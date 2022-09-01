@@ -25,8 +25,12 @@ from PyQt5.QtGui import (
     QFont,
 )
 
-from index import OnscreenStenotype
+import ctypes
+from ctypes.wintypes import HWND
+import win32gui
+import win32con
 
+from index import OnscreenStenotype
 from typing import Any, Callable, List, Set
 
 
@@ -55,22 +59,26 @@ class Main(Tool):
         stenotype.end_stroke.connect(self.on_stenotype_input)
         stenotype.after_touch_event.connect(self.on_stenotype_touch)
 
-        self.text_edit = text_edit = QTextEdit(self)
-        text_edit.setFocusPolicy(Qt.StrongFocus)
-        text_edit.setFont(QFont("", 12))
+        # self.text_edit = text_edit = QTextEdit(self)
+        # text_edit.setFocusPolicy(Qt.StrongFocus)
+        # text_edit.setFont(QFont("", 12))
 
         self.layout = layout = QGridLayout(self)
         layout.addWidget(label, 0, 0)
         # layout.addWidget(button, 1, 0)
-        layout.addWidget(text_edit, 1, 0)
-        layout.addWidget(stenotype, 2, 0)
+        # layout.addWidget(text_edit, 1, 0)
+        layout.addWidget(stenotype, 1, 0)
         self.setLayout(layout)
 
         self.setAttribute(Qt.WA_AcceptTouchEvents)
         self.setAttribute(Qt.WA_ShowWithoutActivating)
         self.setFocusPolicy(Qt.NoFocus)
+
+        # https://stackoverflow.com/questions/71084136/how-to-set-focus-to-the-old-window-on-button-click-in-pyqt5-python
         # self.setWindowFlags(Qt.Dialog | Qt.WindowStaysOnTopHint | Qt.BypassWindowManagerHint | Qt.WindowDoesNotAcceptFocus)
-        # self.setWindowFlags(Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(Qt.WindowStaysOnTopHint)
+
+        self.prevent_window_focus()
 
         engine.signal_stroked.connect(self.on_stroked)
         # engine.signal_send_string.connect(self.on_send_string)
@@ -90,6 +98,20 @@ class Main(Tool):
     #     return super().event(event)
 
     #endregion
+
+    # https://stackoverflow.com/questions/24582525/how-to-show-clickable-qframe-without-loosing-focus-from-main-window
+    # https://stackoverflow.com/questions/68276479/how-to-use-setwindowlongptr-hwnd-gwl-exstyle-ws-ex-noactivate
+
+    # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptrw
+    def prevent_window_focus(self):
+        window_handle = HWND(int(self.winId()))
+
+        user32 = ctypes.windll.user32
+        user32.SetWindowLongPtrW(
+            window_handle,
+            win32con.GWL_EXSTYLE,
+            user32.GetWindowLongPtrW(window_handle, win32con.GWL_EXSTYLE) | win32con.WS_EX_NOACTIVATE | win32con.WS_EX_APPWINDOW,
+        )
 
     def on_stenotype_input(self, stroke_keys: Set[str]):
         # self.text_edit.setFocus()
@@ -174,7 +196,7 @@ class KeyboardWidget(QWidget):
         (["-T", "-S", "-D", "-Z"], "", (LOW_COMPOUND_ROW, 11)),
         (["-D", "-Z"], "", (LOW_COMPOUND_ROW, 12)),
     )
-    
+
     VOWEL_ROW_KEYS_LEFT = (
         (["A-"], "A"),
         (["A-", "O-"], ""),
@@ -195,25 +217,25 @@ class KeyboardWidget(QWidget):
     ROW_HEIGHTS = (
         KEY_SIZE_NUM_BAR,
         COMPOUND_KEY_SIZE,
-        REDUCED_KEY_SIZE, # top row
+        REDUCED_KEY_SIZE,  # top row
         COMPOUND_KEY_SIZE,
-        REDUCED_KEY_SIZE, # bottom row
+        REDUCED_KEY_SIZE,  # bottom row
     )
 
     COL_WIDTHS = (
         KEY_SIZE,
     ) * 3 + (
-        REDUCED_KEY_SIZE, # H-, R-
+        REDUCED_KEY_SIZE,  # H-, R-
         COMPOUND_KEY_SIZE,
-        REDUCED_KEY_SIZE * 2, # *
+        REDUCED_KEY_SIZE * 2,  # *
         COMPOUND_KEY_SIZE,
-        REDUCED_KEY_SIZE, # -F, -R
+        REDUCED_KEY_SIZE,  # -F, -R
     ) + (
         KEY_SIZE,
     ) * 2 + (
-        REDUCED_KEY_SIZE, # -T, -S
+        REDUCED_KEY_SIZE,  # -T, -S
         COMPOUND_KEY_SIZE,
-        REDUCED_KEY_SIZE, # -D, -Z
+        REDUCED_KEY_SIZE,  # -D, -Z
     )
 
     VOWEL_SET_WIDTHS = (
@@ -222,7 +244,7 @@ class KeyboardWidget(QWidget):
         REDUCED_KEY_SIZE,
     )
 
-    end_stroke = pyqtSignal(set) # Set[str]
+    end_stroke = pyqtSignal(set)  # Set[str]
     after_touch_event = pyqtSignal()
 
     #region Overrides
@@ -244,7 +266,7 @@ class KeyboardWidget(QWidget):
 
         self.setLayout(layout)
 
-        self.setFont(QFont("", 12))
+        self.setFont(QFont("Seaford", 12))
 
         self.setAttribute(Qt.WA_AcceptTouchEvents)
         self.setFocusPolicy(Qt.NoFocus)
@@ -259,8 +281,9 @@ class KeyboardWidget(QWidget):
 
             for touch_point in event.touchPoints():
                 key_widget = self.key_widget_from_point(touch_point.pos())
-                if not key_widget: continue
-                
+                if not key_widget:
+                    continue
+
                 self.current_stroke_keys.update(key_widget.values)
             return True
 
@@ -316,7 +339,7 @@ class KeyboardWidget(QWidget):
         layout.addSpacing(self.KEY_SIZE)
         add_vowel_set(KeyboardWidget.VOWEL_ROW_KEYS_RIGHT)
         layout.addStretch(1)
-        layout.addSpacing(self.KEY_SIZE) # right padding
+        layout.addSpacing(self.KEY_SIZE)  # right padding
 
         return layout
 
@@ -326,6 +349,7 @@ class KeyboardWidget(QWidget):
                 return key_widget
 
         return None
+
 
 class KeyWidget(QPushButton):
     def __init__(self, values: List[str], label: str, parent: QWidget = None):
