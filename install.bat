@@ -1,0 +1,1 @@
+plover_console -s plover_plugins install -e .
