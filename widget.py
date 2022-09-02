@@ -9,6 +9,7 @@ from PyQt5.QtCore import (
     QObject,
     QPointF,
     pyqtSignal,
+    pyqtProperty,
 )
 from PyQt5.QtWidgets import (
     QWidget,
@@ -23,15 +24,16 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import (
     QFont,
+    QTouchEvent,
+    QMouseEvent,
 )
 
 import ctypes
 from ctypes.wintypes import HWND
-import win32gui
 import win32con
 
 from index import OnscreenStenotype
-from typing import Any, Callable, List, Set
+from typing import Any, Callable
 
 
 class Main(Tool):
@@ -47,7 +49,8 @@ class Main(Tool):
         self.engine = engine
 
         self.label = label = QLabel(self)
-        label.setFont(QFont("", 24))
+        label.setFont(QFont("Atkinson Hyperlegible", 24))
+        label.setText("…")
         # label.setText("\n".join(", ".join(dir(engine)[x:x+8]) for x in range(0, len(dir(engine)), 8)))\
 
         # if isinstance(engine._machine, OnscreenStenotype):
@@ -67,7 +70,7 @@ class Main(Tool):
         layout.addWidget(label, 0, 0)
         # layout.addWidget(button, 1, 0)
         # layout.addWidget(text_edit, 1, 0)
-        layout.addWidget(stenotype, 1, 0)
+        layout.addWidget(stenotype, 1, 0, Qt.AlignCenter)
         self.setLayout(layout)
 
         self.setAttribute(Qt.WA_AcceptTouchEvents)
@@ -77,6 +80,7 @@ class Main(Tool):
         # https://stackoverflow.com/questions/71084136/how-to-set-focus-to-the-old-window-on-button-click-in-pyqt5-python
         # self.setWindowFlags(Qt.Dialog | Qt.WindowStaysOnTopHint | Qt.BypassWindowManagerHint | Qt.WindowDoesNotAcceptFocus)
         self.setWindowFlags(Qt.WindowStaysOnTopHint)
+
 
         self.prevent_window_focus()
 
@@ -113,7 +117,7 @@ class Main(Tool):
             user32.GetWindowLongPtrW(window_handle, win32con.GWL_EXSTYLE) | win32con.WS_EX_NOACTIVATE | win32con.WS_EX_APPWINDOW,
         )
 
-    def on_stenotype_input(self, stroke_keys: Set[str]):
+    def on_stenotype_input(self, stroke_keys: set[str]):
         # self.text_edit.setFocus()
         self.engine._machine._notify(list(stroke_keys))
 
@@ -122,14 +126,12 @@ class Main(Tool):
         pass
 
     def on_stroked(self, stroke: Stroke):
-        self.label.setText(stroke.rtfcre)
+        self.label.setText(stroke.rtfcre or "…")
 
     # def on_send_string(self, string: str):
-    #     # raise Exception()
     #     self.text_edit.setPlainText(self.text_edit.toPlainText() + string)
 
     # def on_send_backspaces(self, n_backspaces: int):
-    #     # raise Exception()
     #     self.text_edit.setPlainText(self.text_edit.toPlainText()[:-n_backspaces])
 
     # def button_on_clicked(self):
@@ -210,7 +212,7 @@ class KeyboardWidget(QWidget):
     )
 
     KEY_SIZE_NUM_BAR = 80
-    KEY_SIZE = 160
+    KEY_SIZE = 150
     COMPOUND_KEY_SIZE = 72
     REDUCED_KEY_SIZE = KEY_SIZE - COMPOUND_KEY_SIZE / 2
 
@@ -250,13 +252,11 @@ class KeyboardWidget(QWidget):
     #region Overrides
 
     def __init__(self, parent: QWidget = None):
-        # on_stroked: Callable[[Set[str]], None]
-
         super().__init__(parent)
 
         # self.setFont(QFont("", 16))
 
-        self.key_widgets: List[KeyWidget] = []
+        self.key_widgets: list[KeyWidget] = []
 
         layout = QVBoxLayout(self)
 
@@ -266,41 +266,64 @@ class KeyboardWidget(QWidget):
 
         self.setLayout(layout)
 
-        self.setFont(QFont("Seaford", 12))
+        self.setStyleSheet("""
+/* KeyWidget {
+    background: #fdfdfd;
+    border: 1px solid;
+    border-color: #d0d0d0 #d0d0d0 #bbbbbb #d0d0d0;
+    border-radius: 3px;
+    margin: 1px;
+} */
+
+KeyWidget[matched="true"] {
+    background: #6f9f86 /* #686fff */;
+    color: #fff;
+    border: 1px solid /* #11a */;
+    border-color: #2a6361 #2a6361 #1f5153 #2a6361;
+}
+
+KeyWidget[touched="true"] {
+    background: #41796a /* #382fef */;
+}
+""")
+        self.setFont(QFont("Atkinson Hyperlegible", 12))
 
         self.setAttribute(Qt.WA_AcceptTouchEvents)
         self.setFocusPolicy(Qt.NoFocus)
 
-        # self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
-        self.current_stroke_keys = set()
+
+        self.current_stroke_keys: set[str] = set()
 
     def event(self, event: QEvent) -> bool:
+        if not isinstance(event, QTouchEvent):
+            return super().event(event)
+
+        self.after_touch_event.emit()
+
+        touched_key_widgets = self.find_touched_key_widgets(event.touchPoints())
+
         if event.type() in (QEvent.TouchBegin, QEvent.TouchUpdate):
-            self.after_touch_event.emit()
-
-            for touch_point in event.touchPoints():
-                key_widget = self.key_widget_from_point(touch_point.pos())
-                if not key_widget:
-                    continue
-
-                self.current_stroke_keys.update(key_widget.values)
-            return True
+            self.current_stroke_keys.update(
+                key
+                for key_widget in touched_key_widgets
+                for key in key_widget.values
+            )
 
         elif event.type() == QEvent.TouchEnd:
-            self.after_touch_event.emit()
-
             if all(touch.state() == Qt.TouchPointReleased for touch in event.touchPoints()):
                 self.end_stroke.emit(self.current_stroke_keys)
                 self.current_stroke_keys = set()
+        
 
-            return True
+        self.update_key_widget_styles(touched_key_widgets)
 
-        return super().event(event)
+        return True
 
     #endregion
 
-    # todo mutation is unclear here
+    # TODO it is not well indicated that this function and the next mutate key_widgets
     def build_main_rows_layout(self):
         layout = QGridLayout()
         for (values, label, grid_position) in KeyboardWidget.MAIN_ROWS_KEYS:
@@ -343,6 +366,18 @@ class KeyboardWidget(QWidget):
 
         return layout
 
+    def find_touched_key_widgets(self, touch_points: list[QTouchEvent.TouchPoint]):
+        touched_key_widgets: list[KeyWidget] = []
+        for touch in touch_points:
+            if touch.state() == Qt.TouchPointReleased: continue
+
+            key_widget = self.key_widget_from_point(touch.pos())
+            if not key_widget: continue
+
+            touched_key_widgets.append(key_widget)
+
+        return touched_key_widgets
+
     def key_widget_from_point(self, point: QPointF):
         for key_widget in self.key_widgets:
             if key_widget.geometry().contains(point.toPoint(), True):
@@ -350,9 +385,32 @@ class KeyboardWidget(QWidget):
 
         return None
 
+    def update_key_widget_styles(self, touched_key_widgets: list):
+        touched_key_widgets: list[KeyWidget] = touched_key_widgets
+    
+        for key_widget in self.key_widgets:
+            if key_widget in touched_key_widgets:
+                key_widget.touched = True
+                key_widget.matched = True
+
+            elif all(key in self.current_stroke_keys for key in key_widget.values):
+                key_widget.touched = False
+                key_widget.matched = True
+
+            else:
+                key_widget.touched = False
+                key_widget.matched = False
+
+            # Reload stylesheet for dynamic properties: https://stackoverflow.com/questions/1595476/are-qts-stylesheets-really-handling-dynamic-properties
+            self.style().unpolish(key_widget)
+            self.style().polish(key_widget)
+
+
 
 class KeyWidget(QPushButton):
-    def __init__(self, values: List[str], label: str, parent: QWidget = None):
+    #region Overrides
+
+    def __init__(self, values: list[str], label: str, parent: QWidget = None):
         super().__init__(label, parent)
 
         self.values = values
@@ -360,23 +418,33 @@ class KeyWidget(QPushButton):
 
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        self.setAttribute(Qt.WA_AcceptTouchEvents)
+        # self.setAttribute(Qt.WA_AcceptTouchEvents)
         self.setFocusPolicy(Qt.NoFocus)
 
-    # def event(self, event: QEvent) -> bool:
-    #     self.setText(str(event))
+        self._touched = False
+        self._matched = False
 
-    #     if event.type() in (QEvent.TouchBegin, QEvent.TouchUpdate, QEvent.TouchEnd):
-    #         self.setText(
-    #             ",".join(map(lambda touch: point(touch.pos()), event.touchPoints()))
-    #         )
-    #         return True
+    #endregion
 
-    #     return super().event(event)
+    @pyqtProperty(bool)
+    def touched(self):
+        return self._touched
+
+    @touched.setter
+    def touched(self, touched: bool):
+        self._touched = touched
+
+    @pyqtProperty(bool)
+    def matched(self):
+        return self._matched
+
+    @matched.setter
+    def matched(self, matched: bool):
+        self._matched = matched
 
 
-def point(point):
-    return f"({point.x()}, {point.y()})"
+# def point(point):
+#     return f"({point.x()}, {point.y()})"
 
 # def command_open_window(engine: StenoEngine, arg: str):
 #     new_window = Main(engine)
