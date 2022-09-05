@@ -48,9 +48,9 @@ class Main(Tool):
 
         self.engine = engine
 
-        self.label = label = QLabel(self)
-        label.setFont(QFont("Atkinson Hyperlegible", 24))
-        label.setText("…")
+        self.last_stroke_label = last_stroke_label = QLabel(self)
+        last_stroke_label.setFont(QFont("Atkinson Hyperlegible", 24))
+        last_stroke_label.setText("…")
         # label.setText("\n".join(", ".join(dir(engine)[x:x+8]) for x in range(0, len(dir(engine)), 8)))\
 
         # if isinstance(engine._machine, OnscreenStenotype):
@@ -67,10 +67,10 @@ class Main(Tool):
         # text_edit.setFont(QFont("", 12))
 
         self.layout = layout = QGridLayout(self)
-        layout.addWidget(label, 0, 0)
+        layout.addWidget(last_stroke_label, 0, 0, Qt.AlignBottom | Qt.AlignRight)
         # layout.addWidget(button, 1, 0)
         # layout.addWidget(text_edit, 1, 0)
-        layout.addWidget(stenotype, 1, 0, Qt.AlignCenter)
+        layout.addWidget(stenotype, 0, 0, Qt.AlignCenter)
         self.setLayout(layout)
 
         self.setAttribute(Qt.WA_AcceptTouchEvents)
@@ -81,8 +81,10 @@ class Main(Tool):
         # self.setWindowFlags(Qt.Dialog | Qt.WindowStaysOnTopHint | Qt.BypassWindowManagerHint | Qt.WindowDoesNotAcceptFocus)
         self.setWindowFlags(Qt.WindowStaysOnTopHint)
 
-
         self.prevent_window_focus()
+
+
+        self.setWindowOpacity(0.9375)
 
         engine.signal_stroked.connect(self.on_stroked)
         # engine.signal_send_string.connect(self.on_send_string)
@@ -108,6 +110,14 @@ class Main(Tool):
 
     # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptrw
     def prevent_window_focus(self):
+        """
+        Prevents the stenotype window from taking focus from other programs when the keys are touched. Currently, this
+        is an alternative to the nonfunctional Qt window flag `Qt.WindowDoesNotAcceptFocus` and Unix-only attribute
+        `Qt.WA_X11DoNotAcceptFocus`. This function is currently designed for Windows only.
+
+        See https://bugreports.qt.io/browse/QTBUG-36230, https://forum.qt.io/topic/82493/the-windowdoesnotacceptfocus-flag-is-making-me-thirsty/7 for bug information.
+        """
+
         window_handle = HWND(int(self.winId()))
 
         user32 = ctypes.windll.user32
@@ -126,7 +136,7 @@ class Main(Tool):
         pass
 
     def on_stroked(self, stroke: Stroke):
-        self.label.setText(stroke.rtfcre or "…")
+        self.last_stroke_label.setText(stroke.rtfcre or "…")
 
     # def on_send_string(self, string: str):
     #     self.text_edit.setPlainText(self.text_edit.toPlainText() + string)
@@ -211,9 +221,9 @@ class KeyboardWidget(QWidget):
         (["-U"], "U"),
     )
 
-    KEY_SIZE_NUM_BAR = 80
-    KEY_SIZE = 150
-    COMPOUND_KEY_SIZE = 72
+    KEY_SIZE_NUM_BAR = 72
+    KEY_SIZE = 144
+    COMPOUND_KEY_SIZE = 60
     REDUCED_KEY_SIZE = KEY_SIZE - COMPOUND_KEY_SIZE / 2
 
     ROW_HEIGHTS = (
@@ -229,7 +239,7 @@ class KeyboardWidget(QWidget):
     ) * 3 + (
         REDUCED_KEY_SIZE,  # H-, R-
         COMPOUND_KEY_SIZE,
-        REDUCED_KEY_SIZE * 2,  # *
+        REDUCED_KEY_SIZE * 2 + KEY_SIZE * 2,  # *
         COMPOUND_KEY_SIZE,
         REDUCED_KEY_SIZE,  # -F, -R
     ) + (
@@ -286,12 +296,11 @@ KeyWidget[touched="true"] {
     background: #41796a /* #382fef */;
 }
 """)
-        self.setFont(QFont("Atkinson Hyperlegible", 12))
 
         self.setAttribute(Qt.WA_AcceptTouchEvents)
         self.setFocusPolicy(Qt.NoFocus)
 
-        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        # self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
 
         self.current_stroke_keys: set[str] = set()
@@ -312,7 +321,8 @@ KeyWidget[touched="true"] {
             )
 
         elif event.type() == QEvent.TouchEnd:
-            if all(touch.state() == Qt.TouchPointReleased for touch in event.touchPoints()):
+            # This also filters out empty strokes (Plover accepts them and will insert extra spaces)
+            if self.current_stroke_keys and all(touch.state() == Qt.TouchPointReleased for touch in event.touchPoints()):
                 self.end_stroke.emit(self.current_stroke_keys)
                 self.current_stroke_keys = set()
         
@@ -342,6 +352,8 @@ KeyWidget[touched="true"] {
             layout.setColumnMinimumWidth(i, size)
             layout.setColumnStretch(i, 0)
 
+        # layout.setColumnStretch(5, 1)
+
         return layout
 
     def build_vowel_row_layout(self):
@@ -359,7 +371,7 @@ KeyWidget[touched="true"] {
 
         layout.addStretch(1)
         add_vowel_set(KeyboardWidget.VOWEL_ROW_KEYS_LEFT)
-        layout.addSpacing(self.KEY_SIZE)
+        layout.addSpacing(self.KEY_SIZE * 2)
         add_vowel_set(KeyboardWidget.VOWEL_ROW_KEYS_RIGHT)
         layout.addStretch(1)
         layout.addSpacing(self.KEY_SIZE)  # right padding
@@ -414,17 +426,27 @@ class KeyWidget(QPushButton):
         super().__init__(label, parent)
 
         self.values = values
-        self.label = label
 
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         # self.setAttribute(Qt.WA_AcceptTouchEvents)
         self.setFocusPolicy(Qt.NoFocus)
 
+        if label:
+            self.setFont(QFont("Atkinson Hyperlegible", 16))
+
         self._touched = False
         self._matched = False
 
+    def event(self, event: QEvent):
+        # Prevents automatic button highlighting
+        if event.type() == QEvent.HoverEnter:
+            self.setAttribute(Qt.WA_UnderMouse, False)
+
+        return super().event(event)
+
     #endregion
+
 
     @pyqtProperty(bool)
     def touched(self):
