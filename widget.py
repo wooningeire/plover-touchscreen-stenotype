@@ -32,9 +32,6 @@ import ctypes
 from ctypes.wintypes import HWND
 import win32con
 
-from index import OnscreenStenotype
-from typing import Any, Callable
-
 
 class Main(Tool):
     #region Overrides
@@ -128,11 +125,15 @@ class Main(Tool):
         )
 
     def on_stenotype_input(self, stroke_keys: set[str]):
-        # self.text_edit.setFocus()
+        # Temporarily enable steno output
+        engine_already_enabled = self.engine.output
+        self.engine.output = True
+
         self.engine._machine._notify(list(stroke_keys))
 
+        self.engine.output = engine_already_enabled
+
     def on_stenotype_touch(self):
-        # self.text_edit.setFocus()
         pass
 
     def on_stroked(self, stroke: Stroke):
@@ -223,7 +224,7 @@ class KeyboardWidget(QWidget):
 
     KEY_SIZE_NUM_BAR = 72
     KEY_SIZE = 144
-    COMPOUND_KEY_SIZE = 60
+    COMPOUND_KEY_SIZE = 64
     REDUCED_KEY_SIZE = KEY_SIZE - COMPOUND_KEY_SIZE / 2
 
     ROW_HEIGHTS = (
