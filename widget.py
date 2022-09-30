@@ -6,7 +6,6 @@ from plover.steno import Stroke
 from PyQt5.QtCore import (
     Qt,
     QEvent,
-    QObject,
     QPointF,
     pyqtSignal,
     pyqtProperty,
@@ -15,8 +14,6 @@ from PyQt5.QtWidgets import (
     QWidget,
     QLabel,
     QPushButton,
-    QTextEdit,
-    QLayout,
     QGridLayout,
     QHBoxLayout,
     QVBoxLayout,
@@ -25,7 +22,6 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import (
     QFont,
     QTouchEvent,
-    QMouseEvent,
 )
 
 import ctypes
@@ -48,25 +44,12 @@ class Main(Tool):
         self.last_stroke_label = last_stroke_label = QLabel(self)
         last_stroke_label.setFont(QFont("Atkinson Hyperlegible", 24))
         last_stroke_label.setText("…")
-        # last_stroke_label.setText(str((self.screen().logicalDotsPerInch(), self.screen().physicalDotsPerInch())))
-        # label.setText("\n".join(", ".join(dir(engine)[x:x+8]) for x in range(0, len(dir(engine)), 8)))\
-
-        # button = KeyWidget([], "Press me!", self)
-        # button.clicked.connect(self.button_on_clicked)
 
         stenotype = KeyboardWidget(self)
         stenotype.end_stroke.connect(self._on_stenotype_input)
-        stenotype.after_touch_event.connect(self._on_stenotype_touch)
-
-        # self.text_edit = text_edit = QTextEdit(self)
-        # text_edit.setFocusPolicy(Qt.StrongFocus)
-        # text_edit.setFont(QFont("", 12))
 
         self.layout = layout = QGridLayout(self)
         layout.addWidget(last_stroke_label, 0, 0, Qt.AlignBottom | Qt.AlignRight)
-        # layout.addWidget(button, 1, 0)
-        # layout.addWidget(text_edit, 1, 0)
-        # layout.addWidget(stenotype, 0, 0, Qt.AlignCenter)
         layout.addWidget(stenotype, 0, 0, Qt.AlignVCenter)
         self.setLayout(layout)
 
@@ -84,21 +67,7 @@ class Main(Tool):
         self.setWindowOpacity(0.9375)
 
         engine.signal_stroked.connect(self._on_stroked)
-        # engine.signal_send_string.connect(self.on_send_string)
-        # engine.signal_send_backspaces.connect(self.on_send_backspaces)
 
-        # engine.signal_connect("stroked", self.on_stroked)
-        # engine.signal_connect("send_string", self.on_send_string)
-
-        # text_edit.setFocus()
-
-    # https://gist.github.com/stevenliebregt/8e4211937b671ac637b610650a11914f
-    # def event(self, event: QEvent) -> bool:
-    #     if event.type() in (QEvent.TouchBegin, QEvent.TouchUpdate, QEvent.TouchEnd):
-    #         self.label.setText(",".join(map(lambda touch: point(touch.pos()), event.touchPoints())))
-    #         return True
-
-    #     return super().event(event)
 
     #endregion
 
@@ -133,20 +102,8 @@ class Main(Tool):
 
         self.engine.output = engine_already_enabled
 
-    def _on_stenotype_touch(self):
-        pass
-
     def _on_stroked(self, stroke: Stroke):
         self.last_stroke_label.setText(stroke.rtfcre or "…")
-
-    # def on_send_string(self, string: str):
-    #     self.text_edit.setPlainText(self.text_edit.toPlainText() + string)
-
-    # def on_send_backspaces(self, n_backspaces: int):
-    #     self.text_edit.setPlainText(self.text_edit.toPlainText()[:-n_backspaces])
-
-    # def button_on_clicked(self):
-    #     self.engine._machine._notify(["S-"])
 
 
 class KeyboardWidget(QWidget):
@@ -265,8 +222,6 @@ class KeyboardWidget(QWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
 
-        # self.setFont(QFont("", 16))
-
         self.key_widgets: list[KeyWidget] = []
 
         layout = QVBoxLayout(self)
@@ -278,23 +233,15 @@ class KeyboardWidget(QWidget):
         self.setLayout(layout)
 
         self.setStyleSheet("""
-/* KeyWidget {
-    background: #fdfdfd;
-    border: 1px solid;
-    border-color: #d0d0d0 #d0d0d0 #bbbbbb #d0d0d0;
-    border-radius: 3px;
-    margin: 1px;
-} */
-
 KeyWidget[matched="true"] {
-    background: #6f9f86 /* #686fff */;
+    background: #6f9f86;
     color: #fff;
-    border: 1px solid /* #11a */;
+    border: 1px solid;
     border-color: #2a6361 #2a6361 #1f5153 #2a6361;
 }
 
 KeyWidget[touched="true"] {
-    background: #41796a /* #382fef */;
+    background: #41796a;
 }
 """)
 
@@ -464,10 +411,6 @@ class KeyWidget(QPushButton):
     @matched.setter
     def matched(self, matched: bool):
         self.__matched = matched
-
-
-# def point(point):
-#     return f"({point.x()}, {point.y()})"
 
 # def command_open_window(engine: StenoEngine, arg: str):
 #     new_window = Main(engine)
