@@ -48,16 +48,15 @@ class Main(Tool):
         self.last_stroke_label = last_stroke_label = QLabel(self)
         last_stroke_label.setFont(QFont("Atkinson Hyperlegible", 24))
         last_stroke_label.setText("…")
+        # last_stroke_label.setText(str((self.screen().logicalDotsPerInch(), self.screen().physicalDotsPerInch())))
         # label.setText("\n".join(", ".join(dir(engine)[x:x+8]) for x in range(0, len(dir(engine)), 8)))\
-
-        # if isinstance(engine._machine, OnscreenStenotype):
 
         # button = KeyWidget([], "Press me!", self)
         # button.clicked.connect(self.button_on_clicked)
 
         stenotype = KeyboardWidget(self)
-        stenotype.end_stroke.connect(self.on_stenotype_input)
-        stenotype.after_touch_event.connect(self.on_stenotype_touch)
+        stenotype.end_stroke.connect(self._on_stenotype_input)
+        stenotype.after_touch_event.connect(self._on_stenotype_touch)
 
         # self.text_edit = text_edit = QTextEdit(self)
         # text_edit.setFocusPolicy(Qt.StrongFocus)
@@ -67,7 +66,8 @@ class Main(Tool):
         layout.addWidget(last_stroke_label, 0, 0, Qt.AlignBottom | Qt.AlignRight)
         # layout.addWidget(button, 1, 0)
         # layout.addWidget(text_edit, 1, 0)
-        layout.addWidget(stenotype, 0, 0, Qt.AlignCenter)
+        # layout.addWidget(stenotype, 0, 0, Qt.AlignCenter)
+        layout.addWidget(stenotype, 0, 0, Qt.AlignVCenter)
         self.setLayout(layout)
 
         self.setAttribute(Qt.WA_AcceptTouchEvents)
@@ -78,12 +78,12 @@ class Main(Tool):
         # self.setWindowFlags(Qt.Dialog | Qt.WindowStaysOnTopHint | Qt.BypassWindowManagerHint | Qt.WindowDoesNotAcceptFocus)
         self.setWindowFlags(Qt.WindowStaysOnTopHint)
 
-        self.prevent_window_focus()
+        self.__prevent_window_focus()
 
 
         self.setWindowOpacity(0.9375)
 
-        engine.signal_stroked.connect(self.on_stroked)
+        engine.signal_stroked.connect(self._on_stroked)
         # engine.signal_send_string.connect(self.on_send_string)
         # engine.signal_send_backspaces.connect(self.on_send_backspaces)
 
@@ -106,7 +106,7 @@ class Main(Tool):
     # https://stackoverflow.com/questions/68276479/how-to-use-setwindowlongptr-hwnd-gwl-exstyle-ws-ex-noactivate
 
     # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptrw
-    def prevent_window_focus(self):
+    def __prevent_window_focus(self):
         """
         Prevents the stenotype window from taking focus from other programs when the keys are touched. Currently, this
         is an alternative to the nonfunctional Qt window flag `Qt.WindowDoesNotAcceptFocus` and Unix-only attribute
@@ -124,7 +124,7 @@ class Main(Tool):
             user32.GetWindowLongPtrW(window_handle, win32con.GWL_EXSTYLE) | win32con.WS_EX_NOACTIVATE | win32con.WS_EX_APPWINDOW,
         )
 
-    def on_stenotype_input(self, stroke_keys: set[str]):
+    def _on_stenotype_input(self, stroke_keys: set[str]):
         # Temporarily enable steno output
         engine_already_enabled = self.engine.output
         self.engine.output = True
@@ -133,10 +133,10 @@ class Main(Tool):
 
         self.engine.output = engine_already_enabled
 
-    def on_stenotype_touch(self):
+    def _on_stenotype_touch(self):
         pass
 
-    def on_stroked(self, stroke: Stroke):
+    def _on_stroked(self, stroke: Stroke):
         self.last_stroke_label.setText(stroke.rtfcre or "…")
 
     # def on_send_string(self, string: str):
@@ -223,8 +223,8 @@ class KeyboardWidget(QWidget):
     )
 
     KEY_SIZE_NUM_BAR = 72
-    KEY_SIZE = 144
-    COMPOUND_KEY_SIZE = 64
+    KEY_SIZE = 132
+    COMPOUND_KEY_SIZE = 68
     REDUCED_KEY_SIZE = KEY_SIZE - COMPOUND_KEY_SIZE / 2
 
     ROW_HEIGHTS = (
@@ -240,7 +240,7 @@ class KeyboardWidget(QWidget):
     ) * 3 + (
         REDUCED_KEY_SIZE,  # H-, R-
         COMPOUND_KEY_SIZE,
-        REDUCED_KEY_SIZE * 2 + KEY_SIZE * 2,  # *
+        REDUCED_KEY_SIZE * 2 + KEY_SIZE * 2.5,  # *
         COMPOUND_KEY_SIZE,
         REDUCED_KEY_SIZE,  # -F, -R
     ) + (
@@ -257,7 +257,7 @@ class KeyboardWidget(QWidget):
         REDUCED_KEY_SIZE,
     )
 
-    end_stroke = pyqtSignal(set)  # Set[str]
+    end_stroke = pyqtSignal(set)  #set[str]
     after_touch_event = pyqtSignal()
 
     #region Overrides
@@ -271,9 +271,9 @@ class KeyboardWidget(QWidget):
 
         layout = QVBoxLayout(self)
 
-        layout.addLayout(self.build_main_rows_layout())
+        layout.addLayout(self.__build_main_rows_layout())
         layout.addSpacing(self.KEY_SIZE * 3/4)
-        layout.addLayout(self.build_vowel_row_layout())
+        layout.addLayout(self.__build_vowel_row_layout())
 
         self.setLayout(layout)
 
@@ -301,7 +301,7 @@ KeyWidget[touched="true"] {
         self.setAttribute(Qt.WA_AcceptTouchEvents)
         self.setFocusPolicy(Qt.NoFocus)
 
-        # self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
 
         self.current_stroke_keys: set[str] = set()
@@ -312,7 +312,7 @@ KeyWidget[touched="true"] {
 
         self.after_touch_event.emit()
 
-        touched_key_widgets = self.find_touched_key_widgets(event.touchPoints())
+        touched_key_widgets = self._find_touched_key_widgets(event.touchPoints())
 
         if event.type() in (QEvent.TouchBegin, QEvent.TouchUpdate):
             self.current_stroke_keys.update(
@@ -328,14 +328,14 @@ KeyWidget[touched="true"] {
                 self.current_stroke_keys = set()
         
 
-        self.update_key_widget_styles(touched_key_widgets)
+        self._update_key_widget_styles(touched_key_widgets)
 
         return True
 
     #endregion
 
     # TODO it is not well indicated that this function and the next mutate key_widgets
-    def build_main_rows_layout(self):
+    def __build_main_rows_layout(self):
         layout = QGridLayout()
         for (values, label, grid_position) in KeyboardWidget.MAIN_ROWS_KEYS:
             key_widget = KeyWidget(values, label, self)
@@ -353,11 +353,11 @@ KeyWidget[touched="true"] {
             layout.setColumnMinimumWidth(i, size)
             layout.setColumnStretch(i, 0)
 
-        # layout.setColumnStretch(5, 1)
+        layout.setColumnStretch(5, 1) # * key
 
         return layout
 
-    def build_vowel_row_layout(self):
+    def __build_vowel_row_layout(self):
         layout = QHBoxLayout()
 
         layout.setSpacing(0)
@@ -370,35 +370,35 @@ KeyWidget[touched="true"] {
 
                 layout.addWidget(key_widget)
 
-        layout.addStretch(1)
+        
+        layout.addSpacing(self.KEY_SIZE * 3)
         add_vowel_set(KeyboardWidget.VOWEL_ROW_KEYS_LEFT)
-        layout.addSpacing(self.KEY_SIZE * 2)
-        add_vowel_set(KeyboardWidget.VOWEL_ROW_KEYS_RIGHT)
         layout.addStretch(1)
-        layout.addSpacing(self.KEY_SIZE)  # right padding
+        add_vowel_set(KeyboardWidget.VOWEL_ROW_KEYS_RIGHT)
+        layout.addSpacing(self.KEY_SIZE * 4)
 
         return layout
 
-    def find_touched_key_widgets(self, touch_points: list[QTouchEvent.TouchPoint]):
+    def _find_touched_key_widgets(self, touch_points: list[QTouchEvent.TouchPoint]):
         touched_key_widgets: list[KeyWidget] = []
         for touch in touch_points:
             if touch.state() == Qt.TouchPointReleased: continue
 
-            key_widget = self.key_widget_from_point(touch.pos())
+            key_widget = self._key_widget_from_point(touch.pos())
             if not key_widget: continue
 
             touched_key_widgets.append(key_widget)
 
         return touched_key_widgets
 
-    def key_widget_from_point(self, point: QPointF):
+    def _key_widget_from_point(self, point: QPointF):
         for key_widget in self.key_widgets:
-            if key_widget.geometry().contains(point.toPoint(), True):
+            if key_widget.geometry().contains(point.toPoint()):
                 return key_widget
 
         return None
 
-    def update_key_widget_styles(self, touched_key_widgets: list):
+    def _update_key_widget_styles(self, touched_key_widgets: list):
         touched_key_widgets: list[KeyWidget] = touched_key_widgets
     
         for key_widget in self.key_widgets:
@@ -436,8 +436,8 @@ class KeyWidget(QPushButton):
         if label:
             self.setFont(QFont("Atkinson Hyperlegible", 16))
 
-        self._touched = False
-        self._matched = False
+        self.__touched = False
+        self.__matched = False
 
     def event(self, event: QEvent):
         # Prevents automatic button highlighting
@@ -451,19 +451,19 @@ class KeyWidget(QPushButton):
 
     @pyqtProperty(bool)
     def touched(self):
-        return self._touched
+        return self.__touched
 
     @touched.setter
     def touched(self, touched: bool):
-        self._touched = touched
+        self.__touched = touched
 
     @pyqtProperty(bool)
     def matched(self):
-        return self._matched
+        return self.__matched
 
     @matched.setter
     def matched(self, matched: bool):
-        self._matched = matched
+        self.__matched = matched
 
 
 # def point(point):
