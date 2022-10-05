@@ -360,6 +360,8 @@ KeyWidget[touched="true"] {
         touched_key_widgets: list[KeyWidget] = touched_key_widgets
     
         for key_widget in self.key_widgets:
+            old_touched, old_matched = key_widget.touched, key_widget.matched
+
             if key_widget in touched_key_widgets:
                 key_widget.touched = True
                 key_widget.matched = True
@@ -372,9 +374,11 @@ KeyWidget[touched="true"] {
                 key_widget.touched = False
                 key_widget.matched = False
 
-            # Reload stylesheet for dynamic properties: https://stackoverflow.com/questions/1595476/are-qts-stylesheets-really-handling-dynamic-properties
-            self.style().unpolish(key_widget)
-            self.style().polish(key_widget)
+
+            if (old_touched, old_matched) != (key_widget.touched, key_widget.matched):
+                # Reload stylesheet for dynamic properties: https://stackoverflow.com/questions/1595476/are-qts-stylesheets-really-handling-dynamic-properties
+                # self.style().unpolish(key_widget)
+                self.style().polish(key_widget)
 
 
 
