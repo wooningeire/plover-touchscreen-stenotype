@@ -40,6 +40,10 @@ class Main(Tool):
         super().__init__(engine)
 
         self.engine = engine
+        self.__last_stroke_from_widget = False
+        """Whether the last emitted stroke originated from the on-screen stenotype"""
+        self.__last_stroke_keys: set[str] | None = None
+        self.__last_stroke_engine_enabled = False
 
         self.last_stroke_label = last_stroke_label = QLabel(self)
         last_stroke_label.setFont(QFont("Atkinson Hyperlegible", 24))
@@ -95,15 +99,29 @@ class Main(Tool):
 
     def _on_stenotype_input(self, stroke_keys: set[str]):
         # Temporarily enable steno output
-        engine_already_enabled = self.engine.output
+        self.__last_stroke_engine_enabled = self.engine.output
         self.engine.output = True
 
+        self.__last_stroke_from_widget = True
+        self.__last_stroke_keys = stroke_keys
         self.engine._machine._notify(list(stroke_keys))
 
-        self.engine.output = engine_already_enabled
+        # Wait until `stroked` hook is dispatched to reset `self.engine.output`, since it must be True for Suggestions to be shown
+
+        # TODO The current implementation is not infallible because the `stroked` handler does not verify that the stroke it
+        # received is the same stroke sent from this method. Multiple strokes may also be sent before the handler is called
+        # (use deque to resolve this)
 
     def _on_stroked(self, stroke: Stroke):
+        # if not self.__last_stroke_from_widget: return
+        if not self.__last_stroke_from_widget or self.__last_stroke_keys != set(stroke.keys()): return
+
         self.last_stroke_label.setText(stroke.rtfcre or "…")
+        self.engine.output = self.__last_stroke_engine_enabled
+        
+        self.__last_stroke_from_widget = False
+        self.__last_stroke_keys = None
+
 
 
 class KeyboardWidget(QWidget):
@@ -227,7 +245,7 @@ class KeyboardWidget(QWidget):
         layout = QVBoxLayout(self)
 
         layout.addLayout(self.__build_main_rows_layout())
-        layout.addSpacing(self.KEY_SIZE * 3/4)
+        layout.addSpacing(self.KEY_SIZE)
         layout.addLayout(self.__build_vowel_row_layout())
 
         self.setLayout(layout)
@@ -331,19 +349,12 @@ KeyWidget[touched="true"] {
         for touch in touch_points:
             if touch.state() == Qt.TouchPointReleased: continue
 
-            key_widget = self._key_widget_from_point(touch.pos())
+            key_widget = self.childAt(touch.pos().toPoint())
             if not key_widget: continue
 
             touched_key_widgets.append(key_widget)
 
         return touched_key_widgets
-
-    def _key_widget_from_point(self, point: QPointF):
-        for key_widget in self.key_widgets:
-            if key_widget.geometry().contains(point.toPoint()):
-                return key_widget
-
-        return None
 
     def _update_key_widget_styles(self, touched_key_widgets: list):
         touched_key_widgets: list[KeyWidget] = touched_key_widgets
