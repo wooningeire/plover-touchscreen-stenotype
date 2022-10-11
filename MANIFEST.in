@@ -1,4 +1,0 @@
-exclude plover_my_plugin/tool/*_rc.py
-exclude plover_my_plugin/tool/*_ui.py
-include plover_my_plugin/tool/*.ui
-recursive-include plover_my_plugin/tool/resources *

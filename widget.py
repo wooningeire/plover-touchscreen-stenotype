@@ -45,6 +45,13 @@ class Main(Tool):
         self.__last_stroke_keys: set[str] | None = None
         self.__last_stroke_engine_enabled = False
 
+        self.__setup_ui()
+
+        engine.signal_stroked.connect(self._on_stroked)
+
+    #endregion
+
+    def __setup_ui(self):
         self.last_stroke_label = last_stroke_label = QLabel(self)
         last_stroke_label.setFont(QFont("Atkinson Hyperlegible", 24))
         last_stroke_label.setText("…")
@@ -70,10 +77,6 @@ class Main(Tool):
 
         self.setWindowOpacity(0.9375)
 
-        engine.signal_stroked.connect(self._on_stroked)
-
-
-    #endregion
 
     # https://stackoverflow.com/questions/24582525/how-to-show-clickable-qframe-without-loosing-focus-from-main-window
     # https://stackoverflow.com/questions/68276479/how-to-use-setwindowlongptr-hwnd-gwl-exstyle-ws-ex-noactivate
@@ -130,7 +133,7 @@ class KeyboardWidget(QWidget):
     TOP_COMPOUND_ROW = 1
     LOW_COMPOUND_ROW = 3
 
-    # [keys], (row, column, rowSpan, columnSpan)
+    # [keys], label, (row, column, rowSpan, columnSpan)
     MAIN_ROWS_KEYS = (
         (["#"], "#", (0, 0, 1, -1)),
         (["S-"], "S", (TOP_ROW, 0, 3, 1)),
@@ -232,7 +235,7 @@ class KeyboardWidget(QWidget):
         REDUCED_KEY_SIZE,
     )
 
-    end_stroke = pyqtSignal(set)  #set[str]
+    end_stroke = pyqtSignal(set)  # set[str]
     after_touch_event = pyqtSignal()
 
     #region Overrides
@@ -240,36 +243,11 @@ class KeyboardWidget(QWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
 
+        self.current_stroke_keys: set[str] = set()
         self.key_widgets: list[KeyWidget] = []
 
-        layout = QVBoxLayout(self)
+        self.__setup_ui()
 
-        layout.addLayout(self.__build_main_rows_layout())
-        layout.addSpacing(self.KEY_SIZE)
-        layout.addLayout(self.__build_vowel_row_layout())
-
-        self.setLayout(layout)
-
-        self.setStyleSheet("""
-KeyWidget[matched="true"] {
-    background: #6f9f86;
-    color: #fff;
-    border: 1px solid;
-    border-color: #2a6361 #2a6361 #1f5153 #2a6361;
-}
-
-KeyWidget[touched="true"] {
-    background: #41796a;
-}
-""")
-
-        self.setAttribute(Qt.WA_AcceptTouchEvents)
-        self.setFocusPolicy(Qt.NoFocus)
-
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-
-        self.current_stroke_keys: set[str] = set()
 
     def event(self, event: QEvent) -> bool:
         if not isinstance(event, QTouchEvent):
@@ -298,6 +276,34 @@ KeyWidget[touched="true"] {
         return True
 
     #endregion
+
+    def __setup_ui(self):
+        layout = QVBoxLayout(self)
+
+        layout.addLayout(self.__build_main_rows_layout())
+        layout.addSpacing(self.KEY_SIZE)
+        layout.addLayout(self.__build_vowel_row_layout())
+
+        self.setLayout(layout)
+
+        self.setStyleSheet("""
+KeyWidget[matched="true"] {
+    background: #6f9f86;
+    color: #fff;
+    border: 1px solid;
+    border-color: #2a6361 #2a6361 #1f5153 #2a6361;
+}
+
+KeyWidget[touched="true"] {
+    background: #41796a;
+}
+""")
+
+        self.setAttribute(Qt.WA_AcceptTouchEvents)
+        self.setFocusPolicy(Qt.NoFocus)
+
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
 
     # TODO it is not well indicated that this function and the next mutate key_widgets
     def __build_main_rows_layout(self):
@@ -390,16 +396,10 @@ class KeyWidget(QPushButton):
 
         self.values = values
 
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-        # self.setAttribute(Qt.WA_AcceptTouchEvents)
-        self.setFocusPolicy(Qt.NoFocus)
-
-        if label:
-            self.setFont(QFont("Atkinson Hyperlegible", 16))
-
         self.__touched = False
         self.__matched = False
+
+        self.__setup_ui(label)
 
     def event(self, event: QEvent):
         # Prevents automatic button highlighting
@@ -409,6 +409,15 @@ class KeyWidget(QPushButton):
         return super().event(event)
 
     #endregion
+
+    def __setup_ui(self, label):
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        # self.setAttribute(Qt.WA_AcceptTouchEvents)
+        self.setFocusPolicy(Qt.NoFocus)
+
+        if label:
+            self.setFont(QFont("Atkinson Hyperlegible", 16))
 
 
     @pyqtProperty(bool)
