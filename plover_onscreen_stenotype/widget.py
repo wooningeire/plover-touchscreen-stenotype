@@ -269,6 +269,13 @@ class KeyboardWidget(QWidget):
         _REDUCED_KEY_SIZE,
     )
 
+    _KEY_OFFSETS = (
+        0,
+        _KEY_SIZE * 0.75,
+        _KEY_SIZE * 0.75,
+        0,
+    )
+
     end_stroke = pyqtSignal(set)  #set[str]
     after_touch_event = pyqtSignal()
 
