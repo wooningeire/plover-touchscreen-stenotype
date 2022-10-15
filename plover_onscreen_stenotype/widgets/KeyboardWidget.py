@@ -30,68 +30,146 @@ class KeyboardWidget(QWidget):
     TOP_COMPOUND_ROW = 1
     LOW_COMPOUND_ROW = 3
 
-    # [keys], (row, column, rowSpan, columnSpan)
-    MAIN_ROWS_KEYS = (
-        (["#"], "#", (0, 0, 1, -1)),
-        (["S-"], "S", (TOP_ROW, 0, 3, 1)),
-        (["T-"], "T", (TOP_ROW, 1)),
-        (["K-"], "K", (LOW_ROW, 1)),
-        (["P-"], "P", (TOP_ROW, 2)),
-        (["W-"], "W", (LOW_ROW, 2)),
-        (["H-"], "H", (TOP_ROW, 3)),
-        (["R-"], "R", (LOW_ROW, 3)),
-        (["H-", "*"], "", (TOP_ROW, 4)),
-        (["R-", "*"], "", (LOW_ROW, 4)),
-        (["*"], "*", (TOP_ROW, 5, 3, 1)),
-        (["*", "-F"], "", (TOP_ROW, 6)),
-        (["*", "-R"], "", (LOW_ROW, 6)),
-        (["-F"], "F", (TOP_ROW, 7)),
-        (["-R"], "R", (LOW_ROW, 7)),
-        (["-P"], "P", (TOP_ROW, 8)),
-        (["-B"], "B", (LOW_ROW, 8)),
-        (["-L"], "L", (TOP_ROW, 9)),
-        (["-G"], "G", (LOW_ROW, 9)),
-        (["-T"], "T", (TOP_ROW, 10)),
-        (["-S"], "S", (LOW_ROW, 10)),
-        (["-T", "-D"], "", (TOP_ROW, 11)),
-        (["-S", "-Z"], "", (LOW_ROW, 11)),
-        (["-D"], "D", (TOP_ROW, 12)),
-        (["-Z"], "Z", (LOW_ROW, 12)),
-
-        (["#", "S-"], "", (TOP_COMPOUND_ROW, 0)),
-        (["#", "T-"], "", (TOP_COMPOUND_ROW, 1)),
-        (["#", "P-"], "", (TOP_COMPOUND_ROW, 2)),
-        (["#", "H-"], "", (TOP_COMPOUND_ROW, 3)),
-        (["#", "H-", "*"], "", (TOP_COMPOUND_ROW, 4)),
-        (["#", "*"], "", (TOP_COMPOUND_ROW, 5)),
-        (["#", "*", "-F"], "", (TOP_COMPOUND_ROW, 6)),
-        (["#", "-F"], "", (TOP_COMPOUND_ROW, 7)),
-        (["#", "-P"], "", (TOP_COMPOUND_ROW, 8)),
-        (["#", "-L"], "", (TOP_COMPOUND_ROW, 9)),
-        (["#", "-T"], "", (TOP_COMPOUND_ROW, 10)),
-        (["#", "-T", "-D"], "", (TOP_COMPOUND_ROW, 11)),
-        (["#", "-D"], "", (TOP_COMPOUND_ROW, 12)),
-
-        (["T-", "K-"], "", (LOW_COMPOUND_ROW, 1)),
-        (["P-", "W-"], "", (LOW_COMPOUND_ROW, 2)),
-        (["H-", "R-"], "", (LOW_COMPOUND_ROW, 3)),
-        (["H-", "R-", "*"], "", (LOW_COMPOUND_ROW, 4)),
-        (["*", "-R", "-F"], "", (LOW_COMPOUND_ROW, 6)),
-        (["-F", "-R"], "", (LOW_COMPOUND_ROW, 7)),
-        (["-P", "-B"], "", (LOW_COMPOUND_ROW, 8)),
-        (["-L", "-G"], "", (LOW_COMPOUND_ROW, 9)),
-        (["-T", "-S"], "", (LOW_COMPOUND_ROW, 10)),
-        (["-T", "-S", "-D", "-Z"], "", (LOW_COMPOUND_ROW, 11)),
-        (["-D", "-Z"], "", (LOW_COMPOUND_ROW, 12)),
+    _MAIN_ROWS_KEYS_2 = (
+        (
+            (["#"], ""),
+            (["#", "S-"], ""),
+            (["S-"], "S", 3),
+        ), (
+            (["#"], ""),
+            (["#", "T-"], ""),
+            (["T-"], "T"),
+            (["T-", "K-"], ""),
+            (["K-"], "K"),
+        ), (
+            (["#"], ""),
+            (["#", "P-"], ""),
+            (["P-"], "P"),
+            (["P-", "W-"], ""),
+            (["W-"], "W"),
+        ), (
+            (["#"], ""),
+            (["#", "H-"], ""),
+            (["H-"], "H"),
+            (["H-", "R-"], ""),
+            (["R-"], "R"),
+        ), (
+            (["#"], ""),
+            (["#", "H-", "*"], ""),
+            (["H-", "*"], ""),
+            (["H-", "R-", "*"], ""),
+            (["R-", "*"], ""),
+        ), (
+            (["#"], "#"),
+            (["#", "*"], ""),
+            (["*"], "*", 3),
+        ), (
+            (["#"], ""),
+            (["#", "*", "-F"], ""),
+            (["*", "-F"], ""),
+            (["*", "-F", "-R"], ""),
+            (["*", "-R"], ""),
+        ), (
+            (["#"], ""),
+            (["#", "-F"], ""),
+            (["-F"], "F"),
+            (["-F", "-R"], ""),
+            (["-R"], "R"),
+        ), (
+            (["#"], ""),
+            (["#", "-P"], ""),
+            (["-P"], "P"),
+            (["-P", "-B"], ""),
+            (["-B"], "B"),
+        ), (
+            (["#"], ""),
+            (["#", "-L"], ""),
+            (["-L"], "L"),
+            (["-L", "-G"], ""),
+            (["-G"], "G"),
+        ), (
+            (["#"], ""),
+            (["#", "-T"], ""),
+            (["-T"], "T"),
+            (["-T", "-S"], ""),
+            (["-S"], "S"),
+        ), (
+            (["#"], ""),
+            (["#", "-T", "-D"], ""),
+            (["-T", "-D"], ""),
+            (["-T", "-S", "-D", "-Z"], ""),
+            (["-S", "-Z"], ""),
+        ), (
+            (["#"], ""),
+            (["#", "-D"], ""),
+            (["-D"], "D"),
+            (["-D", "-Z"], ""),
+            (["-Z"], "Z"),
+        ),
     )
 
-    VOWEL_ROW_KEYS_LEFT = (
+    # # [keys], (row, column, rowSpan, columnSpan)
+    # MAIN_ROWS_KEYS = (
+    #     (["#"], "#", (0, 0, 1, -1)),
+    #     (["S-"], "S", (TOP_ROW, 0, 3, 1)),
+    #     (["T-"], "T", (TOP_ROW, 1)),
+    #     (["K-"], "K", (LOW_ROW, 1)),
+    #     (["P-"], "P", (TOP_ROW, 2)),
+    #     (["W-"], "W", (LOW_ROW, 2)),
+    #     (["H-"], "H", (TOP_ROW, 3)),
+    #     (["R-"], "R", (LOW_ROW, 3)),
+    #     (["H-", "*"], "", (TOP_ROW, 4)),
+    #     (["R-", "*"], "", (LOW_ROW, 4)),
+    #     (["*"], "*", (TOP_ROW, 5, 3, 1)),
+    #     (["*", "-F"], "", (TOP_ROW, 6)),
+    #     (["*", "-R"], "", (LOW_ROW, 6)),
+    #     (["-F"], "F", (TOP_ROW, 7)),
+    #     (["-R"], "R", (LOW_ROW, 7)),
+    #     (["-P"], "P", (TOP_ROW, 8)),
+    #     (["-B"], "B", (LOW_ROW, 8)),
+    #     (["-L"], "L", (TOP_ROW, 9)),
+    #     (["-G"], "G", (LOW_ROW, 9)),
+    #     (["-T"], "T", (TOP_ROW, 10)),
+    #     (["-S"], "S", (LOW_ROW, 10)),
+    #     (["-T", "-D"], "", (TOP_ROW, 11)),
+    #     (["-S", "-Z"], "", (LOW_ROW, 11)),
+    #     (["-D"], "D", (TOP_ROW, 12)),
+    #     (["-Z"], "Z", (LOW_ROW, 12)),
+
+    #     (["#", "S-"], "", (TOP_COMPOUND_ROW, 0)),
+    #     (["#", "T-"], "", (TOP_COMPOUND_ROW, 1)),
+    #     (["#", "P-"], "", (TOP_COMPOUND_ROW, 2)),
+    #     (["#", "H-"], "", (TOP_COMPOUND_ROW, 3)),
+    #     (["#", "H-", "*"], "", (TOP_COMPOUND_ROW, 4)),
+    #     (["#", "*"], "", (TOP_COMPOUND_ROW, 5)),
+    #     (["#", "*", "-F"], "", (TOP_COMPOUND_ROW, 6)),
+    #     (["#", "-F"], "", (TOP_COMPOUND_ROW, 7)),
+    #     (["#", "-P"], "", (TOP_COMPOUND_ROW, 8)),
+    #     (["#", "-L"], "", (TOP_COMPOUND_ROW, 9)),
+    #     (["#", "-T"], "", (TOP_COMPOUND_ROW, 10)),
+    #     (["#", "-T", "-D"], "", (TOP_COMPOUND_ROW, 11)),
+    #     (["#", "-D"], "", (TOP_COMPOUND_ROW, 12)),
+
+    #     (["T-", "K-"], "", (LOW_COMPOUND_ROW, 1)),
+    #     (["P-", "W-"], "", (LOW_COMPOUND_ROW, 2)),
+    #     (["H-", "R-"], "", (LOW_COMPOUND_ROW, 3)),
+    #     (["H-", "R-", "*"], "", (LOW_COMPOUND_ROW, 4)),
+    #     (["*", "-R", "-F"], "", (LOW_COMPOUND_ROW, 6)),
+    #     (["-F", "-R"], "", (LOW_COMPOUND_ROW, 7)),
+    #     (["-P", "-B"], "", (LOW_COMPOUND_ROW, 8)),
+    #     (["-L", "-G"], "", (LOW_COMPOUND_ROW, 9)),
+    #     (["-T", "-S"], "", (LOW_COMPOUND_ROW, 10)),
+    #     (["-T", "-S", "-D", "-Z"], "", (LOW_COMPOUND_ROW, 11)),
+    #     (["-D", "-Z"], "", (LOW_COMPOUND_ROW, 12)),
+    # )
+
+    _VOWEL_ROW_KEYS_LEFT = (
         (["A-"], "A"),
         (["A-", "O-"], ""),
         (["O-"], "O"),
     )
 
-    VOWEL_ROW_KEYS_RIGHT = (
+    _VOWEL_ROW_KEYS_RIGHT = (
         (["-E"], "E"),
         (["-E", "-U"], ""),
         (["-U"], "U"),
@@ -103,6 +181,8 @@ class KeyboardWidget(QWidget):
     _COMPOUND_KEY_SIZE = 0.91507619738
     _REDUCED_KEY_SIZE = _KEY_SIZE - _COMPOUND_KEY_SIZE / 2
 
+    _PINKY_STRETCH = _KEY_SIZE * 0.125
+
     _ROW_HEIGHTS = (
         _KEY_SIZE_NUM_BAR,
         _COMPOUND_KEY_SIZE,
@@ -112,8 +192,10 @@ class KeyboardWidget(QWidget):
     )
 
     _COL_WIDTHS = (
+        _KEY_SIZE + _PINKY_STRETCH,
+    ) + (
         _KEY_SIZE,
-    ) * 3 + (
+    ) * 2 + (
         _REDUCED_KEY_SIZE,  # H-, R-
         _COMPOUND_KEY_SIZE,
         _REDUCED_KEY_SIZE * 2 + _KEY_SIZE * 2.5,  # *
@@ -122,23 +204,35 @@ class KeyboardWidget(QWidget):
     ) + (
         _KEY_SIZE,
     ) * 2 + (
-        _REDUCED_KEY_SIZE,  # -T, -S
+        _REDUCED_KEY_SIZE + _PINKY_STRETCH,  # -T, -S
         _COMPOUND_KEY_SIZE,
         _REDUCED_KEY_SIZE,  # -D, -Z
     )
 
-    VOWEL_SET_WIDTHS = (
+    _VOWEL_SET_WIDTHS = (
         _REDUCED_KEY_SIZE,
         _COMPOUND_KEY_SIZE,
         _REDUCED_KEY_SIZE,
     )
 
-    _KEY_OFFSETS = (
+    _ROWS_GAP = _KEY_SIZE * 0.75
+
+    _COL_OFFSETS = (
+        0, # S-
+        _KEY_SIZE * 0.35, # T-, K-
+        _KEY_SIZE * 0.5, # P-, W-
+        0, # H-, R-
+    ) + (
         0,
-        _KEY_SIZE * 0.75,
-        _KEY_SIZE * 0.75,
+    ) * 3 + (
+        0,  # -F, -R
+        _KEY_SIZE * 0.5,  # -P, -B
+        _KEY_SIZE * 0.35,  # -L, -G
+        0,  # -T, -S
         0,
+        _KEY_SIZE * -0.125, # -D, -Z
     )
+    
 
     end_stroke = pyqtSignal(set)  #set[str]
     after_touch_event = pyqtSignal()
@@ -186,7 +280,7 @@ class KeyboardWidget(QWidget):
         layout = QVBoxLayout(self)
 
         layout.addLayout(self.__build_main_rows_layout())
-        layout.addSpacing(self.__px(self._KEY_SIZE))
+        layout.addSpacing(self.__px(KeyboardWidget._ROWS_GAP))
         layout.addLayout(self.__build_vowel_row_layout())
 
         self.setLayout(layout)
@@ -216,24 +310,64 @@ KeyWidget[touched="true"] {
 
     # TODO it is not well indicated that this function and the next mutate key_widgets
     def __build_main_rows_layout(self):
-        self.main_rows_layout = layout = QGridLayout()
-        for (values, label, grid_position) in KeyboardWidget.MAIN_ROWS_KEYS:
-            key_widget = KeyWidget(values, label, self)
-            self.key_widgets.append(key_widget)
+        self.main_rows_layout = layout = QHBoxLayout()
+        for i, (column, col_width_cm, col_offset_cm) in enumerate(zip(
+                KeyboardWidget._MAIN_ROWS_KEYS_2,
+                KeyboardWidget._COL_WIDTHS,
+                KeyboardWidget._COL_OFFSETS
+        )):
+            column_layout = QVBoxLayout()
+            column_layout.addStretch(1)
 
-            layout.addWidget(key_widget, *grid_position)
+            row_pos = 0
+
+            for values, label, *rest in column:
+                row_span = rest[0] if rest else 1
+                row_height_cm = sum(height for height in KeyboardWidget._ROW_HEIGHTS[row_pos:row_pos + row_span])
+
+                key_widget = KeyWidget(values, label, self)
+                self.key_widgets.append(key_widget)
+
+                if i == 5:  # * key
+                    key_widget.setMinimumWidth(self.__px(col_width_cm))
+                    key_widget.setFixedHeight(self.__px(row_height_cm))
+                else:
+                    key_widget.setFixedSize(self.__px(col_width_cm), self.__px(row_height_cm))
+
+
+                column_layout.addWidget(key_widget)
+
+                row_pos += row_span
+                
+            column_layout.addSpacing(self.__px(col_offset_cm))
+            layout.addLayout(column_layout)
+
+            # if i in (0, 9): # S- and -L, -G
+            #     layout.addSpacing(self.__px(KeyboardWidget._PINKY_STRETCH))
+            if i == 5:  # * key
+                layout.setStretchFactor(column_layout, 1)
+
 
         layout.setSpacing(0)
 
-        for i, size_cm in enumerate(KeyboardWidget._ROW_HEIGHTS):
-            layout.setRowMinimumHeight(i, self.__px(size_cm))
-            layout.setRowStretch(i, 0)
+        # self.main_rows_layout = layout = QGridLayout()
+        # for (values, label, grid_position) in KeyboardWidget.MAIN_ROWS_KEYS:
+        #     key_widget = KeyWidget(values, label, self)
+        #     self.key_widgets.append(key_widget)
 
-        for i, size_cm in enumerate(KeyboardWidget._COL_WIDTHS):
-            layout.setColumnMinimumWidth(i, self.__px(size_cm))
-            layout.setColumnStretch(i, 0)
+        #     layout.addWidget(key_widget, *grid_position)
 
-        layout.setColumnStretch(5, 1)  # * key
+        # layout.setSpacing(0)
+
+        # for i, size_cm in enumerate(KeyboardWidget._ROW_HEIGHTS):
+        #     layout.setRowMinimumHeight(i, self.__px(size_cm))
+        #     layout.setRowStretch(i, 0)
+
+        # for i, size_cm in enumerate(KeyboardWidget._COL_WIDTHS):
+        #     layout.setColumnMinimumWidth(i, self.__px(size_cm))
+        #     layout.setColumnStretch(i, 0)
+
+        # layout.setColumnStretch(5, 1)  # * key
 
 
         return layout
@@ -244,7 +378,7 @@ KeyWidget[touched="true"] {
         layout.setSpacing(0)
 
         def add_vowel_set(vowel_key_descriptors):
-            for ((values, label), width) in zip(vowel_key_descriptors, KeyboardWidget.VOWEL_SET_WIDTHS):
+            for ((values, label), width) in zip(vowel_key_descriptors, KeyboardWidget._VOWEL_SET_WIDTHS):
                 key_widget = KeyWidget(values, label, self)
                 self.key_widgets.append(key_widget)
                 key_widget.setFixedSize(self.__px(width), self.__px(self._KEY_SIZE))
@@ -252,21 +386,21 @@ KeyWidget[touched="true"] {
                 layout.addWidget(key_widget)
 
         
-        layout.addSpacing(self.__px(self._KEY_SIZE) * 3)
-        add_vowel_set(KeyboardWidget.VOWEL_ROW_KEYS_LEFT)
+        layout.addSpacing(self.__px(KeyboardWidget._KEY_SIZE) * 3 + self.__px(KeyboardWidget._PINKY_STRETCH))
+        add_vowel_set(KeyboardWidget._VOWEL_ROW_KEYS_LEFT)
         layout.addStretch(1)
-        add_vowel_set(KeyboardWidget.VOWEL_ROW_KEYS_RIGHT)
-        layout.addSpacing(self.__px(self._KEY_SIZE) * 4)
+        add_vowel_set(KeyboardWidget._VOWEL_ROW_KEYS_RIGHT)
+        layout.addSpacing(self.__px(KeyboardWidget._KEY_SIZE) * 4 + self.__px(KeyboardWidget._PINKY_STRETCH))
 
         return layout
 
 
     def __resize_dpi_responsive_widgets(self):
-        for i, size_cm in enumerate(KeyboardWidget._ROW_HEIGHTS):
-            self.main_rows_layout.setRowMinimumHeight(i, self.__px(size_cm))
+        # for i, size_cm in enumerate(KeyboardWidget._ROW_HEIGHTS):
+        #     self.main_rows_layout.setRowMinimumHeight(i, self.__px(size_cm))
 
-        for i, size_cm in enumerate(KeyboardWidget._COL_WIDTHS):
-            self.main_rows_layout.setColumnMinimumWidth(i, self.__px(size_cm))
+        # for i, size_cm in enumerate(KeyboardWidget._COL_WIDTHS):
+        #     self.main_rows_layout.setColumnMinimumWidth(i, self.__px(size_cm))
 
 
         self.layout().itemAt(1).spacerItem().changeSize(0, self.__px(KeyboardWidget._KEY_SIZE))
@@ -274,8 +408,8 @@ KeyWidget[touched="true"] {
 
         for i, size_cm in zip(
             range(self.vowel_row_layout.count()),
-            (KeyboardWidget._KEY_SIZE * 3,) + KeyboardWidget.VOWEL_SET_WIDTHS
-                    + (0,) + KeyboardWidget.VOWEL_SET_WIDTHS
+            (KeyboardWidget._KEY_SIZE * 3,) + KeyboardWidget._VOWEL_SET_WIDTHS
+                    + (0,) + KeyboardWidget._VOWEL_SET_WIDTHS
                     + (KeyboardWidget._KEY_SIZE * 4,),
         ):
             item = self.vowel_row_layout.itemAt(i)
