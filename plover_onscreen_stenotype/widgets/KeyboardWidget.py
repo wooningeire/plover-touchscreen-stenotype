@@ -215,22 +215,22 @@ class KeyboardWidget(QWidget):
         _REDUCED_KEY_SIZE,
     )
 
-    _ROWS_GAP = _KEY_SIZE * 0.75
+    _ROWS_GAP = _KEY_SIZE * 0.85
 
     _COL_OFFSETS = (
-        0, # S-
+        0,  # S-
         _KEY_SIZE * 0.35, # T-, K-
-        _KEY_SIZE * 0.5, # P-, W-
+        _KEY_SIZE * 0.6, # P-, W-
         0, # H-, R-
     ) + (
         0,
     ) * 3 + (
         0,  # -F, -R
-        _KEY_SIZE * 0.5,  # -P, -B
+        _KEY_SIZE * 0.6,  # -P, -B
         _KEY_SIZE * 0.35,  # -L, -G
         0,  # -T, -S
         0,
-        _KEY_SIZE * -0.125, # -D, -Z
+        0, # -D, -Z
     )
     
 
