@@ -2,6 +2,7 @@ from PyQt5.QtCore import (
     Qt,
     QEvent,
     pyqtSignal,
+    QTimer,
 )
 from PyQt5.QtWidgets import (
     QWidget,
@@ -9,6 +10,7 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QVBoxLayout,
     QSizePolicy,
+    QSpacerItem,
 )
 from PyQt5.QtGui import (
     QTouchEvent,
@@ -280,7 +282,14 @@ class KeyboardWidget(QWidget):
         layout = QVBoxLayout(self)
 
         layout.addLayout(self.__build_main_rows_layout())
-        layout.addSpacing(self.__px(KeyboardWidget._ROWS_GAP))
+
+        layout.addSpacerItem(QSpacerItem(
+            0,
+            self.__px(KeyboardWidget._ROWS_GAP),
+            QSizePolicy.Preferred,
+            QSizePolicy.Expanding
+        ))
+
         layout.addLayout(self.__build_vowel_row_layout())
 
         self.setLayout(layout)
@@ -348,6 +357,16 @@ KeyWidget[touched="true"] {
                 layout.setStretchFactor(column_layout, 1)
 
 
+        # Defer setting the minimum width to later; setting it immediately causes it to shrink to this size initially
+        def resize_asterisk_column():
+            asterisk_column = layout.itemAt(5).layout()
+            for item in (asterisk_column.itemAt(i) for i in range(asterisk_column.count())):
+                if not (widget := item.widget()): continue
+                widget.setMinimumWidth(0)
+
+        QTimer.singleShot(0, resize_asterisk_column)
+            
+
         layout.setSpacing(0)
 
         # self.main_rows_layout = layout = QGridLayout()
@@ -403,7 +422,7 @@ KeyWidget[touched="true"] {
         #     self.main_rows_layout.setColumnMinimumWidth(i, self.__px(size_cm))
 
 
-        self.layout().itemAt(1).spacerItem().changeSize(0, self.__px(KeyboardWidget._KEY_SIZE))
+        # self.layout().itemAt(1).spacerItem().changeSize(0, self.__px(KeyboardWidget._KEY_SIZE))
 
 
         for i, size_cm in zip(

@@ -69,7 +69,7 @@ class Main(Tool):
 
         self.layout = layout = QGridLayout(self)
         layout.addWidget(last_stroke_label, 0, 0, Qt.AlignBottom | Qt.AlignRight)
-        layout.addWidget(stenotype, 0, 0, Qt.AlignVCenter)
+        layout.addWidget(stenotype, 0, 0)
         self.setLayout(layout)
 
 
