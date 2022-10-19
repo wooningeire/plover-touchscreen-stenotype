@@ -32,7 +32,7 @@ class KeyboardWidget(QWidget):
     TOP_COMPOUND_ROW = 1
     LOW_COMPOUND_ROW = 3
 
-    _MAIN_ROWS_KEYS_2 = (
+    _MAIN_ROWS_KEYS = (
         (
             (["#"], ""),
             (["#", "S-"], ""),
@@ -234,10 +234,15 @@ class KeyboardWidget(QWidget):
         0,
         0, # -D, -Z
     )
+
+
+    _ASTERISK_COLUMN_INDEX = 5
     
 
     end_stroke = pyqtSignal(set)  #set[str]
     after_touch_event = pyqtSignal()
+
+    dpi_change = pyqtSignal()
 
     #region Overrides
 
@@ -313,17 +318,19 @@ KeyWidget[touched="true"] {
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
     
         
-        self.screen().physicalDotsPerInchChanged.connect(lambda _dpi: self.__resize_dpi_responsive_widgets())
-        self.window().windowHandle().screenChanged.connect(lambda _screen: self.__resize_dpi_responsive_widgets())
+        self.screen().physicalDotsPerInchChanged.connect(lambda _dpi: self.__handle_dpi_change())
+        self.window().windowHandle().screenChanged.connect(lambda _screen: self.__handle_dpi_change())
 
 
     # TODO it is not well indicated that this function and the next mutate key_widgets
     def __build_main_rows_layout(self):
+        # Parameter defaults on inner functions are used to create closures
+
         self.main_rows_layout = layout = QHBoxLayout()
         for i, (column, col_width_cm, col_offset_cm) in enumerate(zip(
-                KeyboardWidget._MAIN_ROWS_KEYS_2,
-                KeyboardWidget._COL_WIDTHS,
-                KeyboardWidget._COL_OFFSETS
+            KeyboardWidget._MAIN_ROWS_KEYS,
+            KeyboardWidget._COL_WIDTHS,
+            KeyboardWidget._COL_OFFSETS,
         )):
             column_layout = QVBoxLayout()
             column_layout.addStretch(1)
@@ -337,34 +344,61 @@ KeyWidget[touched="true"] {
                 key_widget = KeyWidget(values, label, self)
                 self.key_widgets.append(key_widget)
 
-                if i == 5:  # * key
-                    key_widget.setMinimumWidth(self.__px(col_width_cm))
-                    key_widget.setFixedHeight(self.__px(row_height_cm))
+
+                if i == KeyboardWidget._ASTERISK_COLUMN_INDEX:
+                    def resize(
+                        key_widget: KeyWidget=key_widget,
+                        col_width_cm: float=col_width_cm,
+                        row_height_cm: float=row_height_cm,
+                    ):
+                        key_widget.setMinimumWidth(self.__px(col_width_cm))
+                        key_widget.setFixedHeight(self.__px(row_height_cm))
+
+                        # Defer setting the minimum width to later; setting it immediately causes it to shrink to this size initially
+                        QTimer.singleShot(0, lambda: key_widget.setMinimumWidth(0))
+                        
                 else:
-                    key_widget.setFixedSize(self.__px(col_width_cm), self.__px(row_height_cm))
+                    def resize(
+                        key_widget: KeyWidget=key_widget,
+                        col_width_cm: float=col_width_cm,
+                        row_height_cm: float=row_height_cm,
+                    ):
+                        key_widget.setFixedSize(self.__px(col_width_cm), self.__px(row_height_cm))
+
+                resize()
+                self.dpi_change.connect(resize)
 
 
                 column_layout.addWidget(key_widget)
 
                 row_pos += row_span
                 
+            
             column_layout.addSpacing(self.__px(col_offset_cm))
+
+            def resize_column_spacing(
+                column_layout: QVBoxLayout=column_layout,
+                col_offset_cm: float=col_offset_cm,
+            ):
+                column_layout.itemAt(column_layout.count() - 1).spacerItem().changeSize(0, self.__px(col_offset_cm))
+            self.dpi_change.connect(resize_column_spacing)
+
+            
             layout.addLayout(column_layout)
 
             # if i in (0, 9): # S- and -L, -G
             #     layout.addSpacing(self.__px(KeyboardWidget._PINKY_STRETCH))
-            if i == 5:  # * key
+            if i == KeyboardWidget._ASTERISK_COLUMN_INDEX:
                 layout.setStretchFactor(column_layout, 1)
 
 
-        # Defer setting the minimum width to later; setting it immediately causes it to shrink to this size initially
-        def resize_asterisk_column():
-            asterisk_column = layout.itemAt(5).layout()
-            for item in (asterisk_column.itemAt(i) for i in range(asterisk_column.count())):
-                if not (widget := item.widget()): continue
-                widget.setMinimumWidth(0)
+        # def resize_asterisk_column():
+        #     asterisk_column = layout.itemAt(KeyboardWidget._ASTERISK_COLUMN_INDEX).layout()
+        #     for item in (asterisk_column.itemAt(i) for i in range(asterisk_column.count())):
+        #         if not (widget := item.widget()): continue
+        #         widget.setMinimumWidth(0)
 
-        QTimer.singleShot(0, resize_asterisk_column)
+        # QTimer.singleShot(0, resize_asterisk_column)
             
 
         layout.setSpacing(0)
@@ -392,6 +426,8 @@ KeyWidget[touched="true"] {
         return layout
 
     def __build_vowel_row_layout(self):
+        # Parameter defaults on inner functions are used to create closures
+
         self.vowel_row_layout = layout = QHBoxLayout()
 
         layout.setSpacing(0)
@@ -400,7 +436,17 @@ KeyWidget[touched="true"] {
             for ((values, label), width) in zip(vowel_key_descriptors, KeyboardWidget._VOWEL_SET_WIDTHS):
                 key_widget = KeyWidget(values, label, self)
                 self.key_widgets.append(key_widget)
-                key_widget.setFixedSize(self.__px(width), self.__px(self._KEY_SIZE))
+
+
+                def resize(
+                    key_widget: KeyWidget=key_widget,
+                    width: float=width,
+                ):
+                    key_widget.setFixedSize(self.__px(width), self.__px(KeyboardWidget._KEY_SIZE))
+
+                resize()
+                self.dpi_change.connect(resize)
+
 
                 layout.addWidget(key_widget)
 
@@ -411,10 +457,16 @@ KeyWidget[touched="true"] {
         add_vowel_set(KeyboardWidget._VOWEL_ROW_KEYS_RIGHT)
         layout.addSpacing(self.__px(KeyboardWidget._KEY_SIZE) * 4 + self.__px(KeyboardWidget._PINKY_STRETCH))
 
+        def resize_spacing():
+            layout.itemAt(0).spacerItem().changeSize(self.__px(KeyboardWidget._KEY_SIZE) * 3 + self.__px(KeyboardWidget._PINKY_STRETCH), 0)
+            layout.itemAt(layout.count() - 1).spacerItem().changeSize(self.__px(KeyboardWidget._KEY_SIZE) * 4 + self.__px(KeyboardWidget._PINKY_STRETCH), 0)
+        self.dpi_change.connect(resize_spacing)
+
+
         return layout
 
 
-    def __resize_dpi_responsive_widgets(self):
+    def __handle_dpi_change(self):
         # for i, size_cm in enumerate(KeyboardWidget._ROW_HEIGHTS):
         #     self.main_rows_layout.setRowMinimumHeight(i, self.__px(size_cm))
 
@@ -425,22 +477,24 @@ KeyWidget[touched="true"] {
         # self.layout().itemAt(1).spacerItem().changeSize(0, self.__px(KeyboardWidget._KEY_SIZE))
 
 
-        for i, size_cm in zip(
-            range(self.vowel_row_layout.count()),
-            (KeyboardWidget._KEY_SIZE * 3,) + KeyboardWidget._VOWEL_SET_WIDTHS
-                    + (0,) + KeyboardWidget._VOWEL_SET_WIDTHS
-                    + (KeyboardWidget._KEY_SIZE * 4,),
-        ):
-            item = self.vowel_row_layout.itemAt(i)
+        # for i, size_cm in zip(
+        #     range(self.vowel_row_layout.count()),
+        #     (KeyboardWidget._KEY_SIZE * 3,) + KeyboardWidget._VOWEL_SET_WIDTHS
+        #             + (0,) + KeyboardWidget._VOWEL_SET_WIDTHS
+        #             + (KeyboardWidget._KEY_SIZE * 4,),
+        # ):
+        #     item = self.vowel_row_layout.itemAt(i)
 
-            if widget := item.widget():
-                widget.setMinimumSize(self.__px(size_cm), self.__px(KeyboardWidget._KEY_SIZE))
-            elif spacer_item := item.spacerItem():
-                spacer_item.changeSize(self.__px(size_cm), 0)
+        #     if widget := item.widget():
+        #         widget.setMinimumSize(self.__px(size_cm), self.__px(KeyboardWidget._KEY_SIZE))
+        #     elif spacer_item := item.spacerItem():
+        #         spacer_item.changeSize(self.__px(size_cm), 0)
 
-        self.main_rows_layout.invalidate()
-        self.vowel_row_layout.invalidate()
-        self.layout().invalidate()
+        # self.main_rows_layout.invalidate()
+        # self.vowel_row_layout.invalidate()
+        # self.layout().invalidate()
+
+        self.dpi_change.emit()
 
         # self.window().setMinimumSize(self.window().sizeHint()) # Needed in order to use QWidget.resize
         # cast(Main, self.window()).resize_from_center(0, 0)
