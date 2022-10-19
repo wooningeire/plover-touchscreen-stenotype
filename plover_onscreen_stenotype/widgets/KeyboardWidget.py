@@ -410,8 +410,6 @@ KeyWidget[touched="true"] {
 
         #     layout.addWidget(key_widget, *grid_position)
 
-        # layout.setSpacing(0)
-
         # for i, size_cm in enumerate(KeyboardWidget._ROW_HEIGHTS):
         #     layout.setRowMinimumHeight(i, self.__px(size_cm))
         #     layout.setRowStretch(i, 0)
@@ -467,29 +465,6 @@ KeyWidget[touched="true"] {
 
 
     def __handle_dpi_change(self):
-        # for i, size_cm in enumerate(KeyboardWidget._ROW_HEIGHTS):
-        #     self.main_rows_layout.setRowMinimumHeight(i, self.__px(size_cm))
-
-        # for i, size_cm in enumerate(KeyboardWidget._COL_WIDTHS):
-        #     self.main_rows_layout.setColumnMinimumWidth(i, self.__px(size_cm))
-
-
-        # self.layout().itemAt(1).spacerItem().changeSize(0, self.__px(KeyboardWidget._KEY_SIZE))
-
-
-        # for i, size_cm in zip(
-        #     range(self.vowel_row_layout.count()),
-        #     (KeyboardWidget._KEY_SIZE * 3,) + KeyboardWidget._VOWEL_SET_WIDTHS
-        #             + (0,) + KeyboardWidget._VOWEL_SET_WIDTHS
-        #             + (KeyboardWidget._KEY_SIZE * 4,),
-        # ):
-        #     item = self.vowel_row_layout.itemAt(i)
-
-        #     if widget := item.widget():
-        #         widget.setMinimumSize(self.__px(size_cm), self.__px(KeyboardWidget._KEY_SIZE))
-        #     elif spacer_item := item.spacerItem():
-        #         spacer_item.changeSize(self.__px(size_cm), 0)
-
         # self.main_rows_layout.invalidate()
         # self.vowel_row_layout.invalidate()
         # self.layout().invalidate()
