@@ -287,17 +287,18 @@ class KeyboardWidget(QWidget):
         layout = QVBoxLayout(self)
 
         layout.addLayout(self.__build_main_rows_layout())
-
         layout.addSpacerItem(QSpacerItem(
             0,
             self.__px(KeyboardWidget._ROWS_GAP),
             QSizePolicy.Preferred,
             QSizePolicy.Expanding
         ))
-
         layout.addLayout(self.__build_vowel_row_layout())
+        
+        layout.setSpacing(0)
 
         self.setLayout(layout)
+
 
         self.setStyleSheet("""
 KeyWidget[matched="true"] {
@@ -339,7 +340,7 @@ KeyWidget[touched="true"] {
 
             for values, label, *rest in column:
                 row_span = rest[0] if rest else 1
-                row_height_cm = sum(height for height in KeyboardWidget._ROW_HEIGHTS[row_pos:row_pos + row_span])
+                row_heights_cm = KeyboardWidget._ROW_HEIGHTS[row_pos:row_pos + row_span]
 
                 key_widget = KeyWidget(values, label, self)
                 self.key_widgets.append(key_widget)
@@ -349,10 +350,10 @@ KeyWidget[touched="true"] {
                     def resize(
                         key_widget: KeyWidget=key_widget,
                         col_width_cm: float=col_width_cm,
-                        row_height_cm: float=row_height_cm,
+                        row_heights_cm: tuple[float]=row_heights_cm,
                     ):
                         key_widget.setMinimumWidth(self.__px(col_width_cm))
-                        key_widget.setFixedHeight(self.__px(row_height_cm))
+                        key_widget.setFixedHeight(sum(self.__px(height) for height in row_heights_cm))
 
                         # Defer setting the minimum width to later; setting it immediately causes it to shrink to this size initially
                         QTimer.singleShot(0, lambda: key_widget.setMinimumWidth(0))
@@ -361,9 +362,9 @@ KeyWidget[touched="true"] {
                     def resize(
                         key_widget: KeyWidget=key_widget,
                         col_width_cm: float=col_width_cm,
-                        row_height_cm: float=row_height_cm,
+                        row_heights_cm: tuple[float]=row_heights_cm,
                     ):
-                        key_widget.setFixedSize(self.__px(col_width_cm), self.__px(row_height_cm))
+                        key_widget.setFixedSize(self.__px(col_width_cm), sum(self.__px(height) for height in row_heights_cm))
 
                 resize()
                 self.dpi_change.connect(resize)
@@ -376,11 +377,12 @@ KeyWidget[touched="true"] {
             
             column_layout.addSpacing(self.__px(col_offset_cm))
 
+            column_spacer = column_layout.itemAt(column_layout.count() - 1).spacerItem()
             def resize_column_spacing(
-                column_layout: QVBoxLayout=column_layout,
+                column_spacer: QSpacerItem=column_spacer,
                 col_offset_cm: float=col_offset_cm,
             ):
-                column_layout.itemAt(column_layout.count() - 1).spacerItem().changeSize(0, self.__px(col_offset_cm))
+                column_spacer.changeSize(0, self.__px(col_offset_cm))
             self.dpi_change.connect(resize_column_spacing)
 
             
