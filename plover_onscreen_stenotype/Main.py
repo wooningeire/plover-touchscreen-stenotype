@@ -1,4 +1,5 @@
 from plover.gui_qt.tool import Tool
+from plover.gui_qt.utils import ToolBar
 # from plover.gui_qt import Engine
 from plover.engine import StenoEngine
 from plover.steno import Stroke
@@ -12,6 +13,7 @@ from PyQt5.QtCore import (
 from PyQt5.QtWidgets import (
     QLabel,
     QGridLayout,
+    QAction,
 )
 from PyQt5.QtGui import (
     QFont,
@@ -19,6 +21,7 @@ from PyQt5.QtGui import (
 
 
 from plover_onscreen_stenotype.widgets.KeyboardWidget import KeyboardWidget
+from plover_onscreen_stenotype.widgets.SettingsDialog import SettingsDialog
 
 
 class Main(Tool):
@@ -64,9 +67,15 @@ class Main(Tool):
         stenotype = KeyboardWidget(self)
         stenotype.end_stroke.connect(self._on_stenotype_input)
 
-        self.layout = layout = QGridLayout(self)
+        settings_action = QAction(self)
+        settings_action.setText("Settings")
+        settings_action.triggered.connect(self.__launch_settings_dialog)
+
+
+        layout = QGridLayout(self)
         layout.addWidget(last_stroke_label, 0, 0, Qt.AlignBottom | Qt.AlignRight)
         layout.addWidget(stenotype, 0, 0)
+        layout.addWidget(ToolBar(settings_action), 0, 0, Qt.AlignBottom | Qt.AlignLeft)
         self.setLayout(layout)
 
 
@@ -135,7 +144,6 @@ class Main(Tool):
         self.__last_stroke_keys = None
 
     def resize_from_center(self, width: int, height: int):
-        self.last_stroke_label.setText("abc")
         try:
             rect = self.geometry()
             old_center = rect.center()
@@ -153,6 +161,11 @@ class Main(Tool):
 
         except Exception as error:
             self.last_stroke_label.setText(str(error))
+
+
+    def __launch_settings_dialog(self):
+        dialog = SettingsDialog(self)
+        dialog.open()
         
 
 
