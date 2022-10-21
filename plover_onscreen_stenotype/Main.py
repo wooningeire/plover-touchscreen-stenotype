@@ -2,6 +2,7 @@ from plover.gui_qt.tool import Tool
 # from plover.gui_qt import Engine
 from plover.engine import StenoEngine
 from plover.steno import Stroke
+from plover.oslayer import PLATFORM
 
 from PyQt5.QtCore import (
     Qt,
@@ -15,10 +16,6 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import (
     QFont,
 )
-
-import ctypes
-from ctypes.wintypes import HWND
-import win32con
 
 
 from plover_onscreen_stenotype.widgets.KeyboardWidget import KeyboardWidget
@@ -55,8 +52,8 @@ class Main(Tool):
         # self.setWindowFlags(Qt.Dialog | Qt.WindowStaysOnTopHint | Qt.BypassWindowManagerHint | Qt.WindowDoesNotAcceptFocus)
         self.setWindowFlags(Qt.WindowStaysOnTopHint)
 
-        # For some reason, this has to be called before KeyboardWidget is created. Other attributes must also be
-        # set before this, otherwise the window will steal focus again
+        # For some reason (tested on Windows only), this has to be called before KeyboardWidget is created. Other attributes
+        # must also be set before this, otherwise the window will steal focus again
         self.__prevent_window_focus()
 
 
@@ -82,21 +79,34 @@ class Main(Tool):
     # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptrw
     def __prevent_window_focus(self):
         """
-        Prevents the stenotype window from taking focus from other programs when the keys are touched. Currently, this
-        is an alternative to the nonfunctional Qt window flag `Qt.WindowDoesNotAcceptFocus` and Unix-only attribute
-        `Qt.WA_X11DoNotAcceptFocus`. This function is currently designed for Windows only.
+        Prevents the stenotype window from taking focus from other programs when the keys are touched. This is a
+        cross-platform polyfill for the window flag `Qt.WindowDoesNotAcceptFocus` (which is nonfunctional on
+        Windows).
 
         See https://bugreports.qt.io/browse/QTBUG-36230, https://forum.qt.io/topic/82493/the-windowdoesnotacceptfocus-flag-is-making-me-thirsty/7 for bug information.
         """
 
-        window_handle = HWND(int(self.winId()))
+        if PLATFORM == "win":
+            import ctypes
+            from ctypes.wintypes import HWND
+            import win32con
 
-        user32 = ctypes.windll.user32
-        user32.SetWindowLongPtrW(
-            window_handle,
-            win32con.GWL_EXSTYLE,
-            user32.GetWindowLongPtrW(window_handle, win32con.GWL_EXSTYLE) | win32con.WS_EX_NOACTIVATE | win32con.WS_EX_APPWINDOW,
-        )
+            window_handle = HWND(int(self.winId()))
+
+            user32 = ctypes.windll.user32
+            user32.SetWindowLongPtrW(
+                window_handle,
+                win32con.GWL_EXSTYLE,
+                user32.GetWindowLongPtrW(window_handle, win32con.GWL_EXSTYLE) | win32con.WS_EX_NOACTIVATE | win32con.WS_EX_APPWINDOW,
+            )
+
+        elif PLATFORM == "linux":
+            self.setWindowFlag(Qt.WindowDoesNotAcceptFocus)
+            self.setAttribute(Qt.WA_X11DoNotAcceptFocus)
+
+        else:
+            self.setWindowFlag(Qt.WindowDoesNotAcceptFocus)
+
 
     def _on_stenotype_input(self, stroke_keys: set[str]):
         # Temporarily enable steno output
