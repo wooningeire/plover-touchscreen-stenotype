@@ -320,7 +320,10 @@ KeyWidget[touched="true"] {
     
         
         self.screen().physicalDotsPerInchChanged.connect(lambda _dpi: self.__handle_dpi_change())
-        self.window().windowHandle().screenChanged.connect(lambda _screen: self.__handle_dpi_change())
+        # `self.window().windowHandle()` may initially be None on Linux
+        QTimer.singleShot(0,
+            lambda: self.window().windowHandle().screenChanged.connect(lambda _screen: self.__handle_dpi_change())
+        )
 
 
     # TODO it is not well indicated that this function and the next mutate key_widgets

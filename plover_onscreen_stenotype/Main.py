@@ -102,16 +102,17 @@ class Main(Tool):
 
         elif PLATFORM == "linux":
             self.setWindowFlag(Qt.WindowDoesNotAcceptFocus)
-            self.setAttribute(Qt.WA_X11DoNotAcceptFocus)
+            # self.setAttribute(Qt.WA_X11DoNotAcceptFocus)
 
         else:
             self.setWindowFlag(Qt.WindowDoesNotAcceptFocus)
 
 
     def _on_stenotype_input(self, stroke_keys: set[str]):
-        # Temporarily enable steno output
-        self.__last_stroke_engine_enabled = self.engine.output
-        self.engine.output = True
+        # Temporarily enable steno output (if not already waiting for a `stroked` hook dispatch)
+        if not self.__last_stroke_from_widget:
+            self.__last_stroke_engine_enabled = self.engine.output
+            self.engine.output = True
 
         self.__last_stroke_from_widget = True
         self.__last_stroke_keys = stroke_keys
@@ -121,7 +122,7 @@ class Main(Tool):
 
         # TODO The current implementation is not infallible because the `stroked` handler does not verify that the stroke it
         # received is the same stroke sent from this method. Multiple strokes may also be sent before the handler is called
-        # (use deque to resolve this)
+        # (can use deque to resolve this)
 
     def _on_stroked(self, stroke: Stroke):
         # if not self.__last_stroke_from_widget: return
