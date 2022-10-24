@@ -9,6 +9,7 @@ from PyQt5.QtCore import (
     Qt,
     QSize,
     QPoint,
+    QSettings,
 )
 from PyQt5.QtWidgets import (
     QLabel,
@@ -42,10 +43,19 @@ class Main(Tool):
         self.__last_stroke_engine_enabled = False
 
         self.__settings = Settings()
+        self.restore_state()
+        self.finished.connect(self.save_state)
 
         self.__setup_ui()
 
         engine.signal_stroked.connect(self._on_stroked)
+
+
+    def _restore_state(self, settings: QSettings):
+        self.__settings.key_layout = settings.value("key_layout", self.__settings.key_layout)
+
+    def _save_state(self, settings: QSettings):
+        settings.setValue("key_layout", self.__settings.key_layout)
 
     #endregion
 
@@ -56,7 +66,7 @@ class Main(Tool):
 
         # https://stackoverflow.com/questions/71084136/how-to-set-focus-to-the-old-window-on-button-click-in-pyqt5-python
         # self.setWindowFlags(Qt.Dialog | Qt.WindowStaysOnTopHint | Qt.BypassWindowManagerHint | Qt.WindowDoesNotAcceptFocus)
-        self.setWindowFlags(Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint)
 
         # For some reason (tested on Windows only), this has to be called before KeyboardWidget is created. Other attributes
         # must also be set before this, otherwise the window will steal focus again

@@ -72,9 +72,9 @@ class KeyboardWidget(QWidget):
     #endregion
 
     def __setup_ui(self):
-        self.setLayout(build_keyboard[self.__settings.keyboard_layout](self, self._key_widgets))
+        self.setLayout(build_keyboard[self.__settings.key_layout](self, self._key_widgets))
 
-        self.__settings.keyboard_layout_change.connect(self.__rebuild_layout)
+        self.__settings.key_layout_change.connect(self.__rebuild_layout)
 
 
         self.setStyleSheet("""

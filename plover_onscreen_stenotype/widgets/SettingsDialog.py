@@ -35,7 +35,7 @@ class SettingsDialog(QDialog):
             KeyboardLayout.STAGGERED: QRadioButton("Staggered", radio_box),
             KeyboardLayout.GRID: QRadioButton("Straight", radio_box),
         }
-        radios[self.__settings.keyboard_layout].setChecked(True)
+        radios[self.__settings.key_layout].setChecked(True)
 
         self.__key_layout_radios = {
             id(button): value
@@ -62,4 +62,4 @@ class SettingsDialog(QDialog):
 
     def __on_keyboard_layout_change(self, button: QRadioButton, checked: bool):
         if not checked: return
-        self.__settings.keyboard_layout = self.__key_layout_radios[id(button)]
+        self.__settings.key_layout = self.__key_layout_radios[id(button)]
