@@ -19,8 +19,9 @@ else:
     Main = object
 
 
+from plover_onscreen_stenotype.settings import Settings, KeyboardLayout
 from plover_onscreen_stenotype.widgets.KeyWidget import KeyWidget
-from plover_onscreen_stenotype.widgets.build_keyboard import build_staggered
+from plover_onscreen_stenotype.widgets.build_keyboard import build_keyboard
 
 
 class KeyboardWidget(QWidget):
@@ -31,11 +32,13 @@ class KeyboardWidget(QWidget):
 
     #region Overrides
 
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, settings: Settings, parent: QWidget=None):
         super().__init__(parent)
 
         self._current_stroke_keys: set[str] = set()
         self._key_widgets: list[KeyWidget] = []
+
+        self.__settings = settings
 
         self.__setup_ui()
 
@@ -69,7 +72,9 @@ class KeyboardWidget(QWidget):
     #endregion
 
     def __setup_ui(self):
-        self.setLayout(build_staggered(self, self._key_widgets))
+        self.setLayout(build_keyboard[self.__settings.keyboard_layout](self, self._key_widgets))
+
+        self.__settings.keyboard_layout_change.connect(self.__rebuild_layout)
 
 
         self.setStyleSheet("""
@@ -107,6 +112,15 @@ KeyWidget[touched="true"] {
 
         # self.window().setMinimumSize(self.window().sizeHint()) # Needed in order to use QWidget.resize
         # cast(Main, self.window()).resize_from_center(0, 0)
+
+
+    def __rebuild_layout(self, value: KeyboardLayout):
+        self._key_widgets = []
+        self.dpi_change.disconnect() # TODO removing all listeners may become overzealous in the future
+
+        # https://stackoverflow.com/questions/10416582/replacing-layout-on-a-qwidget-with-another-layout
+        QWidget().setLayout(self.layout()) # Unparent and destroy the current layout so it can be replaced
+        self.setLayout(build_keyboard[value](self, self._key_widgets))
         
 
 

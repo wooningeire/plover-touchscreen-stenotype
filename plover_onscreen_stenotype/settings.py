@@ -12,7 +12,7 @@ class KeyboardLayout(Enum):
 
 
 class Settings(QObject):
-	keyboard_layout_change = pyqtSignal()
+	keyboard_layout_change = pyqtSignal(KeyboardLayout)
 	
 	def __init__(self):
 		super().__init__()
@@ -26,4 +26,4 @@ class Settings(QObject):
 	@keyboard_layout.setter
 	def keyboard_layout(self, value: KeyboardLayout):
 		self.__keyboard_layout = value
-		self.keyboard_layout_change.emit()
+		self.keyboard_layout_change.emit(value)

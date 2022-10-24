@@ -67,7 +67,7 @@ class Main(Tool):
         last_stroke_label.setFont(QFont("Atkinson Hyperlegible", 24))
         last_stroke_label.setText("…")
 
-        stenotype = KeyboardWidget(self)
+        stenotype = KeyboardWidget(self.__settings, self)
         stenotype.end_stroke.connect(self._on_stenotype_input)
 
         settings_action = QAction(self)
