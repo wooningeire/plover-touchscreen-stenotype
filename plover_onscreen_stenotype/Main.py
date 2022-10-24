@@ -12,6 +12,7 @@ from PyQt5.QtCore import (
     QSettings,
 )
 from PyQt5.QtWidgets import (
+    QWidget,
     QLabel,
     QGridLayout,
     QAction,
@@ -84,11 +85,16 @@ class Main(Tool):
         settings_action.setText("Settings")
         settings_action.triggered.connect(self.__launch_settings_dialog)
 
+        toolbar = ToolBar(settings_action)
+        toolbar.setFocusPolicy(Qt.NoFocus)
+        for button in toolbar.findChildren(QWidget):
+            button.setFocusPolicy(Qt.NoFocus)
+
 
         layout = QGridLayout(self)
         layout.addWidget(last_stroke_label, 0, 0, Qt.AlignBottom | Qt.AlignRight)
         layout.addWidget(stenotype, 0, 0)
-        layout.addWidget(ToolBar(settings_action), 0, 0, Qt.AlignBottom | Qt.AlignLeft)
+        layout.addWidget(toolbar, 0, 0, Qt.AlignBottom | Qt.AlignLeft)
         self.setLayout(layout)
 
 

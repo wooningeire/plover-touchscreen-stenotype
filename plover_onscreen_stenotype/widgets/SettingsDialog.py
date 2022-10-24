@@ -27,6 +27,10 @@ class SettingsDialog(QDialog):
     def __setup_ui(self):
         self.setWindowTitle("On-screen stenotype settings")
 
+        size = self.size()
+        size.setWidth(175)
+        self.resize(size)
+
 
         radio_box = QGroupBox("Key layout", self)
         radio_group = QButtonGroup(radio_box)
