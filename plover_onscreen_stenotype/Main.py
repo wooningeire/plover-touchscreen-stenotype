@@ -20,6 +20,7 @@ from PyQt5.QtGui import (
 )
 
 
+from plover_onscreen_stenotype.settings import Settings
 from plover_onscreen_stenotype.widgets.KeyboardWidget import KeyboardWidget
 from plover_onscreen_stenotype.widgets.SettingsDialog import SettingsDialog
 
@@ -39,6 +40,8 @@ class Main(Tool):
         """Whether the last emitted stroke originated from the on-screen stenotype"""
         self.__last_stroke_keys: set[str] | None = None
         self.__last_stroke_engine_enabled = False
+
+        self.__settings = Settings()
 
         self.__setup_ui()
 
@@ -164,7 +167,7 @@ class Main(Tool):
 
 
     def __launch_settings_dialog(self):
-        dialog = SettingsDialog(self)
+        dialog = SettingsDialog(self.__settings, self)
         dialog.open()
         
 
