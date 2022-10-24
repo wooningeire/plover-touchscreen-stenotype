@@ -18,7 +18,7 @@ else:
     KeyboardWidget = object
 
 from plover_onscreen_stenotype.widgets.KeyWidget import KeyWidget
-from plover_onscreen_stenotype.settings import KeyboardLayout
+from plover_onscreen_stenotype.settings import KeyLayout
 
 
 _TOP_ROW = 2
@@ -429,8 +429,8 @@ def _build_keyboard_layout(
 #region Exports
 
 build_keyboard = {
-    KeyboardLayout.STAGGERED: partial(_build_keyboard_layout, _build_main_rows_layout_staggered, _build_vowel_row_layout),
-    KeyboardLayout.GRID: partial(_build_keyboard_layout, _build_main_rows_layout_grid, _build_vowel_row_layout),
+    KeyLayout.STAGGERED: partial(_build_keyboard_layout, _build_main_rows_layout_staggered, _build_vowel_row_layout),
+    KeyLayout.GRID: partial(_build_keyboard_layout, _build_main_rows_layout_grid, _build_vowel_row_layout),
 }
 
 #endregion

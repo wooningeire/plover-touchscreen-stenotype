@@ -19,7 +19,7 @@ else:
     Main = object
 
 
-from plover_onscreen_stenotype.settings import Settings, KeyboardLayout
+from plover_onscreen_stenotype.settings import Settings, KeyLayout
 from plover_onscreen_stenotype.widgets.KeyWidget import KeyWidget
 from plover_onscreen_stenotype.widgets.build_keyboard import build_keyboard
 
@@ -114,7 +114,7 @@ KeyWidget[touched="true"] {
         # cast(Main, self.window()).resize_from_center(0, 0)
 
 
-    def __rebuild_layout(self, value: KeyboardLayout):
+    def __rebuild_layout(self, value: KeyLayout):
         self._key_widgets = []
         # Detach all the dpi_change listeners on the old key widgets to avoid leaking memory
         # TODO removing all listeners may become overzealous in the future

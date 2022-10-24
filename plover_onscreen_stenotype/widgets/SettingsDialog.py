@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 else:
     Main = object
 
-from plover_onscreen_stenotype.settings import Settings, KeyboardLayout
+from plover_onscreen_stenotype.settings import Settings, KeyLayout
 
 
 class SettingsDialog(QDialog):
@@ -36,8 +36,8 @@ class SettingsDialog(QDialog):
         radio_group = QButtonGroup(radio_box)
 
         radios = {
-            KeyboardLayout.STAGGERED: QRadioButton("Staggered", radio_box),
-            KeyboardLayout.GRID: QRadioButton("Straight", radio_box),
+            KeyLayout.STAGGERED: QRadioButton("Staggered", radio_box),
+            KeyLayout.GRID: QRadioButton("Straight", radio_box),
         }
         radios[self.__settings.key_layout].setChecked(True)
 
