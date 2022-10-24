@@ -116,7 +116,9 @@ KeyWidget[touched="true"] {
 
     def __rebuild_layout(self, value: KeyboardLayout):
         self._key_widgets = []
-        self.dpi_change.disconnect() # TODO removing all listeners may become overzealous in the future
+        # Detach all the dpi_change listeners on the old key widgets to avoid leaking memory
+        # TODO removing all listeners may become overzealous in the future
+        self.dpi_change.disconnect()
 
         # https://stackoverflow.com/questions/10416582/replacing-layout-on-a-qwidget-with-another-layout
         QWidget().setLayout(self.layout()) # Unparent and destroy the current layout so it can be replaced

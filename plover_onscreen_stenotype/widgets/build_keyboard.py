@@ -335,7 +335,22 @@ def _build_main_rows_layout_grid(keyboard_widget: KeyboardWidget, key_widgets: l
         layout.setColumnMinimumWidth(i, keyboard_widget.px(size_cm))
         layout.setColumnStretch(i, 0)
 
-    layout.setColumnStretch(5, 1)  # * key
+    # * column
+    layout.setColumnStretch(_ASTERISK_COLUMN_INDEX, 1)
+    QTimer.singleShot(0, lambda: layout.setColumnMinimumWidth(_ASTERISK_COLUMN_INDEX, 0))
+
+
+    def resize_columns():
+        for i, size_cm in enumerate(_ROW_HEIGHTS):
+            layout.setRowMinimumHeight(i, keyboard_widget.px(size_cm))
+
+        for i, size_cm in enumerate(_COL_WIDTHS):
+            layout.setColumnMinimumWidth(i, keyboard_widget.px(size_cm))
+
+        # * column
+        QTimer.singleShot(0, lambda: layout.setColumnMinimumWidth(_ASTERISK_COLUMN_INDEX, 0))
+    
+    keyboard_widget.dpi_change.connect(resize_columns)
 
 
     layout.setSpacing(0)
