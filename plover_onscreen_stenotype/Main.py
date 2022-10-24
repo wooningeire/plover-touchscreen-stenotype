@@ -19,6 +19,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import (
     QFont,
+    QIcon,
 )
 
 
@@ -83,6 +84,7 @@ class Main(Tool):
 
         settings_action = QAction(self)
         settings_action.setText("Settings")
+        settings_action.setIcon(QIcon(r":/settings.svg")) # Loads from Plover's application-wide application resources
         settings_action.triggered.connect(self.__launch_settings_dialog)
 
         toolbar = ToolBar(settings_action)
@@ -90,11 +92,13 @@ class Main(Tool):
         for button in toolbar.findChildren(QWidget):
             button.setFocusPolicy(Qt.NoFocus)
 
+        toolbar.setIconSize(QSize(48, 48))
+
 
         layout = QGridLayout(self)
         layout.addWidget(last_stroke_label, 0, 0, Qt.AlignBottom | Qt.AlignRight)
-        layout.addWidget(stenotype, 0, 0)
         layout.addWidget(toolbar, 0, 0, Qt.AlignBottom | Qt.AlignLeft)
+        layout.addWidget(stenotype, 0, 0)
         self.setLayout(layout)
 
 

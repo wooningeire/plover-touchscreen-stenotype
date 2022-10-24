@@ -1,3 +1,6 @@
+from PyQt5.QtCore import (
+    Qt,
+)
 from PyQt5.QtWidgets import (
     QWidget,
     QDialog,
@@ -30,6 +33,8 @@ class SettingsDialog(QDialog):
         size = self.size()
         size.setWidth(175)
         self.resize(size)
+
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
 
         radio_box = QGroupBox("Key layout", self)
