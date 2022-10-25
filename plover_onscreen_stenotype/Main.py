@@ -5,6 +5,9 @@ from plover.engine import StenoEngine
 from plover.steno import Stroke
 from plover.oslayer import PLATFORM
 
+from plover import system
+from plover.translation import Translation, Translator, _mapping_to_macro
+
 from PyQt5.QtCore import (
     Qt,
     QSize,
@@ -38,7 +41,7 @@ class Main(Tool):
     def __init__(self, engine: StenoEngine):
         super().__init__(engine)
 
-        self.engine = engine
+        self.engine = engine # Override for type hint
         self.__last_stroke_from_widget = False
         """Whether the last emitted stroke originated from the on-screen stenotype"""
         self.__last_stroke_keys: set[str] | None = None
@@ -76,11 +79,12 @@ class Main(Tool):
 
 
         self.last_stroke_label = last_stroke_label = QLabel(self)
-        last_stroke_label.setFont(QFont("Atkinson Hyperlegible", 24))
+        last_stroke_label.setFont(QFont("Atkinson Hyperlegible", 21))
         last_stroke_label.setText("…")
 
         stenotype = KeyboardWidget(self.__settings, self)
         stenotype.end_stroke.connect(self._on_stenotype_input)
+        stenotype.current_stroke_change.connect(self._on_stroke_change)
 
         settings_action = QAction(self)
         settings_action.setText("Settings")
@@ -96,7 +100,7 @@ class Main(Tool):
 
 
         layout = QGridLayout(self)
-        layout.addWidget(last_stroke_label, 0, 0, Qt.AlignBottom | Qt.AlignRight)
+        layout.addWidget(last_stroke_label, 0, 0, Qt.AlignTop | Qt.AlignHCenter)
         layout.addWidget(toolbar, 0, 0, Qt.AlignBottom | Qt.AlignLeft)
         layout.addWidget(stenotype, 0, 0)
         self.setLayout(layout)
@@ -160,11 +164,47 @@ class Main(Tool):
         # if not self.__last_stroke_from_widget: return
         if not self.__last_stroke_from_widget or self.__last_stroke_keys != set(stroke.keys()): return
 
-        self.last_stroke_label.setText(stroke.rtfcre or "…")
+        # self.last_stroke_label.setText(stroke.rtfcre or "…")
         self.engine.output = self.__last_stroke_engine_enabled
         
         self.__last_stroke_from_widget = False
         self.__last_stroke_keys = None
+
+
+    def _on_stroke_change(self, stroke_keys: set[str]):
+        translator: Translator = self.engine._translator
+        stroke: Stroke = Stroke(stroke_keys)
+
+        
+        # translator._state is temporarily cleared when engine output is set to False
+        if not self.engine.output:
+            translator.set_state(self.engine._running_state)
+        
+        
+        # This is the body of `Translator.translate_stroke`, but without the side effects
+
+        max_key_length = translator._dictionary.longest_key
+        mapping = translator._lookup_with_prefix(max_key_length, translator.get_state().translations, [stroke])
+
+        macro = _mapping_to_macro(mapping, stroke)
+        if macro is not None:
+            translation = Translation([stroke], f"={macro.name}")
+
+        else:
+            translation = (
+                translator._find_longest_match(2, max_key_length, stroke) or
+                (mapping is not None and Translation([stroke], mapping)) or
+                translator._find_longest_match(1, max_key_length, stroke, system.SUFFIX_KEYS) or
+                Translation([stroke], None)
+            )
+        
+
+        if not self.engine.output:
+            translator.clear_state()
+
+        word = translation.english if translation.english is not None else "(undefined)"
+        self.last_stroke_label.setText(f"""{" / ".join(translation.rtfcre)}\u2002:\u2002{word}""")
+
 
     def resize_from_center(self, width: int, height: int):
         try:

@@ -25,7 +25,8 @@ from plover_onscreen_stenotype.widgets.build_keyboard import build_keyboard
 
 
 class KeyboardWidget(QWidget):
-    end_stroke = pyqtSignal(set)  #set[str]
+    end_stroke = pyqtSignal(set)  # set[str]
+    current_stroke_change = pyqtSignal(set)  # set[str]
     after_touch_event = pyqtSignal()
 
     dpi_change = pyqtSignal()
@@ -57,6 +58,8 @@ class KeyboardWidget(QWidget):
                 for key_widget in touched_key_widgets
                 for key in key_widget.values
             )
+
+            self.current_stroke_change.emit(self._current_stroke_keys)
 
         elif event.type() == QEvent.TouchEnd:
             # This also filters out empty strokes (Plover accepts them and will insert extra spaces)
