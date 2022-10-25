@@ -1,3 +1,4 @@
+from typing import Iterable
 from plover.gui_qt.tool import Tool
 from plover.gui_qt.utils import ToolBar
 # from plover.gui_qt import Engine
@@ -18,6 +19,7 @@ from PyQt5.QtWidgets import (
     QWidget,
     QLabel,
     QGridLayout,
+    QVBoxLayout,
     QAction,
 )
 from PyQt5.QtGui import (
@@ -46,6 +48,8 @@ class Main(Tool):
         """Whether the last emitted stroke originated from the on-screen stenotype"""
         self.__last_stroke_keys: set[str] | None = None
         self.__last_stroke_engine_enabled = False
+
+        self.__next_translation_defined = False
 
         self.__settings = Settings()
         self.restore_state()
@@ -79,8 +83,19 @@ class Main(Tool):
 
 
         self.last_stroke_label = last_stroke_label = QLabel(self)
-        last_stroke_label.setFont(QFont("Atkinson Hyperlegible", 21))
-        last_stroke_label.setText("…")
+        last_stroke_label.setFont(QFont("Atkinson Hyperlegible", 16))
+
+        self.last_translation_label = translation_label = QLabel(self)
+        translation_label.setFont(QFont("Atkinson Hyperlegible", 20))
+        translation_label.setText("…")
+
+        labels_layout = QVBoxLayout()
+        labels_layout.addWidget(last_stroke_label, 0, Qt.AlignCenter)
+        labels_layout.addSpacing(-8)
+        labels_layout.addWidget(translation_label, 0, Qt.AlignCenter)
+
+        labels_layout.setSpacing(0)
+
 
         stenotype = KeyboardWidget(self.__settings, self)
         stenotype.end_stroke.connect(self._on_stenotype_input)
@@ -100,7 +115,7 @@ class Main(Tool):
 
 
         layout = QGridLayout(self)
-        layout.addWidget(last_stroke_label, 0, 0, Qt.AlignTop | Qt.AlignHCenter)
+        layout.addLayout(labels_layout, 0, 0, Qt.AlignTop | Qt.AlignHCenter)
         layout.addWidget(toolbar, 0, 0, Qt.AlignBottom | Qt.AlignLeft)
         layout.addWidget(stenotype, 0, 0)
         self.setLayout(layout)
@@ -160,8 +175,10 @@ class Main(Tool):
         # received is the same stroke sent from this method. Multiple strokes may also be sent before the handler is called
         # (can use deque to resolve this)
 
+        self.last_stroke_label.setStyleSheet("")
+        self.last_translation_label.setStyleSheet(f"""color: #{"ff" if self.__next_translation_defined else "3f"}000000;""")
+
     def _on_stroked(self, stroke: Stroke):
-        # if not self.__last_stroke_from_widget: return
         if not self.__last_stroke_from_widget or self.__last_stroke_keys != set(stroke.keys()): return
 
         # self.last_stroke_label.setText(stroke.rtfcre or "…")
@@ -172,38 +189,15 @@ class Main(Tool):
 
 
     def _on_stroke_change(self, stroke_keys: set[str]):
-        translator: Translator = self.engine._translator
-        stroke: Stroke = Stroke(stroke_keys)
+        translation = _coming_translation(self.engine, stroke_keys)
+        self.__next_translation_defined = has_translation = translation.english is not None
 
-        
-        # translator._state is temporarily cleared when engine output is set to False
-        if not self.engine.output:
-            translator.set_state(self.engine._running_state)
-        
-        
-        # This is the body of `Translator.translate_stroke`, but without the side effects
+        word = translation.english.replace("\n", "\\n") if has_translation else "[undefined]"
+        self.last_stroke_label.setText(" / ".join(translation.rtfcre))
+        self.last_translation_label.setText(word)
 
-        max_key_length = translator._dictionary.longest_key
-        mapping = translator._lookup_with_prefix(max_key_length, translator.get_state().translations, [stroke])
-
-        macro = _mapping_to_macro(mapping, stroke)
-        if macro is not None:
-            translation = Translation([stroke], f"={macro.name}")
-
-        else:
-            translation = (
-                translator._find_longest_match(2, max_key_length, stroke) or
-                (mapping is not None and Translation([stroke], mapping)) or
-                translator._find_longest_match(1, max_key_length, stroke, system.SUFFIX_KEYS) or
-                Translation([stroke], None)
-            )
-        
-
-        if not self.engine.output:
-            translator.clear_state()
-
-        word = translation.english if translation.english is not None else "(undefined)"
-        self.last_stroke_label.setText(f"""{" / ".join(translation.rtfcre)}\u2002:\u2002{word}""")
+        self.last_stroke_label.setStyleSheet("color: #41796a;")
+        self.last_translation_label.setStyleSheet(f"""color: #{"ff" if has_translation else "5f"}41796a;""")
 
 
     def resize_from_center(self, width: int, height: int):
@@ -231,6 +225,41 @@ class Main(Tool):
         dialog.open()
         
 
+
+def _coming_translation(engine: StenoEngine, keys: Iterable[str]) -> Translation:
+    """Computes the translation that will result if the stroke indicated by `keys` is sent to the engine"""
+
+    translator: Translator = engine._translator
+    stroke: Stroke = Stroke(keys)
+
+    # translator._state is temporarily cleared when engine output is set to False
+    if not engine.output:
+        translator.set_state(engine._running_state)
+    
+    
+    # This is the body of `Translator.translate_stroke`, but without the side effects
+
+    max_key_length = translator._dictionary.longest_key
+    mapping = translator._lookup_with_prefix(max_key_length, translator.get_state().translations, [stroke])
+
+    macro = _mapping_to_macro(mapping, stroke)
+    if macro is not None:
+        translation = Translation([stroke], f"={macro.name}")
+
+    else:
+        translation = (
+            translator._find_longest_match(2, max_key_length, stroke) or
+            (mapping is not None and Translation([stroke], mapping)) or
+            translator._find_longest_match(1, max_key_length, stroke, system.SUFFIX_KEYS) or
+            Translation([stroke], None)
+        )
+    
+
+    if not engine.output:
+        translator.clear_state()
+
+    
+    return translation
 
 # def command_open_window(engine: StenoEngine, arg: str):
 #     new_window = Main(engine)

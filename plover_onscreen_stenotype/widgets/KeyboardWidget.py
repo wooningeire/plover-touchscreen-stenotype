@@ -59,7 +59,8 @@ class KeyboardWidget(QWidget):
                 for key in key_widget.values
             )
 
-            self.current_stroke_change.emit(self._current_stroke_keys)
+            if self._current_stroke_keys:
+                self.current_stroke_change.emit(self._current_stroke_keys)
 
         elif event.type() == QEvent.TouchEnd:
             # This also filters out empty strokes (Plover accepts them and will insert extra spaces)
@@ -141,9 +142,7 @@ KeyWidget[touched="true"] {
 
         return touched_key_widgets
 
-    def _update_key_widget_styles(self, touched_key_widgets: list):
-        touched_key_widgets: list[KeyWidget] = touched_key_widgets
-    
+    def _update_key_widget_styles(self, touched_key_widgets: list[KeyWidget]):
         for key_widget in self._key_widgets:
             old_touched, old_matched = key_widget.touched, key_widget.matched
 
