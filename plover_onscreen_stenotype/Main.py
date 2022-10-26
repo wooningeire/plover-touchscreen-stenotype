@@ -95,8 +95,14 @@ class Main(Tool):
 
         self.translation_display_layout = labels_layout = QVBoxLayout()
         labels_layout.addWidget(last_stroke_label, 0, Qt.AlignCenter)
-        labels_layout.addSpacing(-8)
+        spacer = QSpacerItem(0, 0)
+        labels_layout.addSpacerItem(spacer)
         labels_layout.addWidget(translation_label, 0, Qt.AlignCenter)
+
+        def resize_spacer():
+            spacer.changeSize(0, dpi.pt(-5))
+        resize_spacer()
+        dpi.change_logical.connect(resize_spacer)
 
         labels_layout.setSpacing(0)
 
@@ -105,7 +111,7 @@ class Main(Tool):
         display_alignment_layout.setColumnStretch(0, 1)
         display_alignment_layout.setColumnStretch(1, 0)
         def resize_display_alignment():
-            display_alignment_layout.setColumnMinimumWidth(1, dpi.px(KEY_SIZE))
+            display_alignment_layout.setColumnMinimumWidth(1, dpi.cm(KEY_SIZE))
         resize_display_alignment()
         dpi.change.connect(resize_display_alignment)
 
