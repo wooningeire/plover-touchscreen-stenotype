@@ -22,14 +22,13 @@ else:
 from plover_onscreen_stenotype.settings import Settings, KeyLayout
 from plover_onscreen_stenotype.widgets.KeyWidget import KeyWidget
 from plover_onscreen_stenotype.widgets.build_keyboard import build_keyboard
+from plover_onscreen_stenotype.util import UseDpi
 
 
 class KeyboardWidget(QWidget):
     end_stroke = pyqtSignal(set)  # set[str]
     current_stroke_change = pyqtSignal(set)  # set[str]
     after_touch_event = pyqtSignal()
-
-    dpi_change = pyqtSignal()
 
     #region Overrides
 
@@ -76,6 +75,7 @@ class KeyboardWidget(QWidget):
     #endregion
 
     def __setup_ui(self):
+        self.dpi = UseDpi(self)
         self.setLayout(build_keyboard[self.__settings.key_layout](self, self._key_widgets))
 
         self.__settings.key_layout_change.connect(self.__rebuild_layout)
@@ -98,31 +98,24 @@ KeyWidget[touched="true"] {
         self.setFocusPolicy(Qt.NoFocus)
 
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-    
-        
-        self.screen().physicalDotsPerInchChanged.connect(lambda _dpi: self.__handle_dpi_change())
-        # `self.window().windowHandle()` may initially be None on Linux
-        QTimer.singleShot(0,
-            lambda: self.window().windowHandle().screenChanged.connect(lambda _screen: self.__handle_dpi_change())
-        )
 
 
-    def __handle_dpi_change(self):
-        # self.main_rows_layout.invalidate()
-        # self.vowel_row_layout.invalidate()
-        # self.layout().invalidate()
+    # def __handle_dpi_change(self):
+    #     # self.main_rows_layout.invalidate()
+    #     # self.vowel_row_layout.invalidate()
+    #     # self.layout().invalidate()
 
-        self.dpi_change.emit()
+    #     self.dpi.change.emit()
 
-        # self.window().setMinimumSize(self.window().sizeHint()) # Needed in order to use QWidget.resize
-        # cast(Main, self.window()).resize_from_center(0, 0)
+    #     # self.window().setMinimumSize(self.window().sizeHint()) # Needed in order to use QWidget.resize
+    #     # cast(Main, self.window()).resize_from_center(0, 0)
 
 
     def __rebuild_layout(self, value: KeyLayout):
         self._key_widgets = []
-        # Detach all the dpi_change listeners on the old key widgets to avoid leaking memory
+        # Detach all the dpi.change listeners on the old key widgets to avoid leaking memory
         # TODO removing all listeners may become overzealous in the future
-        self.dpi_change.disconnect()
+        self.dpi.change.disconnect()
 
         # https://stackoverflow.com/questions/10416582/replacing-layout-on-a-qwidget-with-another-layout
         QWidget().setLayout(self.layout()) # Unparent and destroy the current layout so it can be replaced
@@ -163,6 +156,3 @@ KeyWidget[touched="true"] {
                 # Reload stylesheet for dynamic properties: https://stackoverflow.com/questions/1595476/are-qts-stylesheets-really-handling-dynamic-properties
                 # self.style().unpolish(key_widget)
                 self.style().polish(key_widget)
-
-    def px(self, cm: float) -> int:
-        return round(cm * self.screen().physicalDotsPerInch() / 2.54)

@@ -237,6 +237,8 @@ _ASTERISK_COLUMN_INDEX = 5
 def _build_main_rows_layout_staggered(keyboard_widget: KeyboardWidget, key_widgets: list[KeyWidget]) -> QLayout:
     # Parameter defaults on inner functions are used to create closures
 
+    dpi = keyboard_widget.dpi
+
     layout = QHBoxLayout()
     for i, (column, col_width_cm, col_offset_cm) in enumerate(zip(
         _MAIN_ROWS_KEYS,
@@ -262,8 +264,8 @@ def _build_main_rows_layout_staggered(keyboard_widget: KeyboardWidget, key_widge
                     col_width_cm: float=col_width_cm,
                     row_heights_cm: tuple[float]=row_heights_cm,
                 ):
-                    key_widget.setMinimumWidth(keyboard_widget.px(col_width_cm))
-                    key_widget.setFixedHeight(sum(keyboard_widget.px(height) for height in row_heights_cm))
+                    key_widget.setMinimumWidth(dpi.px(col_width_cm))
+                    key_widget.setFixedHeight(sum(dpi.px(height) for height in row_heights_cm))
 
                     # Defer setting the minimum width to later; setting it immediately causes it to shrink to this size initially
                     QTimer.singleShot(0, lambda: key_widget.setMinimumWidth(0))
@@ -274,10 +276,10 @@ def _build_main_rows_layout_staggered(keyboard_widget: KeyboardWidget, key_widge
                     col_width_cm: float=col_width_cm,
                     row_heights_cm: tuple[float]=row_heights_cm,
                 ):
-                    key_widget.setFixedSize(keyboard_widget.px(col_width_cm), sum(keyboard_widget.px(height) for height in row_heights_cm))
+                    key_widget.setFixedSize(dpi.px(col_width_cm), sum(dpi.px(height) for height in row_heights_cm))
 
             resize()
-            keyboard_widget.dpi_change.connect(resize)
+            dpi.change.connect(resize)
 
 
             column_layout.addWidget(key_widget)
@@ -285,21 +287,21 @@ def _build_main_rows_layout_staggered(keyboard_widget: KeyboardWidget, key_widge
             row_pos += row_span
             
         
-        column_layout.addSpacing(keyboard_widget.px(col_offset_cm))
+        column_layout.addSpacing(dpi.px(col_offset_cm))
 
         column_spacer = column_layout.itemAt(column_layout.count() - 1).spacerItem()
         def resize_column_spacing(
             column_spacer: QSpacerItem=column_spacer,
             col_offset_cm: float=col_offset_cm,
         ):
-            column_spacer.changeSize(0, keyboard_widget.px(col_offset_cm))
-        keyboard_widget.dpi_change.connect(resize_column_spacing)
+            column_spacer.changeSize(0, dpi.px(col_offset_cm))
+        dpi.change.connect(resize_column_spacing)
 
         
         layout.addLayout(column_layout)
 
         # if i in (0, 9): # S- and -L, -G
-        #     layout.addSpacing(keyboard_widget.px(_PINKY_STRETCH))
+        #     layout.addSpacing(dpi.px(_PINKY_STRETCH))
         if i == _ASTERISK_COLUMN_INDEX:
             layout.setStretchFactor(column_layout, 1)
 
@@ -320,6 +322,8 @@ def _build_main_rows_layout_staggered(keyboard_widget: KeyboardWidget, key_widge
 
 
 def _build_main_rows_layout_grid(keyboard_widget: KeyboardWidget, key_widgets: list[KeyWidget]) -> QLayout:
+    dpi = keyboard_widget.dpi
+
     layout = QGridLayout()
     for (values, label, grid_position) in _MAIN_ROWS_KEYS_GRID:
         key_widget = KeyWidget(values, label, keyboard_widget)
@@ -328,11 +332,11 @@ def _build_main_rows_layout_grid(keyboard_widget: KeyboardWidget, key_widgets: l
         layout.addWidget(key_widget, *grid_position)
 
     for i, size_cm in enumerate(_ROW_HEIGHTS):
-        layout.setRowMinimumHeight(i, keyboard_widget.px(size_cm))
+        layout.setRowMinimumHeight(i, dpi.px(size_cm))
         layout.setRowStretch(i, 0)
 
     for i, size_cm in enumerate(_COL_WIDTHS):
-        layout.setColumnMinimumWidth(i, keyboard_widget.px(size_cm))
+        layout.setColumnMinimumWidth(i, dpi.px(size_cm))
         layout.setColumnStretch(i, 0)
 
     # * column
@@ -342,15 +346,15 @@ def _build_main_rows_layout_grid(keyboard_widget: KeyboardWidget, key_widgets: l
 
     def resize_columns():
         for i, size_cm in enumerate(_ROW_HEIGHTS):
-            layout.setRowMinimumHeight(i, keyboard_widget.px(size_cm))
+            layout.setRowMinimumHeight(i, dpi.px(size_cm))
 
         for i, size_cm in enumerate(_COL_WIDTHS):
-            layout.setColumnMinimumWidth(i, keyboard_widget.px(size_cm))
+            layout.setColumnMinimumWidth(i, dpi.px(size_cm))
 
         # * column
         QTimer.singleShot(0, lambda: layout.setColumnMinimumWidth(_ASTERISK_COLUMN_INDEX, 0))
     
-    keyboard_widget.dpi_change.connect(resize_columns)
+    dpi.change.connect(resize_columns)
 
 
     layout.setSpacing(0)
@@ -362,8 +366,9 @@ def _build_main_rows_layout_grid(keyboard_widget: KeyboardWidget, key_widgets: l
 def _build_vowel_row_layout(keyboard_widget: KeyboardWidget, key_widgets: list[KeyWidget]) -> QLayout:
     # Parameter defaults on inner functions are used to create closures
 
+    dpi = keyboard_widget.dpi
+    
     layout = QHBoxLayout()
-
     layout.setSpacing(0)
 
     def add_vowel_set(vowel_key_descriptors):
@@ -376,10 +381,10 @@ def _build_vowel_row_layout(keyboard_widget: KeyboardWidget, key_widgets: list[K
                 key_widget: KeyWidget=key_widget,
                 width: float=width,
             ):
-                key_widget.setFixedSize(keyboard_widget.px(width), keyboard_widget.px(KEY_SIZE))
+                key_widget.setFixedSize(dpi.px(width), dpi.px(KEY_SIZE))
 
             resize()
-            keyboard_widget.dpi_change.connect(resize)
+            dpi.change.connect(resize)
 
 
             layout.addWidget(key_widget)
@@ -392,11 +397,11 @@ def _build_vowel_row_layout(keyboard_widget: KeyboardWidget, key_widgets: list[K
     layout.addSpacing(0)
 
     def resize_spacing():
-        layout.itemAt(0).spacerItem().changeSize(keyboard_widget.px(KEY_SIZE) * 3 + keyboard_widget.px(_PINKY_STRETCH), 0)
-        layout.itemAt(layout.count() - 1).spacerItem().changeSize(keyboard_widget.px(KEY_SIZE) * 4 + keyboard_widget.px(_PINKY_STRETCH), 0)
+        layout.itemAt(0).spacerItem().changeSize(dpi.px(KEY_SIZE) * 3 + dpi.px(_PINKY_STRETCH), 0)
+        layout.itemAt(layout.count() - 1).spacerItem().changeSize(dpi.px(KEY_SIZE) * 4 + dpi.px(_PINKY_STRETCH), 0)
 
     resize_spacing()
-    keyboard_widget.dpi_change.connect(resize_spacing)
+    dpi.change.connect(resize_spacing)
 
 
     return layout
@@ -408,12 +413,14 @@ def _build_keyboard_layout(
     keyboard_widget: KeyboardWidget,
     key_widgets: list[KeyWidget],
 ) -> QLayout:
+    dpi = keyboard_widget.dpi
+    
     layout = QVBoxLayout(keyboard_widget)
 
     layout.addLayout(build_main_rows(keyboard_widget, key_widgets))
     layout.addSpacerItem(QSpacerItem(
         0,
-        keyboard_widget.px(_ROWS_GAP),
+        dpi.px(_ROWS_GAP),
         QSizePolicy.Preferred,
         QSizePolicy.Expanding,
     ))

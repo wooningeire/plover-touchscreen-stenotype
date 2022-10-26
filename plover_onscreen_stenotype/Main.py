@@ -33,6 +33,7 @@ from plover_onscreen_stenotype.settings import Settings, KeyLayout
 from plover_onscreen_stenotype.widgets.KeyboardWidget import KeyboardWidget
 from plover_onscreen_stenotype.widgets.SettingsDialog import SettingsDialog
 from plover_onscreen_stenotype.widgets.build_keyboard import KEY_SIZE
+from plover_onscreen_stenotype.util import UseDpi
 
 
 class Main(Tool):
@@ -56,7 +57,6 @@ class Main(Tool):
         self.__settings = Settings()
         self.restore_state()
         self.finished.connect(self.save_state)
-
         self.__setup_ui()
 
         engine.signal_stroked.connect(self._on_stroked)
@@ -84,6 +84,8 @@ class Main(Tool):
         self.__prevent_window_focus()
 
 
+        dpi = UseDpi(self)
+
         self.last_stroke_label = last_stroke_label = QLabel(self)
         last_stroke_label.setFont(QFont("Atkinson Hyperlegible", 16))
 
@@ -101,8 +103,11 @@ class Main(Tool):
 
         display_alignment_layout = QGridLayout()
         display_alignment_layout.setColumnStretch(0, 1)
-        display_alignment_layout.setColumnMinimumWidth(1, self.px(KEY_SIZE))
         display_alignment_layout.setColumnStretch(1, 0)
+        def resize_display_alignment():
+            display_alignment_layout.setColumnMinimumWidth(1, dpi.px(KEY_SIZE))
+        resize_display_alignment()
+        dpi.change.connect(resize_display_alignment)
 
         display_alignment_layout.addLayout(labels_layout, 0, 0)
         self._move_translation_display(self.__settings.key_layout)
@@ -244,10 +249,6 @@ class Main(Tool):
     def __launch_settings_dialog(self):
         dialog = SettingsDialog(self.__settings, self)
         dialog.open()
-
-        
-    def px(self, cm: float) -> int:
-        return round(cm * self.screen().physicalDotsPerInch() / 2.54)
         
 
 
