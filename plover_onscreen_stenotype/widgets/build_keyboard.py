@@ -173,11 +173,11 @@ _VOWEL_ROW_KEYS_RIGHT = (
 
 # in centimeters
 _KEY_SIZE_NUM_BAR = 0.96890420899
-_KEY_SIZE = 1.8
+KEY_SIZE = 1.8
 _COMPOUND_KEY_SIZE = 0.91507619738
-_REDUCED_KEY_SIZE = _KEY_SIZE - _COMPOUND_KEY_SIZE / 2
+_REDUCED_KEY_SIZE = KEY_SIZE - _COMPOUND_KEY_SIZE / 2
 
-_PINKY_STRETCH = _KEY_SIZE * 0.125
+_PINKY_STRETCH = KEY_SIZE * 0.125
 
 _ROW_HEIGHTS = (
     _KEY_SIZE_NUM_BAR,
@@ -188,17 +188,17 @@ _ROW_HEIGHTS = (
 )
 
 _COL_WIDTHS = (
-    _KEY_SIZE + _PINKY_STRETCH,
+    KEY_SIZE + _PINKY_STRETCH,
 ) + (
-    _KEY_SIZE,
+    KEY_SIZE,
 ) * 2 + (
     _REDUCED_KEY_SIZE,  # H-, R-
     _COMPOUND_KEY_SIZE,
-    _REDUCED_KEY_SIZE * 2 + _KEY_SIZE * 2.5,  # *
+    _REDUCED_KEY_SIZE * 2 + KEY_SIZE * 2.5,  # *
     _COMPOUND_KEY_SIZE,
     _REDUCED_KEY_SIZE,  # -F, -R
 ) + (
-    _KEY_SIZE,
+    KEY_SIZE,
 ) * 2 + (
     _REDUCED_KEY_SIZE + _PINKY_STRETCH,  # -T, -S
     _COMPOUND_KEY_SIZE,
@@ -211,19 +211,19 @@ _VOWEL_SET_WIDTHS = (
     _REDUCED_KEY_SIZE,
 )
 
-_ROWS_GAP = _KEY_SIZE * 0.85
+_ROWS_GAP = KEY_SIZE * 0.85
 
 _COL_OFFSETS = (
     0,  # S-
-    _KEY_SIZE * 0.35, # T-, K-
-    _KEY_SIZE * 0.6, # P-, W-
+    KEY_SIZE * 0.35, # T-, K-
+    KEY_SIZE * 0.6, # P-, W-
     0, # H-, R-
 ) + (
     0,
 ) * 3 + (
     0,  # -F, -R
-    _KEY_SIZE * 0.6,  # -P, -B
-    _KEY_SIZE * 0.35,  # -L, -G
+    KEY_SIZE * 0.6,  # -P, -B
+    KEY_SIZE * 0.35,  # -L, -G
     0,  # -T, -S
     0,
     0, # -D, -Z
@@ -376,7 +376,7 @@ def _build_vowel_row_layout(keyboard_widget: KeyboardWidget, key_widgets: list[K
                 key_widget: KeyWidget=key_widget,
                 width: float=width,
             ):
-                key_widget.setFixedSize(keyboard_widget.px(width), keyboard_widget.px(_KEY_SIZE))
+                key_widget.setFixedSize(keyboard_widget.px(width), keyboard_widget.px(KEY_SIZE))
 
             resize()
             keyboard_widget.dpi_change.connect(resize)
@@ -392,8 +392,8 @@ def _build_vowel_row_layout(keyboard_widget: KeyboardWidget, key_widgets: list[K
     layout.addSpacing(0)
 
     def resize_spacing():
-        layout.itemAt(0).spacerItem().changeSize(keyboard_widget.px(_KEY_SIZE) * 3 + keyboard_widget.px(_PINKY_STRETCH), 0)
-        layout.itemAt(layout.count() - 1).spacerItem().changeSize(keyboard_widget.px(_KEY_SIZE) * 4 + keyboard_widget.px(_PINKY_STRETCH), 0)
+        layout.itemAt(0).spacerItem().changeSize(keyboard_widget.px(KEY_SIZE) * 3 + keyboard_widget.px(_PINKY_STRETCH), 0)
+        layout.itemAt(layout.count() - 1).spacerItem().changeSize(keyboard_widget.px(KEY_SIZE) * 4 + keyboard_widget.px(_PINKY_STRETCH), 0)
 
     resize_spacing()
     keyboard_widget.dpi_change.connect(resize_spacing)

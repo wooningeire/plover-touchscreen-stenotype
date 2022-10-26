@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import (
     QLabel,
     QGridLayout,
     QVBoxLayout,
+    QSpacerItem,
     QAction,
 )
 from PyQt5.QtGui import (
@@ -28,9 +29,10 @@ from PyQt5.QtGui import (
 )
 
 
-from plover_onscreen_stenotype.settings import Settings
+from plover_onscreen_stenotype.settings import Settings, KeyLayout
 from plover_onscreen_stenotype.widgets.KeyboardWidget import KeyboardWidget
 from plover_onscreen_stenotype.widgets.SettingsDialog import SettingsDialog
+from plover_onscreen_stenotype.widgets.build_keyboard import KEY_SIZE
 
 
 class Main(Tool):
@@ -89,12 +91,23 @@ class Main(Tool):
         translation_label.setFont(QFont("Atkinson Hyperlegible", 20))
         translation_label.setText("…")
 
-        labels_layout = QVBoxLayout()
+        self.translation_display_layout = labels_layout = QVBoxLayout()
         labels_layout.addWidget(last_stroke_label, 0, Qt.AlignCenter)
         labels_layout.addSpacing(-8)
         labels_layout.addWidget(translation_label, 0, Qt.AlignCenter)
 
         labels_layout.setSpacing(0)
+
+
+        display_alignment_layout = QGridLayout()
+        display_alignment_layout.setColumnStretch(0, 1)
+        display_alignment_layout.setColumnMinimumWidth(1, self.px(KEY_SIZE))
+        display_alignment_layout.setColumnStretch(1, 0)
+
+        display_alignment_layout.addLayout(labels_layout, 0, 0)
+        self._move_translation_display(self.__settings.key_layout)
+        display_alignment_layout.addItem(QSpacerItem(0, 0), 0, 1)
+        display_alignment_layout.setSpacing(0)
 
 
         stenotype = KeyboardWidget(self.__settings, self)
@@ -115,10 +128,12 @@ class Main(Tool):
 
 
         layout = QGridLayout(self)
-        layout.addLayout(labels_layout, 0, 0, Qt.AlignTop | Qt.AlignHCenter)
+        layout.addLayout(display_alignment_layout, 0, 0)
         layout.addWidget(toolbar, 0, 0, Qt.AlignBottom | Qt.AlignLeft)
         layout.addWidget(stenotype, 0, 0)
         self.setLayout(layout)
+
+        self.__settings.key_layout_change.connect(self._move_translation_display)
 
 
         self.setWindowOpacity(0.9375)
@@ -199,6 +214,12 @@ class Main(Tool):
         self.last_stroke_label.setStyleSheet("color: #41796a;")
         self.last_translation_label.setStyleSheet(f"""color: #{"ff" if has_translation else "5f"}41796a;""")
 
+    def _move_translation_display(self, key_layout: KeyLayout):
+        if key_layout == KeyLayout.GRID:
+            self.translation_display_layout.setAlignment(Qt.AlignBottom | Qt.AlignHCenter)
+        else:
+            self.translation_display_layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+
 
     def resize_from_center(self, width: int, height: int):
         try:
@@ -223,6 +244,10 @@ class Main(Tool):
     def __launch_settings_dialog(self):
         dialog = SettingsDialog(self.__settings, self)
         dialog.open()
+
+        
+    def px(self, cm: float) -> int:
+        return round(cm * self.screen().physicalDotsPerInch() / 2.54)
         
 
 
