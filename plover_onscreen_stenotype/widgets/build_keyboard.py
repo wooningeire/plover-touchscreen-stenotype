@@ -426,9 +426,8 @@ def _build_keyboard_layout(
     ))
     layout.addLayout(build_vowel_row(keyboard_widget, key_widgets))
 
-    
+    layout.setContentsMargins(0, 0, 0, 0)
     layout.setSpacing(0)
-
 
     return layout
 
