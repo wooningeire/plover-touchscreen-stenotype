@@ -34,6 +34,10 @@ class UseDpi(QObject):
         """Converts cm to px using the current physical DPI."""
         return round(cm * self.__widget.screen().physicalDotsPerInch() / 2.54)
 
+    def dp(self, dp: float) -> int:
+        """Converts dp to px using the current physical DPI. (Defines dp as the length of a pixel on a 96 dpi screen.)"""
+        return round(dp * self.__widget.screen().physicalDotsPerInch() / 96)
+
     def pt(self, pt: float) -> int:
         """Converts pt to px using the current logical DPI."""
         return round(pt * self.__widget.screen().logicalDotsPerInch() / 72)
