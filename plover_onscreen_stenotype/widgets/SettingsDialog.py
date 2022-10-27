@@ -9,6 +9,9 @@ from PyQt5.QtWidgets import (
     QGroupBox,
     QButtonGroup,
 )
+from PyQt5.QtGui import (
+    QFont,
+)
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -36,13 +39,15 @@ class SettingsDialog(QDialog):
 
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
+        self.setFont(QFont("Atkinson Hyperlegible", 10.5))
+
 
         radio_box = QGroupBox("Key layout", self)
         radio_group = QButtonGroup(radio_box)
 
         radios = {
             KeyLayout.STAGGERED: QRadioButton("Staggered", radio_box),
-            KeyLayout.GRID: QRadioButton("Straight", radio_box),
+            KeyLayout.GRID: QRadioButton("Grid", radio_box),
         }
         radios[self.__settings.key_layout].setChecked(True)
 

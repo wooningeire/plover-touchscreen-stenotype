@@ -22,7 +22,7 @@ from PyQt5.QtGui import (
 
 from plover_onscreen_stenotype.settings import Settings, KeyLayout
 from plover_onscreen_stenotype.util import UseDpi
-from plover_onscreen_stenotype.widgets.build_keyboard import KEY_SIZE
+from plover_onscreen_stenotype.widgets.build_keyboard import KEY_WIDTH
 
 
 class TranslationDisplay(QWidget):
@@ -80,7 +80,7 @@ class TranslationDisplay(QWidget):
         display_alignment_layout.setColumnStretch(1, 0)
 
         def resize_display_alignment():
-            display_alignment_layout.setColumnMinimumWidth(1, dpi.cm(KEY_SIZE))
+            display_alignment_layout.setColumnMinimumWidth(1, dpi.cm(KEY_WIDTH))
         resize_display_alignment()
         dpi.change.connect(resize_display_alignment)
 
