@@ -56,12 +56,15 @@ class TranslationDisplay(QWidget):
             stroke_label_font = QFont("Atkinson Hyperlegible")
             translation_label_font = QFont("Atkinson Hyperlegible")
 
-            if self.screen().physicalDotsPerInch() < 96: # Arbitrary cutoff
-                stroke_label_font.setPixelSize(dpi.dp(19.2))
-                translation_label_font.setPixelSize(dpi.dp(24))
+            if self.screen().physicalDotsPerInch() < 120: # Arbitrary cutoff
+               stroke_label_font.setPixelSize(dpi.dp(19.2))
+               translation_label_font.setPixelSize(dpi.dp(24))
             else:
                 stroke_label_font.setPixelSize(dpi.dp(14.4))
                 translation_label_font.setPixelSize(dpi.dp(18))
+
+            # stroke_label_font.setPixelSize(dpi.dp(18))
+            # translation_label_font.setPixelSize(dpi.dp(24))
 
             last_stroke_label.setFont(stroke_label_font)
             middle_spacer.changeSize(0, dpi.dp(-5))
@@ -133,22 +136,23 @@ def _coming_translation(engine: StenoEngine, keys: Iterable[str]) -> Translation
         translator.set_state(engine._running_state)
     
     
-    # This is the body of `Translator.translate_stroke`, but without the side effects
+    # This is mostly the body of `Translator.translate_stroke`, but without the side effects
 
     max_key_length = translator._dictionary.longest_key
     mapping = translator._lookup_with_prefix(max_key_length, translator.get_state().translations, [stroke])
 
-    macro = _mapping_to_macro(mapping, stroke)
-    if macro is not None:
-        translation = Translation([stroke], f"={macro.name}")
 
-    else:
-        translation = (
-            translator._find_longest_match(2, max_key_length, stroke) or
-            (mapping is not None and Translation([stroke], mapping)) or
-            translator._find_longest_match(1, max_key_length, stroke, system.SUFFIX_KEYS) or
-            Translation([stroke], None)
-        )
+    translation = (
+        translator._find_longest_match(2, max_key_length, stroke) or
+        (mapping is not None and Translation([stroke], mapping)) or
+        translator._find_longest_match(1, max_key_length, stroke, system.SUFFIX_KEYS) or
+        Translation([stroke], None)
+    )
+
+    if translation.english is None:
+        macro = _mapping_to_macro(mapping, stroke)
+        if macro is not None:
+            translation = Translation([stroke], f"={macro.name}")
     
 
     if not engine.output:
