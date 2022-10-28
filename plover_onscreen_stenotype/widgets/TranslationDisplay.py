@@ -33,7 +33,7 @@ class TranslationDisplay(QWidget):
         self.__engine = engine
         self.__settings = settings
 
-        self.__next_translation_defined = False
+        self.__next_stroke_matched = False
 
         self.__setup_ui()
 
@@ -99,19 +99,19 @@ class TranslationDisplay(QWidget):
 
 
     def display_keys(self, stroke_keys: Iterable[str]):
-        translation = _coming_translation(self.__engine, stroke_keys)
-        self.__next_translation_defined = has_translation = translation.english is not None
+        translation, stroke_matched = _coming_translation(self.__engine, stroke_keys)
+        self.__next_stroke_matched = stroke_matched
 
-        word = translation.english.replace("\n", "\\n") if has_translation else "[no match]"
+        word = translation.english.replace("\n", "\\n") if translation.english is not None else "[no match]"
         self.last_stroke_label.setText(" / ".join(translation.rtfcre))
         self.last_translation_label.setText(word)
 
         self.last_stroke_label.setStyleSheet("color: #41796a;")
-        self.last_translation_label.setStyleSheet(f"""color: #{"ff" if has_translation else "5f"}41796a;""")
+        self.last_translation_label.setStyleSheet(f"""color: #{"ff" if stroke_matched else "5f"}41796a;""")
 
     def finish_stroke(self):
         self.last_stroke_label.setStyleSheet("")
-        self.last_translation_label.setStyleSheet(f"""color: #{"ff" if self.__next_translation_defined else "3f"}000000;""")
+        self.last_translation_label.setStyleSheet(f"""color: #{"ff" if self.__next_stroke_matched else "3f"}000000;""")
 
 
     def __move_translation_display(self):
@@ -125,8 +125,12 @@ class TranslationDisplay(QWidget):
         self.__labels_layout.invalidate() # Must be called for layout to move
 
 
-def _coming_translation(engine: StenoEngine, keys: Iterable[str]) -> Translation:
-    """Computes the translation that will result if the stroke defined by `keys` is sent to the engine."""
+def _coming_translation(engine: StenoEngine, keys: Iterable[str]) -> tuple[Translation, bool]:
+    """Computes the translation that will result if the stroke defined by `keys` is sent to the engine.
+    
+    :returns: The translation that will result, and if a match was found
+    :rtpe: tuple[Translation, bool]
+    """
 
     translator: Translator = engine._translator
     stroke: Stroke = Stroke(keys)
@@ -149,6 +153,8 @@ def _coming_translation(engine: StenoEngine, keys: Iterable[str]) -> Translation
         Translation([stroke], None)
     )
 
+    stroke_matched = translation.english is not None
+
     if translation.english is None:
         macro = _mapping_to_macro(mapping, stroke)
         if macro is not None:
@@ -159,4 +165,4 @@ def _coming_translation(engine: StenoEngine, keys: Iterable[str]) -> Translation
         translator.clear_state()
 
     
-    return translation
+    return translation, stroke_matched
