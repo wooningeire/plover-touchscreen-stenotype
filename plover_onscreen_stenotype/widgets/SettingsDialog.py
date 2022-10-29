@@ -8,9 +8,12 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QGroupBox,
     QButtonGroup,
+    QLabel,
 )
 from PyQt5.QtGui import (
     QFont,
+    QTextBlock,
+    QTextDocument,
 )
 
 from typing import TYPE_CHECKING
@@ -34,12 +37,12 @@ class SettingsDialog(QDialog):
         self.setWindowTitle("On-screen stenotype settings")
 
         size = self.size()
-        size.setWidth(175)
+        size.setWidth(350)
         self.resize(size)
 
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
-        self.setFont(QFont("Atkinson Hyperlegible", 10.5))
+        self.setFont(QFont("Atkinson Hyperlegible", 11))
 
 
         radio_box = QGroupBox("Key layout", self)
@@ -67,9 +70,21 @@ class SettingsDialog(QDialog):
 
         # sizes_box = QGroupBox(self)
 
+        label_resizing = QLabel("Resize the stenotype window to adjust spacing", self)
+        label_resizing.setWordWrap(True)
+        label_resizing.setStyleSheet("font-style: italic; color: #7f000000;")
+
+        label_troubleshooting = QLabel("If the window is unresponsive to many touches or touch input is delayed, check the plugin description (§ Recommended setup) for possible solutions",
+                self)
+        label_troubleshooting.setWordWrap(True)
+        label_troubleshooting.setStyleSheet("font-style: italic; color: #7f000000;")
+
 
         layout = QVBoxLayout()
         layout.addWidget(radio_box)
+        layout.addWidget(label_resizing)
+        layout.addSpacing(8)
+        layout.addWidget(label_troubleshooting)
         # layout.addWidget(sizes_box)
         self.setLayout(layout)
 
