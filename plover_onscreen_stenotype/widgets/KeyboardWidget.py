@@ -52,16 +52,21 @@ class KeyboardWidget(QWidget):
 
         touched_key_widgets = self._find_touched_key_widgets(event.touchPoints())
 
+        # Variables for detecting changes post-update
+        had_num_bar = "#" in self._current_stroke_keys
+
         if event.type() in (QEvent.TouchBegin, QEvent.TouchUpdate):
+            old_stroke_length = len(self._current_stroke_keys)
+
             self._current_stroke_keys.update(
                 key
                 for key_widget in touched_key_widgets
                 for key in key_widget.values
             )
 
-            if self._current_stroke_keys:
+            if len(self._current_stroke_keys) > old_stroke_length and self._current_stroke_keys:
                 self.current_stroke_change.emit(self._current_stroke_keys)
-            if "#" in self._current_stroke_keys:
+            if not had_num_bar and "#" in self._current_stroke_keys:
                 self.num_bar_pressed_change.emit(True)
             
 
@@ -71,7 +76,8 @@ class KeyboardWidget(QWidget):
                 self.end_stroke.emit(self._current_stroke_keys)
                 self._current_stroke_keys = set()
             
-            self.num_bar_pressed_change.emit(False)
+            if had_num_bar:
+                self.num_bar_pressed_change.emit(False)
         
 
         self._update_key_widget_styles(touched_key_widgets)
