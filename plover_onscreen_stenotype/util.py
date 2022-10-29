@@ -58,3 +58,6 @@ class UseDpi(QObject):
 
     def __on_screen_logical_dpi_change(self, dpi: float):
         self.change_logical.emit()
+
+
+FONT_FAMILY = "Atkinson Hyperlegible"

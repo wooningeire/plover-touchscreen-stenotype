@@ -24,6 +24,7 @@ else:
     Main = object
 
 from plover_onscreen_stenotype.settings import Settings, KeyLayout
+from plover_onscreen_stenotype.util import FONT_FAMILY
 
 
 class SettingsDialog(QDialog):
@@ -43,7 +44,7 @@ class SettingsDialog(QDialog):
 
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
-        self.setFont(QFont("Atkinson Hyperlegible", 11))
+        self.setFont(QFont(FONT_FAMILY, 11))
 
 
         key_layout_box = QGroupBox("Key layout", self)

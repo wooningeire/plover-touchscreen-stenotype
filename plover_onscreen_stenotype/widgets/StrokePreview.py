@@ -21,7 +21,7 @@ from PyQt5.QtGui import (
 
 
 from plover_onscreen_stenotype.settings import Settings, KeyLayout
-from plover_onscreen_stenotype.util import UseDpi
+from plover_onscreen_stenotype.util import UseDpi, FONT_FAMILY
 from plover_onscreen_stenotype.widgets.build_keyboard import KEY_WIDTH
 
 class StrokePreview(QWidget):
@@ -52,8 +52,8 @@ class StrokePreview(QWidget):
         labels_layout.addWidget(translation_label, 0, Qt.AlignCenter)
 
         def resize_labels(): # Set font sizes in px rather than pt so they fit in the keyboard gaps
-            stroke_label_font = QFont("Atkinson Hyperlegible")
-            translation_label_font = QFont("Atkinson Hyperlegible")
+            stroke_label_font = QFont(FONT_FAMILY)
+            translation_label_font = QFont(FONT_FAMILY)
 
             if self.screen().physicalDotsPerInch() < 120: # Arbitrary cutoff
                 stroke_label_font.setPixelSize(dpi.dp(19.2 if self.__settings.stroke_preview_translation else 24))

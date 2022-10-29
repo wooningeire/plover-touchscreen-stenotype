@@ -13,6 +13,9 @@ from PyQt5.QtGui import (
 )
 
 
+from plover_onscreen_stenotype.util import FONT_FAMILY
+
+
 class KeyWidget(QToolButton):
     #region Overrides
 
@@ -40,7 +43,7 @@ class KeyWidget(QToolButton):
         self.setText(label)
 
         if label:
-            self.setFont(QFont("Atkinson Hyperlegible", 16))
+            self.setFont(QFont(FONT_FAMILY, 16))
 
 
         # self.setMinimumSize(0, 0)
