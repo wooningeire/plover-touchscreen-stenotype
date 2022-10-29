@@ -14,15 +14,15 @@ from PyQt5.QtGui import (
 
 from typing import cast, TYPE_CHECKING
 if TYPE_CHECKING:
-    from plover_onscreen_stenotype.Main import Main
+    from plover_touchscreen_stenotype.Main import Main
 else:
     Main = object
 
 
-from plover_onscreen_stenotype.settings import Settings, KeyLayout
-from plover_onscreen_stenotype.widgets.KeyWidget import KeyWidget
-from plover_onscreen_stenotype.widgets.build_keyboard import build_keyboard
-from plover_onscreen_stenotype.util import UseDpi
+from plover_touchscreen_stenotype.settings import Settings, KeyLayout
+from plover_touchscreen_stenotype.widgets.KeyWidget import KeyWidget
+from plover_touchscreen_stenotype.widgets.build_keyboard import build_keyboard
+from plover_touchscreen_stenotype.util import UseDpi
 
 
 class KeyboardWidget(QWidget):

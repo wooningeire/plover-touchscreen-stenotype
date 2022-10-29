@@ -20,25 +20,25 @@ from PyQt5.QtGui import (
 )
 
 
-from plover_onscreen_stenotype.settings import Settings
-from plover_onscreen_stenotype.widgets.KeyboardWidget import KeyboardWidget
-from plover_onscreen_stenotype.widgets.StrokePreview import StrokePreview
-from plover_onscreen_stenotype.widgets.SettingsDialog import SettingsDialog
+from plover_touchscreen_stenotype.settings import Settings
+from plover_touchscreen_stenotype.widgets.KeyboardWidget import KeyboardWidget
+from plover_touchscreen_stenotype.widgets.StrokePreview import StrokePreview
+from plover_touchscreen_stenotype.widgets.SettingsDialog import SettingsDialog
 
 
 class Main(Tool):
     #region Overrides
 
-    TITLE = "On-screen stenotype"
+    TITLE = "Touchscreen stenotype"
     ICON = ""
-    ROLE = "onscreen_stenotype"
+    ROLE = "touchscreen_stenotype"
 
     def __init__(self, engine: StenoEngine):
         super().__init__(engine)
 
         self.engine = engine # Override for type hint
         self.__last_stroke_from_widget = False
-        """Whether the last emitted stroke originated from the on-screen stenotype"""
+        """Whether the last emitted stroke originated from this Tool"""
         self.__last_stroke_keys: set[str] | None = None
         self.__last_stroke_engine_enabled = False
 

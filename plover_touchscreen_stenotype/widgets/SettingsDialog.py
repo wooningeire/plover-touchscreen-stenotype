@@ -19,12 +19,12 @@ from PyQt5.QtGui import (
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from plover_onscreen_stenotype.Main import Main
+    from plover_touchscreen_stenotype.Main import Main
 else:
     Main = object
 
-from plover_onscreen_stenotype.settings import Settings, KeyLayout
-from plover_onscreen_stenotype.util import FONT_FAMILY
+from plover_touchscreen_stenotype.settings import Settings, KeyLayout
+from plover_touchscreen_stenotype.util import FONT_FAMILY
 
 
 class SettingsDialog(QDialog):
@@ -36,7 +36,7 @@ class SettingsDialog(QDialog):
         self.__setup_ui()
 
     def __setup_ui(self):
-        self.setWindowTitle("On-screen stenotype settings")
+        self.setWindowTitle("Touch stenotype settings")
 
         size = self.size()
         size.setWidth(350)

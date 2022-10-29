@@ -1,1 +1,1 @@
-recursive-include plover_onscreen_stenotype/widgets/ *
+recursive-include plover_touchscreen_stenotype/widgets/ *

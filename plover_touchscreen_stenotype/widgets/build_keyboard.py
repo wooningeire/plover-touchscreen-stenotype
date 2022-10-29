@@ -13,12 +13,12 @@ from PyQt5.QtWidgets import (
 from functools import partial
 from typing import TYPE_CHECKING, Callable
 if TYPE_CHECKING:
-    from plover_onscreen_stenotype.widgets.KeyboardWidget import KeyboardWidget
+    from plover_touchscreen_stenotype.widgets.KeyboardWidget import KeyboardWidget
 else:
     KeyboardWidget = object
 
-from plover_onscreen_stenotype.widgets.KeyWidget import KeyWidget
-from plover_onscreen_stenotype.settings import KeyLayout
+from plover_touchscreen_stenotype.widgets.KeyWidget import KeyWidget
+from plover_touchscreen_stenotype.settings import KeyLayout
 
 
 _TOP_ROW = 2

@@ -20,9 +20,9 @@ from PyQt5.QtGui import (
 )
 
 
-from plover_onscreen_stenotype.settings import Settings, KeyLayout
-from plover_onscreen_stenotype.util import UseDpi, FONT_FAMILY
-from plover_onscreen_stenotype.widgets.build_keyboard import KEY_WIDTH
+from plover_touchscreen_stenotype.settings import Settings, KeyLayout
+from plover_touchscreen_stenotype.util import UseDpi, FONT_FAMILY
+from plover_touchscreen_stenotype.widgets.build_keyboard import KEY_WIDTH
 
 class StrokePreview(QWidget):
     def __init__(self, engine: StenoEngine, settings: Settings, parent: QWidget=None):

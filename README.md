@@ -1,5 +1,5 @@
-# On-screen stenotype
-On-screen touchscreen stenotype plugin for Plover.
+# Touchscreen stenotype
+On-screen touch stenotype plugin for Plover.
 
 ## Recommended setup
 Operating systems may have built-in touchscreen gestures that sometimes prevent the window from receiving touches.
