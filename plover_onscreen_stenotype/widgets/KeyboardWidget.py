@@ -29,6 +29,7 @@ class KeyboardWidget(QWidget):
     end_stroke = pyqtSignal(set)  # set[str]
     current_stroke_change = pyqtSignal(set)  # set[str]
     after_touch_event = pyqtSignal()
+    num_bar_pressed_change = pyqtSignal(bool)
 
     #region Overrides
 
@@ -60,12 +61,17 @@ class KeyboardWidget(QWidget):
 
             if self._current_stroke_keys:
                 self.current_stroke_change.emit(self._current_stroke_keys)
+            if "#" in self._current_stroke_keys:
+                self.num_bar_pressed_change.emit(True)
+            
 
         elif event.type() == QEvent.TouchEnd:
             # This also filters out empty strokes (Plover accepts them and will insert extra spaces)
             if self._current_stroke_keys and all(touch.state() == Qt.TouchPointReleased for touch in event.touchPoints()):
                 self.end_stroke.emit(self._current_stroke_keys)
                 self._current_stroke_keys = set()
+            
+            self.num_bar_pressed_change.emit(False)
         
 
         self._update_key_widget_styles(touched_key_widgets)
@@ -113,9 +119,10 @@ KeyWidget[touched="true"] {
 
     def __rebuild_layout(self, value: KeyLayout):
         self._key_widgets = []
-        # Detach all the dpi.change listeners on the old key widgets to avoid leaking memory
+        # Detach listeners on the old key widgets to avoid leaking memory
         # TODO removing all listeners may become overzealous in the future
         self.dpi.change.disconnect()
+        self.num_bar_pressed_change.disconnect()
 
         # https://stackoverflow.com/questions/10416582/replacing-layout-on-a-qwidget-with-another-layout
         QWidget().setLayout(self.layout()) # Unparent and destroy the current layout so it can be replaced

@@ -16,7 +16,7 @@ from PyQt5.QtGui import (
 class KeyWidget(QToolButton):
     #region Overrides
 
-    def __init__(self, values: list[str], label: str, parent: QWidget = None):
+    def __init__(self, values: list[str], label: str, parent: QWidget=None):
         # super().__init__(label, parent)
         super().__init__(parent)
 
@@ -48,6 +48,10 @@ class KeyWidget(QToolButton):
 
         # self.setAttribute(Qt.WA_AcceptTouchEvents)
         self.setFocusPolicy(Qt.NoFocus)
+
+
+    def num_bar_pressed_handler(self, label: str, num_bar_label: str):
+        return lambda num_bar_pressed: self.setText(num_bar_label if num_bar_pressed else label)
 
 
     @pyqtProperty(bool)

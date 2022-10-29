@@ -26,27 +26,28 @@ _LOW_ROW = 4
 _TOP_COMPOUND_ROW = 1
 _LOW_COMPOUND_ROW = 3
 
+# [keys], label, rowSpan?, numberLabel?
 _MAIN_ROWS_KEYS = (
     (
         (["#"], ""),
         (["#", "S-"], ""),
-        (["S-"], "S", 3),
+        (["S-"], "S", 3, "1"),
     ), (
         (["#"], ""),
         (["#", "T-"], ""),
-        (["T-"], "T"),
+        (["T-"], "T", 1, "2"),
         (["T-", "K-"], ""),
         (["K-"], "K"),
     ), (
         (["#"], ""),
         (["#", "P-"], ""),
-        (["P-"], "P"),
+        (["P-"], "P", 1, "3"),
         (["P-", "W-"], ""),
         (["W-"], "W"),
     ), (
         (["#"], ""),
         (["#", "H-"], ""),
-        (["H-"], "H"),
+        (["H-"], "H", 1, "4"),
         (["H-", "R-"], ""),
         (["R-"], "R"),
     ), (
@@ -68,25 +69,25 @@ _MAIN_ROWS_KEYS = (
     ), (
         (["#"], ""),
         (["#", "-F"], ""),
-        (["-F"], "F"),
+        (["-F"], "F", 1, "6"),
         (["-F", "-R"], ""),
         (["-R"], "R"),
     ), (
         (["#"], ""),
         (["#", "-P"], ""),
-        (["-P"], "P"),
+        (["-P"], "P", 1, "7"),
         (["-P", "-B"], ""),
         (["-B"], "B"),
     ), (
         (["#"], ""),
         (["#", "-L"], ""),
-        (["-L"], "L"),
+        (["-L"], "L", 1, "8"),
         (["-L", "-G"], ""),
         (["-G"], "G"),
     ), (
         (["#"], ""),
         (["#", "-T"], ""),
-        (["-T"], "T"),
+        (["-T"], "T", 1, "9"),
         (["-T", "-S"], ""),
         (["-S"], "S"),
     ), (
@@ -104,28 +105,28 @@ _MAIN_ROWS_KEYS = (
     ),
 )
 
-# [keys], (row, column, rowSpan, columnSpan)
+# [keys], label, (row, column, rowSpan?, columnSpan?)
 _MAIN_ROWS_KEYS_GRID = (
     (["#"], "#", (0, 0, 1, -1)),
-    (["S-"], "S", (_TOP_ROW, 0, 3, 1)),
-    (["T-"], "T", (_TOP_ROW, 1)),
+    (["S-"], "S", (_TOP_ROW, 0, 3, 1), "1"),
+    (["T-"], "T", (_TOP_ROW, 1), "2"),
     (["K-"], "K", (_LOW_ROW, 1)),
-    (["P-"], "P", (_TOP_ROW, 2)),
+    (["P-"], "P", (_TOP_ROW, 2), "3"),
     (["W-"], "W", (_LOW_ROW, 2)),
-    (["H-"], "H", (_TOP_ROW, 3)),
+    (["H-"], "H", (_TOP_ROW, 3), "4"),
     (["R-"], "R", (_LOW_ROW, 3)),
     (["H-", "*"], "", (_TOP_ROW, 4)),
     (["R-", "*"], "", (_LOW_ROW, 4)),
     (["*"], "*", (_TOP_ROW, 5, 3, 1)),
     (["*", "-F"], "", (_TOP_ROW, 6)),
     (["*", "-R"], "", (_LOW_ROW, 6)),
-    (["-F"], "F", (_TOP_ROW, 7)),
+    (["-F"], "F", (_TOP_ROW, 7), "6"),
     (["-R"], "R", (_LOW_ROW, 7)),
-    (["-P"], "P", (_TOP_ROW, 8)),
+    (["-P"], "P", (_TOP_ROW, 8), "7"),
     (["-B"], "B", (_LOW_ROW, 8)),
-    (["-L"], "L", (_TOP_ROW, 9)),
+    (["-L"], "L", (_TOP_ROW, 9), "8"),
     (["-G"], "G", (_LOW_ROW, 9)),
-    (["-T"], "T", (_TOP_ROW, 10)),
+    (["-T"], "T", (_TOP_ROW, 10), "9"),
     (["-S"], "S", (_LOW_ROW, 10)),
     (["-T", "-D"], "", (_TOP_ROW, 11)),
     (["-S", "-Z"], "", (_LOW_ROW, 11)),
@@ -160,9 +161,9 @@ _MAIN_ROWS_KEYS_GRID = (
 )
 
 _VOWEL_ROW_KEYS_LEFT = (
-    (["A-"], "A"),
+    (["A-"], "A", "5"),
     (["A-", "O-"], ""),
-    (["O-"], "O"),
+    (["O-"], "O", "0"),
 )
 
 _VOWEL_ROW_KEYS_RIGHT = (
@@ -254,11 +255,16 @@ def _build_main_rows_layout_staggered(keyboard_widget: KeyboardWidget, key_widge
         row_pos = 0
 
         for values, label, *rest in column:
-            row_span = rest[0] if rest else 1
+            row_span: int = rest[0] if len(rest) > 0 else 1
             row_heights_cm = _ROW_HEIGHTS[row_pos:row_pos + row_span]
+
 
             key_widget = KeyWidget(values, label, keyboard_widget)
             key_widgets.append(key_widget)
+
+            if len(rest) > 1:
+                num_bar_label: str = rest[1]
+                keyboard_widget.num_bar_pressed_change.connect(key_widget.num_bar_pressed_handler(label, num_bar_label))
 
 
             if row_pos <= _LOW_ROW < row_pos + row_span:
@@ -331,9 +337,13 @@ def _build_main_rows_layout_grid(keyboard_widget: KeyboardWidget, key_widgets: l
     dpi = keyboard_widget.dpi
 
     layout = QGridLayout()
-    for (values, label, grid_position) in _MAIN_ROWS_KEYS_GRID:
+    for values, label, grid_position, *rest in _MAIN_ROWS_KEYS_GRID:
         key_widget = KeyWidget(values, label, keyboard_widget)
         key_widgets.append(key_widget)
+        
+        if len(rest) > 0:
+            num_bar_label: str = rest[0]
+            keyboard_widget.num_bar_pressed_change.connect(key_widget.num_bar_pressed_handler(label, num_bar_label))
 
         layout.addWidget(key_widget, *grid_position)
 
@@ -378,9 +388,13 @@ def _build_vowel_row_layout(keyboard_widget: KeyboardWidget, key_widgets: list[K
     layout.setSpacing(0)
 
     def add_vowel_set(vowel_key_descriptors):
-        for ((values, label), width) in zip(vowel_key_descriptors, _VOWEL_SET_WIDTHS):
+        for (values, label, *rest), width in zip(vowel_key_descriptors, _VOWEL_SET_WIDTHS):
             key_widget = KeyWidget(values, label, keyboard_widget)
             key_widgets.append(key_widget)
+        
+            if len(rest) > 0:
+                num_bar_label: str = rest[0]
+                keyboard_widget.num_bar_pressed_change.connect(key_widget.num_bar_pressed_handler(label, num_bar_label))
 
 
             def resize(
