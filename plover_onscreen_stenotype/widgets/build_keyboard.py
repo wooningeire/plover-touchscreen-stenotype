@@ -421,16 +421,20 @@ def _build_keyboard_layout(
 ) -> QLayout:
     dpi = keyboard_widget.dpi
     
-    layout = QVBoxLayout(keyboard_widget)
+    # QVBoxLayout has an odd side effect when window is resized to a large enough height; the main rows layout would
+    # start to grow along with the spacer item
+    layout = QGridLayout()
 
-    layout.addLayout(build_main_rows(keyboard_widget, key_widgets))
-    layout.addSpacerItem(QSpacerItem(
-        0,
-        dpi.cm(_ROWS_GAP),
-        QSizePolicy.Preferred,
-        QSizePolicy.Expanding,
-    ))
-    layout.addLayout(build_vowel_row(keyboard_widget, key_widgets))
+    layout.addLayout(build_main_rows(keyboard_widget, key_widgets), 0, 0)
+
+    layout.setRowStretch(1, 1)
+    def resize_row_spacer():
+        layout.setRowMinimumHeight(1, dpi.cm(_ROWS_GAP))
+        QTimer.singleShot(0, lambda: layout.setRowMinimumHeight(1, 0))
+    resize_row_spacer()
+    dpi.change.connect(resize_row_spacer)
+
+    layout.addLayout(build_vowel_row(keyboard_widget, key_widgets), 2, 0)
 
     layout.setContentsMargins(0, 0, 0, 0)
     layout.setSpacing(0)
