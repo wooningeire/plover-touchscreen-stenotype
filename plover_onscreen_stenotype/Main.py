@@ -22,7 +22,7 @@ from PyQt5.QtGui import (
 
 from plover_onscreen_stenotype.settings import Settings
 from plover_onscreen_stenotype.widgets.KeyboardWidget import KeyboardWidget
-from plover_onscreen_stenotype.widgets.TranslationDisplay import TranslationDisplay
+from plover_onscreen_stenotype.widgets.StrokePreview import StrokePreview
 from plover_onscreen_stenotype.widgets.SettingsDialog import SettingsDialog
 
 
@@ -76,7 +76,7 @@ class Main(Tool):
         self.__prevent_window_focus()
 
 
-        self.translation_display = translation_display = TranslationDisplay(self.engine, self.__settings, self)
+        self.translation_display = translation_display = StrokePreview(self.engine, self.__settings, self)
 
         stenotype = KeyboardWidget(self.__settings, self)
         stenotype.end_stroke.connect(self._on_stenotype_input)

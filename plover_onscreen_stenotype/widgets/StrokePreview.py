@@ -24,7 +24,7 @@ from plover_onscreen_stenotype.settings import Settings, KeyLayout
 from plover_onscreen_stenotype.util import UseDpi
 from plover_onscreen_stenotype.widgets.build_keyboard import KEY_WIDTH
 
-class TranslationDisplay(QWidget):
+class StrokePreview(QWidget):
     def __init__(self, engine: StenoEngine, settings: Settings, parent: QWidget=None):
         super().__init__(parent)
 
