@@ -4,10 +4,11 @@ from PyQt5.QtCore import (
 from PyQt5.QtWidgets import (
     QWidget,
     QDialog,
-    QRadioButton,
     QVBoxLayout,
     QGroupBox,
     QButtonGroup,
+    QRadioButton,
+    QCheckBox,
     QLabel,
 )
 from PyQt5.QtGui import (
@@ -45,30 +46,46 @@ class SettingsDialog(QDialog):
         self.setFont(QFont("Atkinson Hyperlegible", 11))
 
 
-        radio_box = QGroupBox("Key layout", self)
-        radio_group = QButtonGroup(radio_box)
+        key_layout_box = QGroupBox("Key layout", self)
+        key_layout_group = QButtonGroup(key_layout_box)
 
-        radios = {
-            KeyLayout.STAGGERED: QRadioButton("Staggered", radio_box),
-            KeyLayout.GRID: QRadioButton("Grid", radio_box),
+        key_layout_radios = {
+            KeyLayout.STAGGERED: QRadioButton("Staggered", key_layout_box),
+            KeyLayout.GRID: QRadioButton("Grid", key_layout_box),
         }
-        radios[self.__settings.key_layout].setChecked(True)
+        key_layout_radios[self.__settings.key_layout].setChecked(True)
 
         self.__key_layout_radios = {
             id(button): value
-            for value, button in radios.items()
+            for value, button in key_layout_radios.items()
         }
 
-        radio_box_layout = QVBoxLayout()
-        for radio in radios.values():
-            radio_box_layout.addWidget(radio)
-            radio_group.addButton(radio)
-        radio_box.setLayout(radio_box_layout)
+        key_layout_box_layout = QVBoxLayout()
+        for radio in key_layout_radios.values():
+            key_layout_box_layout.addWidget(radio)
+            key_layout_group.addButton(radio)
+        key_layout_box.setLayout(key_layout_box_layout)
 
-        radio_group.buttonToggled.connect(self.__on_keyboard_layout_change)
+        key_layout_group.buttonToggled.connect(self.__on_keyboard_layout_change)
 
 
-        # sizes_box = QGroupBox(self)
+        stroke_preview_box = QGroupBox("Stroke preview", self)
+
+        stroke_preview_checkboxes = (
+            QCheckBox("Show stroke", stroke_preview_box),
+            QCheckBox("Show translation", stroke_preview_box),
+        )
+        stroke_preview_checkboxes[0].setChecked(self.__settings.stroke_preview_stroke)
+        stroke_preview_checkboxes[1].setChecked(self.__settings.stroke_preview_translation)
+
+        stroke_preview_box_layout = QVBoxLayout()
+        for checkbox in stroke_preview_checkboxes:
+            stroke_preview_box_layout.addWidget(checkbox)
+        stroke_preview_box.setLayout(stroke_preview_box_layout)
+
+        stroke_preview_checkboxes[0].toggled.connect(self.__on_stroke_preview_stroke_change)
+        stroke_preview_checkboxes[1].toggled.connect(self.__on_stroke_preview_translation_change)
+
 
         label_resizing = QLabel("Resize the stenotype window to adjust spacing", self)
         label_resizing.setWordWrap(True)
@@ -81,7 +98,8 @@ class SettingsDialog(QDialog):
 
 
         layout = QVBoxLayout()
-        layout.addWidget(radio_box)
+        layout.addWidget(key_layout_box)
+        layout.addWidget(stroke_preview_box)
         layout.addWidget(label_resizing)
         layout.addSpacing(8)
         layout.addWidget(label_troubleshooting)
@@ -92,3 +110,9 @@ class SettingsDialog(QDialog):
     def __on_keyboard_layout_change(self, button: QRadioButton, checked: bool):
         if not checked: return
         self.__settings.key_layout = self.__key_layout_radios[id(button)]
+
+    def __on_stroke_preview_stroke_change(self, checked: bool):
+        self.__settings.stroke_preview_stroke = checked
+
+    def __on_stroke_preview_translation_change(self, checked: bool):
+        self.__settings.stroke_preview_translation = checked
