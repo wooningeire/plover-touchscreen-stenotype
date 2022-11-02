@@ -173,15 +173,16 @@ _VOWEL_ROW_KEYS_RIGHT = (
 )
 
 # in centimeters
-_KEY_SIZE_NUM_BAR = 0.96890420899
-KEY_WIDTH = 1.8
-_COMPOUND_KEY_SIZE = 0.91507619738
+_KEY_SIZE_NUM_BAR = 0.95
+KEY_WIDTH = 2
+_COMPOUND_KEY_SIZE = 0.95
 
-_KEY_HEIGHT = KEY_WIDTH * 1.125
-_REDUCED_KEY_SIZE = KEY_WIDTH - _COMPOUND_KEY_SIZE / 2
+_KEY_HEIGHT = 2
+_REDUCED_KEY_WIDTH = KEY_WIDTH - _COMPOUND_KEY_SIZE / 2
 _REDUCED_KEY_HEIGHT = _KEY_HEIGHT - _COMPOUND_KEY_SIZE / 2
 
-_PINKY_STRETCH = KEY_WIDTH * 0.125
+_INDEX_STRETCH = KEY_WIDTH * 0.1
+_PINKY_STRETCH = KEY_WIDTH * 0.5
 
 _ROW_HEIGHTS = (
     _KEY_SIZE_NUM_BAR,
@@ -196,26 +197,26 @@ _COL_WIDTHS = (
 ) + (
     KEY_WIDTH,
 ) * 2 + (
-    _REDUCED_KEY_SIZE,  # H-, R-
+    _REDUCED_KEY_WIDTH + _INDEX_STRETCH,  # H-, R-
     _COMPOUND_KEY_SIZE,
-    _REDUCED_KEY_SIZE * 2 + KEY_WIDTH * 2.5,  # *
+    _REDUCED_KEY_WIDTH * 2 + KEY_WIDTH * 2.5,  # *
     _COMPOUND_KEY_SIZE,
-    _REDUCED_KEY_SIZE,  # -F, -R
+    _REDUCED_KEY_WIDTH + _INDEX_STRETCH,  # -F, -R
 ) + (
     KEY_WIDTH,
 ) * 2 + (
-    _REDUCED_KEY_SIZE + _PINKY_STRETCH,  # -T, -S
+    _REDUCED_KEY_WIDTH + _PINKY_STRETCH,  # -T, -S
     _COMPOUND_KEY_SIZE,
-    _REDUCED_KEY_SIZE,  # -D, -Z
+    _REDUCED_KEY_WIDTH,  # -D, -Z
 )
 
 _VOWEL_SET_WIDTHS = (
-    _REDUCED_KEY_SIZE,
+    _REDUCED_KEY_WIDTH,
     _COMPOUND_KEY_SIZE,
-    _REDUCED_KEY_SIZE,
+    _REDUCED_KEY_WIDTH,
 )
 
-_ROWS_GAP = _KEY_HEIGHT * 0.875
+_ROWS_GAP = _KEY_HEIGHT * 1.25
 
 _COL_OFFSETS = (
     0,  # S-
@@ -417,8 +418,9 @@ def _build_vowel_row_layout(keyboard_widget: KeyboardWidget, key_widgets: list[K
     layout.addSpacing(0)
 
     def resize_spacing():
-        layout.itemAt(0).spacerItem().changeSize(dpi.cm(KEY_WIDTH) * 3 + dpi.cm(_PINKY_STRETCH), 0)
-        layout.itemAt(layout.count() - 1).spacerItem().changeSize(dpi.cm(KEY_WIDTH) * 4 + dpi.cm(_PINKY_STRETCH), 0)
+        # TODO make the spacing amount here a constant?
+        layout.itemAt(0).spacerItem().changeSize(dpi.cm(KEY_WIDTH) * 3.375, 0)
+        layout.itemAt(layout.count() - 1).spacerItem().changeSize(dpi.cm(KEY_WIDTH) * 4.375, 0)
 
     resize_spacing()
     dpi.change.connect(resize_spacing)

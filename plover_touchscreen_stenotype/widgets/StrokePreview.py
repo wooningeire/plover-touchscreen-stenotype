@@ -3,7 +3,7 @@ from plover.engine import StenoEngine
 from plover.steno import Stroke
 
 from plover import system
-from plover.translation import Translation, Translator, _mapping_to_macro
+from plover.translation import Translation, Translator, _mapping_to_macro # TODO access violation
 
 from PyQt5.QtCore import (
     Qt,
@@ -55,18 +55,11 @@ class StrokePreview(QWidget):
             stroke_label_font = QFont(FONT_FAMILY)
             translation_label_font = QFont(FONT_FAMILY)
 
-            if self.screen().physicalDotsPerInch() < 120: # Arbitrary cutoff
-                stroke_label_font.setPixelSize(dpi.dp(19.2 if self.__settings.stroke_preview_translation else 24))
-                translation_label_font.setPixelSize(dpi.dp(24))
-            else:
-                stroke_label_font.setPixelSize(dpi.dp(14.4 if self.__settings.stroke_preview_translation else 18))
-                translation_label_font.setPixelSize(dpi.dp(18))
-
-            # stroke_label_font.setPixelSize(dpi.dp(18))
-            # translation_label_font.setPixelSize(dpi.dp(24))
+            stroke_label_font.setPixelSize(dpi.dp(16.8 if self.__settings.stroke_preview_translation else 21))
+            translation_label_font.setPixelSize(dpi.dp(21))
 
             stroke_label.setFont(stroke_label_font)
-            middle_spacer.changeSize(0, dpi.dp(-5) if self.__settings.stroke_preview_full else 0)
+            middle_spacer.changeSize(0, dpi.dp(-4) if self.__settings.stroke_preview_full else 0)
             translation_label.setFont(translation_label_font)
 
             labels_layout.invalidate()
@@ -172,6 +165,7 @@ def _coming_translation(engine: StenoEngine, keys: Iterable[str]) -> tuple[Trans
     :returns: The translation that will result, and if a match was found
     :rtype: tuple[Translation, bool]
     """
+    # TODO access violations
 
     translator: Translator = engine._translator
     stroke: Stroke = Stroke(keys)

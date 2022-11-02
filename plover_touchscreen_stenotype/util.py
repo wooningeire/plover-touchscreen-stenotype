@@ -60,4 +60,4 @@ class UseDpi(QObject):
         self.change_logical.emit()
 
 
-FONT_FAMILY = "Atkinson Hyperlegible"
+FONT_FAMILY = "Atkinson Hyperlegible, Segoe UI, Ubuntu"
