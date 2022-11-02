@@ -92,7 +92,7 @@ class SettingsDialog(QDialog):
         label_resizing.setWordWrap(True)
         label_resizing.setStyleSheet("font-style: italic; color: #7f000000;")
 
-        label_troubleshooting = QLabel("If the window is unresponsive to many touches or touch input is delayed, check the plugin description (§ Recommended setup) for possible solutions",
+        label_troubleshooting = QLabel("If there are issues with responsiveness, check the plugin description (§ Additional setup) for possible solutions",
                 self)
         label_troubleshooting.setWordWrap(True)
         label_troubleshooting.setStyleSheet("font-style: italic; color: #7f000000;")
