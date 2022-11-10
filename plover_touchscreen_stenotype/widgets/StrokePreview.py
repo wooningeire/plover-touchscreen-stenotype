@@ -43,6 +43,9 @@ class StrokePreview(QWidget):
         self.__stroke_label = stroke_label = QLabel(self)
         self.__translation_label = translation_label = QLabel(self)
 
+        stroke_label.setTextFormat(Qt.PlainText)
+        translation_label.setTextFormat(Qt.PlainText)
+
         labels_layout = QVBoxLayout()
         
         top_spacer = QSpacerItem(0, 0)
