@@ -118,6 +118,9 @@ class Main(Tool):
         See https://bugreports.qt.io/browse/QTBUG-36230, https://forum.qt.io/topic/82493/the-windowdoesnotacceptfocus-flag-is-making-me-thirsty/7 for bug information.
         """
 
+        # On Windows: does not work by itself, but prevents focus from being taken from other Plover windows
+        self.setWindowFlag(Qt.WindowDoesNotAcceptFocus)
+
         if PLATFORM == "win":
             import ctypes
             from ctypes.wintypes import HWND
@@ -132,12 +135,9 @@ class Main(Tool):
                 user32.GetWindowLongPtrW(window_handle, win32con.GWL_EXSTYLE) | win32con.WS_EX_NOACTIVATE | win32con.WS_EX_APPWINDOW,
             )
 
-        elif PLATFORM == "linux":
-            self.setWindowFlag(Qt.WindowDoesNotAcceptFocus)
-            # self.setAttribute(Qt.WA_X11DoNotAcceptFocus)
-
-        else:
-            self.setWindowFlag(Qt.WindowDoesNotAcceptFocus)
+        # elif PLATFORM == "linux":
+        #     self.setWindowFlag(Qt.WindowDoesNotAcceptFocus)
+        #     # self.setAttribute(Qt.WA_X11DoNotAcceptFocus)
 
 
     def _on_stenotype_input(self, stroke_keys: set[str]):
