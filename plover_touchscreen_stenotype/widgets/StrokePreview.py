@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import (
     QGridLayout,
     QVBoxLayout,
     QSpacerItem,
+    QSizePolicy,
 )
 from PyQt5.QtGui import (
     QFont,
@@ -46,15 +47,28 @@ class StrokePreview(QWidget):
         stroke_label.setTextFormat(Qt.PlainText)
         translation_label.setTextFormat(Qt.PlainText)
 
+        # The horizontal size policies of the labels must be set to Ignored, or otherwise they will cause the window to
+        # resize to fit the text if the text is too long. However, that alone just causes the labels to resize to the
+        # widest item in the QVBoxLayout `labels_layout`, which would have a width of 0 since the label widths are
+        # ignored and the rest of the items are spacers. The strut is therefore needed to set the width of the layout
+        # to the width of the parent column in the QGridLayout `display_alignment_layout`, allowing the labels the full
+        # column width to display the text yet limiting them to that width so they do not resize the window.
+        strut = QWidget(self)
+        strut.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        # https://stackoverflow.com/questions/21739119/qt-hboxlayout-stop-mainwindow-from-resizing-to-contents
+        stroke_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
+        translation_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
+
         labels_layout = QVBoxLayout()
         
-        top_spacer = QSpacerItem(0, 0)
-        labels_layout.addSpacerItem(top_spacer)
+        labels_layout.addSpacerItem(top_spacer := QSpacerItem(0, 0))
         labels_layout.addWidget(stroke_label, 0, Qt.AlignCenter)
         labels_layout.addSpacerItem(middle_spacer := QSpacerItem(0, 0))
         labels_layout.addWidget(translation_label, 0, Qt.AlignCenter)
+        labels_layout.addWidget(strut)
 
-        def resize_labels(): # Set font sizes in px rather than pt so they fit in the keyboard gaps
+
+        def resize_label_fonts(): # Set font sizes in px rather than pt so they fit in the keyboard gaps
             stroke_label_font = QFont(FONT_FAMILY)
             translation_label_font = QFont(FONT_FAMILY)
 
@@ -66,8 +80,8 @@ class StrokePreview(QWidget):
             translation_label.setFont(translation_label_font)
 
             labels_layout.invalidate()
-        resize_labels()
-        dpi.change.connect(resize_labels)
+        resize_label_fonts()
+        dpi.change.connect(resize_label_fonts)
 
         labels_layout.setSpacing(0)
         #endregion
@@ -85,18 +99,18 @@ class StrokePreview(QWidget):
 
 
         display_alignment_layout.addLayout(labels_layout, 0, 0)
-        def move_translation_display():
+        def reposition_labels():
             if self.__settings.key_layout == KeyLayout.GRID:
-                labels_layout.setAlignment(Qt.AlignBottom | Qt.AlignHCenter)
+                labels_layout.setAlignment(Qt.AlignBottom)
                 top_spacer.changeSize(0, 0)
             else:
-                labels_layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+                labels_layout.setAlignment(Qt.AlignTop)
                 top_spacer.changeSize(0, -8)
 
             labels_layout.invalidate()  # Must be called for layout to move
-        move_translation_display()
-        self.__settings.key_layout_change.connect(move_translation_display)
-        dpi.change.connect(move_translation_display)
+        reposition_labels()
+        self.__settings.key_layout_change.connect(reposition_labels)
+        dpi.change.connect(reposition_labels)
         
         display_alignment_layout.addItem(QSpacerItem(0, 0), 0, 1)
         display_alignment_layout.setSpacing(0)
@@ -110,7 +124,7 @@ class StrokePreview(QWidget):
             stroke_label.setVisible(self.__settings.stroke_preview_stroke)
             translation_label.setVisible(self.__settings.stroke_preview_translation)
 
-            resize_labels()
+            resize_label_fonts()
 
             self.__display_translation(self.__last_translation, self.__last_stroke_matched)
             self.finish_stroke()
