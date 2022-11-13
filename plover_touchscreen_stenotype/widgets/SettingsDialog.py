@@ -9,7 +9,9 @@ from PyQt5.QtWidgets import (
     QButtonGroup,
     QRadioButton,
     QCheckBox,
+    QSlider,
     QLabel,
+    QSizePolicy,
 )
 from PyQt5.QtGui import (
     QFont,
@@ -88,6 +90,15 @@ class SettingsDialog(QDialog):
         stroke_preview_checkboxes[1].toggled.connect(self.__on_stroke_preview_translation_change)
 
 
+        size_box = QGroupBox("", self)
+
+        key_width_slider = QSlider(Qt.Horizontal, size_box)
+        key_width_slider.setMinimum(0.5)
+        key_width_slider.setMaximum(4)
+
+        key_width_slider.valueChanged.connect(self.__on_key_width_change)
+
+
         label_resizing = QLabel("Resize the stenotype window to adjust spacing", self)
         label_resizing.setWordWrap(True)
         label_resizing.setStyleSheet("font-style: italic; color: #7f000000;")
@@ -101,6 +112,7 @@ class SettingsDialog(QDialog):
         layout = QVBoxLayout()
         layout.addWidget(key_layout_box)
         layout.addWidget(stroke_preview_box)
+        layout.addWidget(size_box)
         layout.addWidget(label_resizing)
         layout.addSpacing(8)
         layout.addWidget(label_troubleshooting)
@@ -117,3 +129,6 @@ class SettingsDialog(QDialog):
 
     def __on_stroke_preview_translation_change(self, checked: bool):
         self.__settings.stroke_preview_translation = checked
+
+    def __on_key_width_change(self, value: float):
+        self.__settings.key_width = value

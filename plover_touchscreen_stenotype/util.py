@@ -10,6 +10,8 @@ from PyQt5.QtGui import (
     QScreen,
 )
 
+from typing import TypeVar, Generic, Any
+
 
 class UseDpi(QObject):
     """Composable that handles DPI-responsivity."""
@@ -58,6 +60,23 @@ class UseDpi(QObject):
 
     def __on_screen_logical_dpi_change(self, dpi: float):
         self.change_logical.emit()
+
+
+T = TypeVar("T")
+class RefAttr(QObject, Generic[T]):
+    """Descriptor for one shallow reactive value."""
+
+    change = pyqtSignal() # T
+
+    def __init__(self, value: T):
+        self.__value = value
+
+    def __get__(self, instance: Any, owner: Any) -> T:
+        return self.__value
+
+    def __set__(self, instance: Any, value: T):
+        self.__value = value
+        self.change.emit(value)
 
 
 FONT_FAMILY = "Atkinson Hyperlegible, Segoe UI, Ubuntu"

@@ -14,6 +14,7 @@ class KeyLayout(Enum):
 class Settings(QObject):
 	key_layout_change = pyqtSignal(KeyLayout)
 	stroke_preview_change = pyqtSignal()
+	key_width_change = pyqtSignal(float)
 	
 	def __init__(self):
 		super().__init__()
@@ -22,6 +23,8 @@ class Settings(QObject):
 
 		self.__stroke_preview_stroke = True
 		self.__stroke_preview_translation = True
+
+		self.__key_width = 2
 
 	@property
 	def key_layout(self):
@@ -57,3 +60,13 @@ class Settings(QObject):
 	@property
 	def stroke_preview_visible(self):
 		return self.stroke_preview_stroke or self.stroke_preview_translation
+
+
+	@property
+	def key_width(self):
+		return self.__key_width
+	
+	@key_width.setter
+	def key_width(self, value: float):
+		self.__key_width = value
+		self.key_width_change.emit(value)
