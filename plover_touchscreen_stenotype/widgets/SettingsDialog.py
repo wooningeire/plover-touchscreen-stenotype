@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
     QRadioButton,
     QCheckBox,
     QSlider,
+    QDoubleSpinBox,
     QLabel,
     QSizePolicy,
 )
@@ -92,11 +93,21 @@ class SettingsDialog(QDialog):
 
         size_box = QGroupBox("", self)
 
-        key_width_slider = QSlider(Qt.Horizontal, size_box)
-        key_width_slider.setMinimum(0.5)
-        key_width_slider.setMaximum(4)
+        # key_width_slider = QSlider(Qt.Horizontal, size_box)
+        # key_width_slider.setMinimum(0.5)
+        # key_width_slider.setMaximum(4)
+        # key_width_slider.setSingleStep(0.1)
+        # key_width_slider.setValue(self.__settings.key_width)
 
-        key_width_slider.valueChanged.connect(self.__on_key_width_change)
+        # key_width_slider.valueChanged.connect(self.__on_key_width_change)
+
+        key_width_box = QDoubleSpinBox(size_box)
+        key_width_box.setMinimum(0.5)
+        key_width_box.setMaximum(3)
+        key_width_box.setSingleStep(0.1)
+        key_width_box.setValue(self.__settings.key_width)
+        
+        key_width_box.valueChanged.connect(self.__on_key_width_change)
 
 
         label_resizing = QLabel("Resize the stenotype window to adjust spacing", self)
