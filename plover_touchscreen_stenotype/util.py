@@ -2,6 +2,7 @@ from PyQt5.QtCore import (
     QObject,
     QTimer,
     pyqtSignal,
+    pyqtBoundSignal,
 )
 from PyQt5.QtWidgets import (
     QWidget,
@@ -10,7 +11,8 @@ from PyQt5.QtGui import (
     QScreen,
 )
 
-from typing import TypeVar, Generic, Any
+from functools import wraps
+from typing import TypeVar, Generic, Any, Callable
 
 
 class UseDpi(QObject):
@@ -77,6 +79,38 @@ class RefAttr(QObject, Generic[T]):
     def __set__(self, instance: Any, value: T):
         self.__value = value
         self.change.emit(value)
+
+
+def on(signal: pyqtBoundSignal):
+    """Decorator factory. Connects a function to a signal."""
+
+    def run_and_connect(handler: Callable[..., None]):
+        signal.connect(handler)
+        return handler
+
+    return run_and_connect
+
+def watch(signal: pyqtBoundSignal, *args, **kwargs):
+    """Decorator factory. Calls a function immediately and connects it to a signal."""
+
+    def run_and_connect(handler: Callable[..., None]):
+        handler(*args, **kwargs)
+        signal.connect(handler)
+        return handler
+
+    return run_and_connect
+
+
+def watch_many(*signals: pyqtBoundSignal):
+    """Decorator factory. Calls a function immediately and connects it to an arbitrary number of signals."""
+
+    def run_and_connect(handler: Callable[..., None]):
+        handler()
+        for signal in signals:
+            signal.connect(handler)
+        return handler
+
+    return run_and_connect
 
 
 FONT_FAMILY = "Atkinson Hyperlegible, Segoe UI, Ubuntu"
