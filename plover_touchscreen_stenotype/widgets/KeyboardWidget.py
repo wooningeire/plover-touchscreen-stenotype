@@ -39,7 +39,7 @@ class KeyboardWidget(QWidget):
         self._current_stroke_keys: set[str] = set()
         self._key_widgets: list[KeyWidget] = []
 
-        self.__settings = settings
+        self.settings = settings
 
         self.__setup_ui()
 
@@ -88,9 +88,9 @@ class KeyboardWidget(QWidget):
 
     def __setup_ui(self):
         self.dpi = UseDpi(self)
-        self.setLayout(build_keyboard[self.__settings.key_layout](self, self._key_widgets))
+        self.setLayout(build_keyboard[self.settings.key_layout](self, self._key_widgets))
 
-        self.__settings.key_layout_change.connect(self.__rebuild_layout)
+        self.settings.key_layout_change.connect(self.__rebuild_layout)
 
 
         self.setStyleSheet("""
