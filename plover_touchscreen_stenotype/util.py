@@ -11,7 +11,6 @@ from PyQt5.QtGui import (
     QScreen,
 )
 
-from functools import wraps
 from typing import TypeVar, Generic, Any, Callable
 
 
@@ -65,20 +64,46 @@ class UseDpi(QObject):
 
 
 T = TypeVar("T")
-class RefAttr(QObject, Generic[T]):
+class RefAttr(Generic[T]):
     """Descriptor for one shallow reactive value."""
 
-    change = pyqtSignal() # T
-
-    def __init__(self, value: T):
+    def __init__(self, value: T, signal: pyqtBoundSignal):
         self.__value = value
+        self.__signal = signal
 
     def __get__(self, instance: Any, owner: Any) -> T:
         return self.__value
 
     def __set__(self, instance: Any, value: T):
         self.__value = value
+        self.__signal.emit(value)
+
+
+class Ref(QObject, Generic[T]):
+    change = pyqtSignal(object) # T
+
+    def __init__(self, value: T):
+        super().__init__()
+        self.__value = value
+        # self.value = RefAttr(value, self.change)
+
+    @property
+    def value(self) -> T:
+        return self.__value
+
+    @value.setter
+    def value(self, value):
+        self.__value = value
         self.change.emit(value)
+
+def computed(handler: Callable[[], T], dependency_ref: Ref):
+    ref: Ref[T] = Ref(handler())
+
+    @on(dependency_ref.change)
+    def recompute_value():
+        ref.value = handler()
+
+    return ref
 
 
 def on(signal: pyqtBoundSignal):
@@ -107,7 +132,7 @@ def watch_many(*signals: pyqtBoundSignal):
     def run_and_connect(handler: Callable[..., None]):
         handler()
         for signal in signals:
-            signal.connect(handler)
+            signal.connect(lambda: handler())
         return handler
 
     return run_and_connect
