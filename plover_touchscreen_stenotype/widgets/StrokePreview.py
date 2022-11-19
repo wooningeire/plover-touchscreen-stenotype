@@ -1,5 +1,4 @@
-from typing import Iterable
-from plover.engine import StenoEngine
+from plover.gui_qt.engine import Engine
 from plover.steno import Stroke
 
 from plover import system
@@ -21,12 +20,14 @@ from PyQt5.QtGui import (
 )
 
 
+from typing import Iterable
+
 from plover_touchscreen_stenotype.settings import Settings, KeyLayout
 from plover_touchscreen_stenotype.util import UseDpi, FONT_FAMILY
 from plover_touchscreen_stenotype.widgets.build_keyboard import KEY_WIDTH
 
 class StrokePreview(QWidget):
-    def __init__(self, engine: StenoEngine, settings: Settings, parent: QWidget=None):
+    def __init__(self, engine: Engine, settings: Settings, parent: QWidget=None):
         super().__init__(parent)
 
         self.__engine = engine
@@ -180,7 +181,7 @@ class StrokePreview(QWidget):
         self.__translation_label.setStyleSheet(f"""color: #{"ff" if self.__last_stroke_matched else "3f"}000000;""")
 
 
-def _coming_translation(engine: StenoEngine, keys: Iterable[str]) -> tuple[Translation, bool]:
+def _coming_translation(engine: Engine, keys: Iterable[str]) -> tuple[Translation, bool]:
     """Computes the translation that will result if the stroke defined by `keys` is sent to the engine.
     
     :returns: The translation that will result, and if a match was found

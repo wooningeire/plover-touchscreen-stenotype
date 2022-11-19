@@ -1,7 +1,6 @@
 from plover.gui_qt.tool import Tool
 from plover.gui_qt.utils import ToolBar
-# from plover.gui_qt import Engine
-from plover.engine import StenoEngine
+from plover.gui_qt.engine import Engine
 from plover.steno import Stroke
 from plover.oslayer import PLATFORM
 
@@ -33,7 +32,7 @@ class Main(Tool):
     ICON = ""
     ROLE = "touchscreen_stenotype"
 
-    def __init__(self, engine: StenoEngine):
+    def __init__(self, engine: Engine):
         super().__init__(engine)
 
         self.engine = engine # Override for type hint
@@ -47,7 +46,7 @@ class Main(Tool):
         self.finished.connect(self.save_state)
         self.__setup_ui()
 
-        engine.signal_stroked.connect(self._on_stroked)
+        engine.signal_stroked.connect(self.__on_stroked)
 
 
     def _restore_state(self, settings: QSettings):
@@ -79,8 +78,8 @@ class Main(Tool):
         self.translation_display = translation_display = StrokePreview(self.engine, self.__settings, self)
 
         stenotype = KeyboardWidget(self.__settings, self)
-        stenotype.end_stroke.connect(self._on_stenotype_input)
-        stenotype.current_stroke_change.connect(self._on_stroke_change)
+        stenotype.end_stroke.connect(self.__on_stenotype_input)
+        stenotype.current_stroke_change.connect(self.__on_stroke_change)
 
         settings_action = QAction(self)
         settings_action.setText("Settings")
@@ -136,11 +135,10 @@ class Main(Tool):
             )
 
         # elif PLATFORM == "linux":
-        #     self.setWindowFlag(Qt.WindowDoesNotAcceptFocus)
         #     # self.setAttribute(Qt.WA_X11DoNotAcceptFocus)
 
 
-    def _on_stenotype_input(self, stroke_keys: set[str]):
+    def __on_stenotype_input(self, stroke_keys: set[str]):
         # Temporarily enable steno output (if not already waiting for a `stroked` hook dispatch)
         if not self.__last_stroke_from_widget:
             self.__last_stroke_engine_enabled = self.engine.output
@@ -158,7 +156,7 @@ class Main(Tool):
 
         self.translation_display.finish_stroke()
 
-    def _on_stroked(self, stroke: Stroke):
+    def __on_stroked(self, stroke: Stroke):
         if not self.__last_stroke_from_widget or self.__last_stroke_keys != set(stroke.keys()): return
 
         # self.last_stroke_label.setText(stroke.rtfcre or "…")
@@ -168,7 +166,7 @@ class Main(Tool):
         self.__last_stroke_keys = None
 
 
-    def _on_stroke_change(self, stroke_keys: set[str]):
+    def __on_stroke_change(self, stroke_keys: set[str]):
         self.translation_display.display_keys(stroke_keys)
 
 
@@ -197,6 +195,6 @@ class Main(Tool):
         dialog = SettingsDialog(self.__settings, self)
         dialog.open()
 
-# def command_open_window(engine: StenoEngine, arg: str):
+# def command_open_window(engine: Engine, arg: str):
 #     new_window = Main(engine)
 #     new_window.show()
