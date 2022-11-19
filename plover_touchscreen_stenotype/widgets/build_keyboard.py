@@ -19,6 +19,7 @@ else:
 
 from plover_touchscreen_stenotype.widgets.KeyWidget import KeyWidget
 from plover_touchscreen_stenotype.settings import KeyLayout
+from plover_touchscreen_stenotype.util import watch
 
 
 _TOP_ROW = 2
@@ -105,7 +106,7 @@ _MAIN_ROWS_KEYS = (
     ),
 )
 
-# [keys], label, (row, column, rowSpan?, columnSpan?)
+# [keys], label, (row, column, rowSpan?, columnSpan?), numberLabel?
 _MAIN_ROWS_KEYS_GRID = (
     (["#"], "#", (0, 0, 1, -1)),
     (["S-"], "S", (_TOP_ROW, 0, 3, 1), "1"),
@@ -271,8 +272,8 @@ def _build_main_rows_layout_staggered(keyboard_widget: KeyboardWidget, key_widge
             if row_pos <= _LOW_ROW < row_pos + row_span:
                 row_heights_cm = (*row_heights_cm, col_offset_cm / 2)
 
-
             if col_index == _ASTERISK_COLUMN_INDEX:
+                @watch(dpi.change)
                 def resize(
                     key_widget: KeyWidget=key_widget,
                     col_width_cm: float=col_width_cm,
@@ -285,15 +286,13 @@ def _build_main_rows_layout_staggered(keyboard_widget: KeyboardWidget, key_widge
                     QTimer.singleShot(0, lambda: key_widget.setMinimumWidth(0))
                     
             else:
+                @watch(dpi.change)
                 def resize(
                     key_widget: KeyWidget=key_widget,
                     col_width_cm: float=col_width_cm,
                     row_heights_cm: tuple[float]=row_heights_cm,
                 ):
                     key_widget.setFixedSize(dpi.cm(col_width_cm), sum(dpi.cm(height) for height in row_heights_cm))
-
-            resize()
-            dpi.change.connect(resize)
 
 
             column_layout.addWidget(key_widget)
@@ -302,13 +301,13 @@ def _build_main_rows_layout_staggered(keyboard_widget: KeyboardWidget, key_widge
             
         column_spacer = QSpacerItem(0, 0)
         column_layout.addSpacerItem(column_spacer)
+
+        @watch(dpi.change)
         def resize_column_spacing(
             column_spacer: QSpacerItem=column_spacer,
             col_offset_cm: float=col_offset_cm,
         ):
             column_spacer.changeSize(0, dpi.cm(col_offset_cm / 2))
-        resize_column_spacing()
-        dpi.change.connect(resize_column_spacing)
 
         
         layout.addLayout(column_layout)
@@ -398,14 +397,12 @@ def _build_vowel_row_layout(keyboard_widget: KeyboardWidget, key_widgets: list[K
                 keyboard_widget.num_bar_pressed_change.connect(key_widget.num_bar_pressed_handler(label, num_bar_label))
 
 
+            @watch(dpi.change)
             def resize(
                 key_widget: KeyWidget=key_widget,
                 width: float=width,
             ):
                 key_widget.setFixedSize(dpi.cm(width), dpi.cm(_KEY_HEIGHT))
-
-            resize()
-            dpi.change.connect(resize)
 
 
             layout.addWidget(key_widget)
@@ -417,13 +414,11 @@ def _build_vowel_row_layout(keyboard_widget: KeyboardWidget, key_widgets: list[K
     add_vowel_set(_VOWEL_ROW_KEYS_RIGHT)
     layout.addSpacing(0)
 
+    @watch(dpi.change)
     def resize_spacing():
         # TODO make the spacing amount here a constant?
-        layout.itemAt(0).spacerItem().changeSize(dpi.cm(KEY_WIDTH) * 3.375, 0)
-        layout.itemAt(layout.count() - 1).spacerItem().changeSize(dpi.cm(KEY_WIDTH) * 4.375, 0)
-
-    resize_spacing()
-    dpi.change.connect(resize_spacing)
+        layout.itemAt(0).spacerItem().changeSize(dpi.cm(KEY_WIDTH) * 3.125, 0)
+        layout.itemAt(layout.count() - 1).spacerItem().changeSize(dpi.cm(KEY_WIDTH) * 4.125, 0)
 
 
     return layout
@@ -444,11 +439,11 @@ def _build_keyboard_layout(
     layout.addLayout(build_main_rows(keyboard_widget, key_widgets), 0, 0)
 
     layout.setRowStretch(1, 1)
+    
+    @watch(dpi.change)
     def resize_row_spacer():
         layout.setRowMinimumHeight(1, dpi.cm(_ROWS_GAP))
         QTimer.singleShot(0, lambda: layout.setRowMinimumHeight(1, 0))
-    resize_row_spacer()
-    dpi.change.connect(resize_row_spacer)
 
     layout.addLayout(build_vowel_row(keyboard_widget, key_widgets), 2, 0)
 

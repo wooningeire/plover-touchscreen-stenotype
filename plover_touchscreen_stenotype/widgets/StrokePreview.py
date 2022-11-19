@@ -23,7 +23,7 @@ from PyQt5.QtGui import (
 from typing import Iterable
 
 from plover_touchscreen_stenotype.settings import Settings, KeyLayout
-from plover_touchscreen_stenotype.util import UseDpi, FONT_FAMILY
+from plover_touchscreen_stenotype.util import UseDpi, watch, watch_many, FONT_FAMILY
 from plover_touchscreen_stenotype.widgets.build_keyboard import KEY_WIDTH
 
 class StrokePreview(QWidget):
@@ -69,6 +69,7 @@ class StrokePreview(QWidget):
         labels_layout.addWidget(strut)
 
 
+        @watch(dpi.change)
         def resize_label_fonts(): # Set font sizes in px rather than pt so they fit in the keyboard gaps
             stroke_label_font = QFont(FONT_FAMILY)
             translation_label_font = QFont(FONT_FAMILY)
@@ -81,8 +82,6 @@ class StrokePreview(QWidget):
             translation_label.setFont(translation_label_font)
 
             labels_layout.invalidate()
-        resize_label_fonts()
-        dpi.change.connect(resize_label_fonts)
 
         labels_layout.setSpacing(0)
         #endregion
@@ -93,13 +92,14 @@ class StrokePreview(QWidget):
         display_alignment_layout.setColumnStretch(0, 1)
         display_alignment_layout.setColumnStretch(1, 0)
 
+        @watch(dpi.change)
         def resize_display_alignment():
             display_alignment_layout.setColumnMinimumWidth(1, dpi.cm(KEY_WIDTH))
-        resize_display_alignment()
-        dpi.change.connect(resize_display_alignment)
 
 
         display_alignment_layout.addLayout(labels_layout, 0, 0)
+
+        @watch_many(dpi.change, self.__settings.key_layout_change)
         def reposition_labels():
             if self.__settings.key_layout == KeyLayout.GRID:
                 labels_layout.setAlignment(Qt.AlignBottom)
@@ -109,9 +109,6 @@ class StrokePreview(QWidget):
                 top_spacer.changeSize(0, -8)
 
             labels_layout.invalidate()  # Must be called for layout to move
-        reposition_labels()
-        self.__settings.key_layout_change.connect(reposition_labels)
-        dpi.change.connect(reposition_labels)
         
         display_alignment_layout.addItem(QSpacerItem(0, 0), 0, 1)
         display_alignment_layout.setSpacing(0)
@@ -121,6 +118,7 @@ class StrokePreview(QWidget):
 
 
         #region Settings reactivity
+        @watch(self.__settings.stroke_preview_change)
         def on_settings_change():
             stroke_label.setVisible(self.__settings.stroke_preview_stroke)
             translation_label.setVisible(self.__settings.stroke_preview_translation)
@@ -129,8 +127,6 @@ class StrokePreview(QWidget):
 
             self.__display_translation(self.__last_translation, self.__last_stroke_matched)
             self.finish_stroke()
-        on_settings_change()
-        self.__settings.stroke_preview_change.connect(on_settings_change)
         #endregion
 
 
