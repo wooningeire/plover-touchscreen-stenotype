@@ -92,6 +92,7 @@ class SettingsDialog(QDialog):
 
 
         size_box = QGroupBox("", self)
+        size_box_layout = QVBoxLayout()
 
         # key_width_slider = QSlider(Qt.Horizontal, size_box)
         # key_width_slider.setMinimum(0.5)
@@ -108,6 +109,19 @@ class SettingsDialog(QDialog):
         key_width_box.setValue(self.__settings.key_width)
         
         key_width_box.valueChanged.connect(self.__on_key_width_change)
+
+        key_height_box = QDoubleSpinBox(size_box)
+        key_height_box.setMinimum(0.5)
+        key_height_box.setMaximum(3)
+        key_height_box.setSingleStep(0.1)
+        key_height_box.setValue(self.__settings.key_height)
+
+        key_height_box.valueChanged.connect(self.__on_key_height_change)
+
+        size_box_layout.addWidget(key_width_box)
+        size_box_layout.addWidget(key_height_box)
+            
+        size_box.setLayout(size_box_layout)
 
 
         label_resizing = QLabel("Resize the stenotype window to adjust spacing", self)
@@ -143,3 +157,6 @@ class SettingsDialog(QDialog):
 
     def __on_key_width_change(self, value: float):
         self.__settings.key_width = value
+
+    def __on_key_height_change(self, value: float):
+        self.__settings.key_height = value
