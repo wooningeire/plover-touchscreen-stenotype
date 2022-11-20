@@ -96,43 +96,87 @@ class Ref(QObject, Generic[T]):
         self.__value = value
         self.change.emit(value)
 
-def computed(handler: Callable[[], T], dependency_ref: Ref):
+
+def computed(handler: Callable[[], T], *dependency_refs: Ref[T]):
     ref: Ref[T] = Ref(handler())
 
-    @on(dependency_ref.change)
     def recompute_value():
         ref.value = handler()
+
+    for dependency in dependency_refs:
+        dependency.change.connect(recompute_value)
 
     return ref
 
 
-def on(signal: pyqtBoundSignal):
-    """Decorator factory. Connects a function to a signal."""
+def on(signal: pyqtBoundSignal, parent: "QObject | None"=None):
+    """Decorator factory. Connects a function to a signal.
+
+        :param parent: QObject that, when destroyed, will cause the handler to be disconnected from the signal.
+    """
 
     def run_and_connect(handler: Callable[..., None]):
-        signal.connect(handler)
+        # Disconnecting using `connection` instead of `handler` allows errors to be caught properly when attempting to
+        # disconnect after the signal parents have been destroyed (why?)
+        connection = signal.connect(handler)
+
+        if parent is not None:
+            @on(parent.destroyed)
+            def disconnect():
+                # try-except might not be ideal
+                try:
+                    signal.disconnect(connection)
+                except TypeError:
+                    pass
+
         return handler
 
     return run_and_connect
 
-def watch(signal: pyqtBoundSignal, *args, **kwargs):
-    """Decorator factory. Calls a function immediately and connects it to a signal."""
+def watch(signal: pyqtBoundSignal, parent: "QObject | None"=None):
+    """Decorator factory. Calls a function immediately and connects it to a signal.
 
-    def run_and_connect(handler: Callable[..., None]):
-        handler(*args, **kwargs)
-        signal.connect(handler)
-        return handler
-
-    return run_and_connect
-
-
-def watch_many(*signals: pyqtBoundSignal):
-    """Decorator factory. Calls a function immediately and connects it to an arbitrary number of signals."""
+        :param parent: QObject that, when destroyed, will cause the handler to be disconnected from the signal.
+    """
 
     def run_and_connect(handler: Callable[..., None]):
         handler()
-        for signal in signals:
-            signal.connect(lambda: handler())
+        connection = signal.connect(handler)
+
+        if parent is not None:
+            @on(parent.destroyed)
+            def disconnect():
+                try:
+                    signal.disconnect(connection)
+                except TypeError:
+                    pass
+
+        return handler
+
+    return run_and_connect
+
+
+def watch_many(*signals: pyqtBoundSignal, parent: "QObject | None"=None):
+    """Decorator factory. Calls a function immediately and connects it to an arbitrary number of signals.
+
+        :param parent: QObject that, when destroyed, will cause the handler to be disconnected from all given signals.
+    """
+
+    def run_and_connect(handler: Callable[..., None]):
+        handler()
+        no_arg_handler = lambda *_: handler()
+
+        connections = tuple(signal.connect(no_arg_handler) for signal in signals)
+
+        if parent is not None:
+            @on(parent.destroyed)
+            def disconnect_all():
+                for signal, connection in zip(signals, connections):
+                    try:
+                        signal.disconnect(connection)
+                    except TypeError:
+                        pass
+
         return handler
 
     return run_and_connect
