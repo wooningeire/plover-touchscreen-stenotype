@@ -50,14 +50,10 @@ class Main(Tool):
 
 
     def _restore_state(self, settings: QSettings):
-        self.__settings.key_layout = settings.value("key_layout", self.__settings.key_layout)
-        self.__settings.stroke_preview_stroke = settings.value("stroke_preview_stroke", self.__settings.stroke_preview_stroke, type=bool)
-        self.__settings.stroke_preview_translation = settings.value("stroke_preview_translation", self.__settings.stroke_preview_translation, type=bool)
+        self.__settings.load(settings)
 
     def _save_state(self, settings: QSettings):
-        settings.setValue("key_layout", self.__settings.key_layout)
-        settings.setValue("stroke_preview_stroke", self.__settings.stroke_preview_stroke)
-        settings.setValue("stroke_preview_translation", self.__settings.stroke_preview_translation)
+        self.__settings.save(settings)
 
     #endregion
 
