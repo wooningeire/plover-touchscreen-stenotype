@@ -174,14 +174,14 @@ _VOWEL_ROW_KEYS_RIGHT = (
 )
 
 # in centimeters
-_KEY_SIZE_NUM_BAR = 0.95
-KEY_WIDTH = 2
 key_width = Ref(2)
+_key_height = Ref(2.25)
 _compound_key_size = Ref(0.95)
 
-_key_height = Ref(2.25)
 _reduced_key_width = computed(lambda: key_width.value - _compound_key_size.value / 2, key_width, _compound_key_size)
 _reduced_key_height = computed(lambda: _key_height.value - _compound_key_size.value / 2, _key_height, _compound_key_size)
+
+_key_height_num_bar = computed(lambda: _key_height.value / 2, _key_height)
 
 _INDEX_STRETCH = 0.2
 _PINKY_STRETCH = 0.8
@@ -190,7 +190,7 @@ _VOWEL_SET_OFFSET = 0.875
 
 _row_heights = tuple(
     computed(handler, _key_height, _compound_key_size) for handler in (
-        lambda: _KEY_SIZE_NUM_BAR,
+        lambda: _key_height_num_bar.value,
         lambda: _compound_key_size.value,
         lambda: _reduced_key_height.value,  # top row
         lambda: _compound_key_size.value,
@@ -226,15 +226,15 @@ _ROWS_GAP = 2.25
 
 _COL_OFFSETS = (
     0,  # S-
-    KEY_WIDTH * 0.375, # T-, K-
-    KEY_WIDTH * 0.6, # P-, W-
+    key_width.value * 0.375, # T-, K-
+    key_width.value * 0.6, # P-, W-
     0, # H-, R-
     0,
     0,
     0,
     0,  # -F, -R
-    KEY_WIDTH * 0.6,  # -P, -B
-    KEY_WIDTH * 0.375,  # -L, -G
+    key_width.value * 0.6,  # -P, -B
+    key_width.value * 0.375,  # -L, -G
     0,  # -T, -S
     0,
     0, # -D, -Z
