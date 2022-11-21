@@ -11,7 +11,8 @@ from PyQt5.QtGui import (
     QScreen,
 )
 
-from typing import TypeVar, Generic, Any, Callable
+from functools import partial
+from typing import TypeVar, Generic, Any, Callable, Iterable
 
 
 class UseDpi(QObject):
@@ -109,29 +110,56 @@ def computed(handler: Callable[[], T], *dependency_refs: Ref[T]):
     return ref
 
 
+def _connect(signal: pyqtBoundSignal, handler: Callable[..., None], parent: "QObject | None"=None):
+    # Disconnecting using `connection` instead of `handler` allows errors to be caught properly when attempting to
+    # disconnect after the signal parents have been destroyed (why?)
+    connection = signal.connect(handler)
+
+    if parent is not None:
+        @on(parent.destroyed)
+        def disconnect():
+            # try-except might not be ideal
+            try:
+                signal.disconnect(connection)
+            except TypeError:
+                pass
+
+    return handler
+
+
+def _connect_many(signals: Iterable[pyqtBoundSignal], handler: Callable[..., None], parent: "QObject | None"=None):
+    no_arg_handler = lambda *args: handler()
+    connections = tuple(signal.connect(no_arg_handler) for signal in signals)
+
+    if parent is not None:
+        @on(parent.destroyed)
+        def disconnect_all():
+            for signal, connection in zip(signals, connections):
+                try:
+                    signal.disconnect(connection)
+                except TypeError:
+                    pass
+
+    return handler
+
+
 def on(signal: pyqtBoundSignal, parent: "QObject | None"=None):
     """Decorator factory. Connects a function to a signal.
 
         :param parent: QObject that, when destroyed, will cause the handler to be disconnected from the signal.
     """
 
-    def run_and_connect(handler: Callable[..., None]):
-        # Disconnecting using `connection` instead of `handler` allows errors to be caught properly when attempting to
-        # disconnect after the signal parents have been destroyed (why?)
-        connection = signal.connect(handler)
+    return partial(_connect, signal, parent=parent)
 
-        if parent is not None:
-            @on(parent.destroyed)
-            def disconnect():
-                # try-except might not be ideal
-                try:
-                    signal.disconnect(connection)
-                except TypeError:
-                    pass
 
-        return handler
+def on_many(*signals: pyqtBoundSignal, parent: "QObject | None"=None):
+    """Decorator factory. Connects a function to an arbitrary number of signals.
 
-    return run_and_connect
+        :param parent: QObject that, when destroyed, will cause the handler to be disconnected from all given signals.
+    """
+
+    return partial(_connect_many, signals, parent=parent)
+
 
 def watch(signal: pyqtBoundSignal, parent: "QObject | None"=None):
     """Decorator factory. Calls a function immediately and connects it to a signal.
@@ -141,17 +169,7 @@ def watch(signal: pyqtBoundSignal, parent: "QObject | None"=None):
 
     def run_and_connect(handler: Callable[..., None]):
         handler()
-        connection = signal.connect(handler)
-
-        if parent is not None:
-            @on(parent.destroyed)
-            def disconnect():
-                try:
-                    signal.disconnect(connection)
-                except TypeError:
-                    pass
-
-        return handler
+        return _connect(signal, handler, parent=parent)
 
     return run_and_connect
 
@@ -164,20 +182,7 @@ def watch_many(*signals: pyqtBoundSignal, parent: "QObject | None"=None):
 
     def run_and_connect(handler: Callable[..., None]):
         handler()
-        no_arg_handler = lambda *_: handler()
-
-        connections = tuple(signal.connect(no_arg_handler) for signal in signals)
-
-        if parent is not None:
-            @on(parent.destroyed)
-            def disconnect_all():
-                for signal, connection in zip(signals, connections):
-                    try:
-                        signal.disconnect(connection)
-                    except TypeError:
-                        pass
-
-        return handler
+        return _connect_many(signals, handler, parent=parent)
 
     return run_and_connect
 

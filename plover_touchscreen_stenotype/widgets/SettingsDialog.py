@@ -27,7 +27,7 @@ else:
     Main = object
 
 from plover_touchscreen_stenotype.settings import Settings, KeyLayout
-from plover_touchscreen_stenotype.util import FONT_FAMILY
+from plover_touchscreen_stenotype.util import watch_many, FONT_FAMILY
 
 
 class SettingsDialog(QDialog):
@@ -110,6 +110,7 @@ class SettingsDialog(QDialog):
         
         key_width_box.valueChanged.connect(self.__on_key_width_change)
 
+
         key_height_box = QDoubleSpinBox(size_box)
         key_height_box.setMinimum(0.5)
         key_height_box.setMaximum(3)
@@ -118,8 +119,21 @@ class SettingsDialog(QDialog):
 
         key_height_box.valueChanged.connect(self.__on_key_height_change)
 
+
+        compound_key_box = QDoubleSpinBox(size_box)
+        compound_key_box.setMinimum(0.25)
+        @watch_many(self.__settings.key_width_change, self.__settings.key_height_change)
+        def set_compound_key_size_max():
+            compound_key_box.setMaximum(min(self.__settings.key_width, self.__settings.key_height))
+        compound_key_box.setSingleStep(0.1)
+        compound_key_box.setValue(self.__settings.compound_key_size)
+
+        compound_key_box.valueChanged.connect(self.__on_compound_key_size_change)
+
+
         size_box_layout.addWidget(key_width_box)
         size_box_layout.addWidget(key_height_box)
+        size_box_layout.addWidget(compound_key_box)
             
         size_box.setLayout(size_box_layout)
 
@@ -160,3 +174,6 @@ class SettingsDialog(QDialog):
 
     def __on_key_height_change(self, value: float):
         self.__settings.key_height = value
+
+    def __on_compound_key_size_change(self, value: float):
+        self.__settings.compound_key_size = value

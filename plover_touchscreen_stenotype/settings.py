@@ -16,6 +16,7 @@ class Settings(QObject):
 	stroke_preview_change = pyqtSignal()
 	key_width_change = pyqtSignal(float)
 	key_height_change = pyqtSignal(float)
+	compound_key_size_change = pyqtSignal(float)
 	
 	def __init__(self):
 		super().__init__()
@@ -27,6 +28,7 @@ class Settings(QObject):
 
 		self.__key_width = 2
 		self.__key_height = 2.25
+		self.__compound_key_size = 0.95
 
 	@property
 	def key_layout(self):
@@ -81,3 +83,12 @@ class Settings(QObject):
 	def key_height(self, value: float):
 		self.__key_height = value
 		self.key_height_change.emit(value)
+
+	@property
+	def compound_key_size(self):
+		return self.__compound_key_size
+	
+	@compound_key_size.setter
+	def compound_key_size(self, value: float):
+		self.__compound_key_size = value
+		self.compound_key_size_change.emit(value)

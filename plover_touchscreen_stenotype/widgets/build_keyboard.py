@@ -19,7 +19,7 @@ else:
 
 from plover_touchscreen_stenotype.widgets.KeyWidget import KeyWidget
 from plover_touchscreen_stenotype.settings import KeyLayout
-from plover_touchscreen_stenotype.util import Ref, computed, on, watch, watch_many
+from plover_touchscreen_stenotype.util import Ref, computed, on, on_many, watch, watch_many
 
 
 _TOP_ROW = 2
@@ -177,81 +177,48 @@ _VOWEL_ROW_KEYS_RIGHT = (
 _KEY_SIZE_NUM_BAR = 0.95
 KEY_WIDTH = 2
 key_width = Ref(2)
-_COMPOUND_KEY_SIZE = 0.95
+_compound_key_size = Ref(0.95)
 
-_KEY_HEIGHT = 2.25
 _key_height = Ref(2.25)
-_REDUCED_KEY_WIDTH = KEY_WIDTH - _COMPOUND_KEY_SIZE / 2
-_reduced_key_width = computed(lambda: key_width.value - _COMPOUND_KEY_SIZE / 2, key_width)
-_REDUCED_KEY_HEIGHT = _KEY_HEIGHT - _COMPOUND_KEY_SIZE / 2
-_reduced_key_height = computed(lambda: _key_height.value - _COMPOUND_KEY_SIZE / 2, _key_height)
+_reduced_key_width = computed(lambda: key_width.value - _compound_key_size.value / 2, key_width, _compound_key_size)
+_reduced_key_height = computed(lambda: _key_height.value - _compound_key_size.value / 2, _key_height, _compound_key_size)
 
-_INDEX_STRETCH = 0.1
+_INDEX_STRETCH = 0.2
 _PINKY_STRETCH = 0.8
 
-_VOWEL_SET_OFFSET = 0.775
-
-_ROW_HEIGHTS = (
-    _KEY_SIZE_NUM_BAR,
-    _COMPOUND_KEY_SIZE,
-    _REDUCED_KEY_HEIGHT,  # top row
-    _COMPOUND_KEY_SIZE,
-    _REDUCED_KEY_HEIGHT,  # bottom row
-)
+_VOWEL_SET_OFFSET = 0.875
 
 _row_heights = tuple(
-    computed(handler, _key_height) for handler in (
+    computed(handler, _key_height, _compound_key_size) for handler in (
         lambda: _KEY_SIZE_NUM_BAR,
-        lambda: _COMPOUND_KEY_SIZE,
+        lambda: _compound_key_size.value,
         lambda: _reduced_key_height.value,  # top row
-        lambda: _COMPOUND_KEY_SIZE,
+        lambda: _compound_key_size.value,
         lambda: _reduced_key_height.value,  # bottom row
     )
 )
 
-_COL_WIDTHS = (
-    KEY_WIDTH + _PINKY_STRETCH,
-    KEY_WIDTH,
-    KEY_WIDTH,
-    _REDUCED_KEY_WIDTH + _INDEX_STRETCH,  # H-, R-
-    _COMPOUND_KEY_SIZE,
-    _REDUCED_KEY_WIDTH * 2 + KEY_WIDTH * 2.5,  # *
-    _COMPOUND_KEY_SIZE,
-    _REDUCED_KEY_WIDTH + _INDEX_STRETCH,  # -F, -R
-    KEY_WIDTH,
-    KEY_WIDTH,
-    _REDUCED_KEY_WIDTH + _PINKY_STRETCH,  # -T, -S
-    _COMPOUND_KEY_SIZE,
-    _REDUCED_KEY_WIDTH,  # -D, -Z
-)
-
 _col_widths = tuple(
-    computed(handler, key_width) for handler in (
+    computed(handler, key_width, _compound_key_size) for handler in (
         lambda: key_width.value + _PINKY_STRETCH,
         lambda: key_width.value,
         lambda: key_width.value,
         lambda: _reduced_key_width.value + _INDEX_STRETCH,  # H-, R-
-        lambda: _COMPOUND_KEY_SIZE,
+        lambda: _compound_key_size.value,
         lambda: _reduced_key_width.value * 2 + key_width.value * 2.5,  # *
-        lambda: _COMPOUND_KEY_SIZE,
+        lambda: _compound_key_size.value,
         lambda: _reduced_key_width.value + _INDEX_STRETCH,  # -F, -R
         lambda: key_width.value,
         lambda: key_width.value,
         lambda: _reduced_key_width.value + _PINKY_STRETCH,  # -T, -S
-        lambda: _COMPOUND_KEY_SIZE,
+        lambda: _compound_key_size.value,
         lambda: _reduced_key_width.value,  # -D, -Z
     )
 )
 
-_VOWEL_SET_WIDTHS = (
-    _REDUCED_KEY_WIDTH,
-    _COMPOUND_KEY_SIZE,
-    _REDUCED_KEY_WIDTH,
-)
-
 _vowel_set_widths = (
     _reduced_key_width,
-    Ref(_COMPOUND_KEY_SIZE),
+    _compound_key_size,
     _reduced_key_width,
 )
 
@@ -385,8 +352,8 @@ def _build_main_rows_layout_grid(keyboard_widget: KeyboardWidget, key_widgets: l
 
         layout.addWidget(key_widget, *grid_position)
 
-    for i, size_cm in enumerate(_ROW_HEIGHTS):
-        layout.setRowMinimumHeight(i, dpi.cm(size_cm))
+    for i, size_cm in enumerate(_row_heights):
+        layout.setRowMinimumHeight(i, dpi.cm(size_cm.value))
         layout.setRowStretch(i, 0)
 
     for i, size_cm in enumerate(_col_widths):
@@ -398,14 +365,18 @@ def _build_main_rows_layout_grid(keyboard_widget: KeyboardWidget, key_widgets: l
     QTimer.singleShot(0, lambda: layout.setColumnMinimumWidth(_ASTERISK_COLUMN_INDEX, 0))
 
 
-    @on(dpi.change, parent=layout)
+    @on_many(dpi.change, *(height.change for height in _row_heights), *(width.change for width in _col_widths), parent=layout)
     def resize_columns():
-        for i, size_cm in enumerate(_ROW_HEIGHTS):
-            layout.setRowMinimumHeight(i, dpi.cm(size_cm))
+        for i, size_cm in enumerate(_row_heights):
+            layout.setRowMinimumHeight(i, dpi.cm(size_cm.value))
 
         for i, size_cm in enumerate(_col_widths):
+            if i == _ASTERISK_COLUMN_INDEX: continue
             layout.setColumnMinimumWidth(i, dpi.cm(size_cm.value))
 
+
+    @on(dpi.change, parent=layout)
+    def resize_asterisk_column():
         # * column
         QTimer.singleShot(0, lambda: layout.setColumnMinimumWidth(_ASTERISK_COLUMN_INDEX, 0))
 
@@ -502,6 +473,10 @@ def _build_keyboard_layout(
     @on(keyboard_widget.settings.key_height_change, parent=layout)
     def set_key_height(value: float):
         _key_height.value = value
+
+    @on(keyboard_widget.settings.compound_key_size_change, parent=layout)
+    def set_compund_key_size(value: float):
+        _compound_key_size.value = value
 
     return layout
 
