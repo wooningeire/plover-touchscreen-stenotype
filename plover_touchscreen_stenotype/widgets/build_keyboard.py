@@ -188,32 +188,28 @@ _PINKY_STRETCH = 0.8
 
 _VOWEL_SET_OFFSET = 0.875
 
-_row_heights = tuple(
-    computed(handler, _key_height, _compound_key_size) for handler in (
-        lambda: _key_height_num_bar.value,
-        lambda: _compound_key_size.value,
-        lambda: _reduced_key_height.value,  # top row
-        lambda: _compound_key_size.value,
-        lambda: _reduced_key_height.value,  # bottom row
-    )
+_row_heights = (
+    _key_height_num_bar,
+    _compound_key_size,
+    _reduced_key_height,  # top row
+    _compound_key_size,
+    _reduced_key_height,  # bottom row
 )
 
-_col_widths = tuple(
-    computed(handler, key_width, _compound_key_size) for handler in (
-        lambda: key_width.value + _PINKY_STRETCH,
-        lambda: key_width.value,
-        lambda: key_width.value,
-        lambda: _reduced_key_width.value + _INDEX_STRETCH,  # H-, R-
-        lambda: _compound_key_size.value,
-        lambda: _reduced_key_width.value * 2 + key_width.value * 2.5,  # *
-        lambda: _compound_key_size.value,
-        lambda: _reduced_key_width.value + _INDEX_STRETCH,  # -F, -R
-        lambda: key_width.value,
-        lambda: key_width.value,
-        lambda: _reduced_key_width.value + _PINKY_STRETCH,  # -T, -S
-        lambda: _compound_key_size.value,
-        lambda: _reduced_key_width.value,  # -D, -Z
-    )
+_col_widths = (
+    computed(lambda: key_width.value + _PINKY_STRETCH, key_width),
+    key_width,
+    key_width,
+    computed(lambda: _reduced_key_width.value + _INDEX_STRETCH, _reduced_key_width),  # H-, R-
+    _compound_key_size,
+    computed(lambda: _reduced_key_width.value * 2 + key_width.value * 2.5, _reduced_key_width, key_width),  # *
+    _compound_key_size,
+    computed(lambda: _reduced_key_width.value + _INDEX_STRETCH, _reduced_key_width),  # -F, -R
+    key_width,
+    key_width,
+    computed(lambda: _reduced_key_width.value + _PINKY_STRETCH, _reduced_key_width),  # -T, -S
+    _compound_key_size,
+    _reduced_key_width,  # -D, -Z
 )
 
 _vowel_set_widths = (
