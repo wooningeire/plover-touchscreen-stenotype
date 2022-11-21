@@ -12,7 +12,7 @@ from PyQt5.QtGui import (
 )
 
 from functools import partial
-from typing import TypeVar, Generic, Any, Callable, Iterable
+from typing import TypeVar, Generic, Any, Callable, Iterable, cast
 
 
 class UseDpi(QObject):
@@ -68,16 +68,19 @@ T = TypeVar("T")
 class RefAttr(Generic[T]):
     """Descriptor for one shallow reactive value."""
 
-    def __init__(self, value: T, signal: pyqtBoundSignal):
-        self.__value = value
-        self.__signal = signal
+    def __set_name__(self, instance: Any, name: str):
+        self.__private_attr_name = f"_{name}"
+        self.__signal_name = f"{name}_change"
 
-    def __get__(self, instance: Any, owner: Any) -> T:
-        return self.__value
+    def __init__(self, expected_type: type[T]):
+        self.signal = pyqtSignal(expected_type)
+
+    def __get__(self, instance: Any, owner: type) -> T:
+        return getattr(instance, self.__private_attr_name)
 
     def __set__(self, instance: Any, value: T):
-        self.__value = value
-        self.__signal.emit(value)
+        setattr(instance, self.__private_attr_name, value)
+        cast(pyqtBoundSignal, getattr(instance, self.__signal_name)).emit(value)
 
 
 class Ref(QObject, Generic[T]):
