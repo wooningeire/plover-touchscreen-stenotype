@@ -24,6 +24,9 @@ class Settings(QObject):
     key_height = RefAttr(float)
     compound_key_size = RefAttr(float)
 
+    index_stretch = RefAttr(float)
+    pinky_stretch = RefAttr(float)
+
 
     key_layout_change = key_layout.signal
 
@@ -33,6 +36,9 @@ class Settings(QObject):
     key_width_change = key_width.signal
     key_height_change = key_height.signal
     compound_key_size_change = compound_key_size.signal
+
+    index_stretch_change = index_stretch.signal
+    pinky_stretch_change = pinky_stretch.signal
 
 
     stroke_preview_change = pyqtSignal()
@@ -47,7 +53,10 @@ class Settings(QObject):
 
         self.key_width = 2
         self.key_height = 2.25
-        self.compound_key_size = 0.95
+        self.compound_key_size = 0.9
+
+        self.index_stretch = 0.2
+        self.pinky_stretch = 0.8
 
         @on_many(self.stroke_preview_stroke_change, self.stroke_preview_translation_change)
         def emit_stroke_preview_change():
