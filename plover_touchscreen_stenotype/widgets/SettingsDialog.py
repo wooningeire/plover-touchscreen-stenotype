@@ -131,9 +131,29 @@ class SettingsDialog(QDialog):
         compound_key_box.valueChanged.connect(self.__on_compound_key_size_change)
 
 
+        index_stretch_box = QDoubleSpinBox(size_box)
+        index_stretch_box.setMinimum(0)
+        index_stretch_box.setMaximum(1)
+        index_stretch_box.setSingleStep(0.1)
+        index_stretch_box.setValue(self.__settings.index_stretch)
+
+        index_stretch_box.valueChanged.connect(self.__on_index_stretch_change)
+
+
+        pinky_stretch_box = QDoubleSpinBox(size_box)
+        pinky_stretch_box.setMinimum(0)
+        pinky_stretch_box.setMaximum(1.5)
+        pinky_stretch_box.setSingleStep(0.1)
+        pinky_stretch_box.setValue(self.__settings.pinky_stretch)
+
+        pinky_stretch_box.valueChanged.connect(self.__on_pinky_stretch_change)
+
+
         size_box_layout.addWidget(key_width_box)
         size_box_layout.addWidget(key_height_box)
         size_box_layout.addWidget(compound_key_box)
+        size_box_layout.addWidget(index_stretch_box)
+        size_box_layout.addWidget(pinky_stretch_box)
             
         size_box.setLayout(size_box_layout)
 
@@ -177,3 +197,9 @@ class SettingsDialog(QDialog):
 
     def __on_compound_key_size_change(self, value: float):
         self.__settings.compound_key_size = value
+
+    def __on_index_stretch_change(self, value: float):
+        self.__settings.index_stretch = value
+
+    def __on_pinky_stretch_change(self, value: float):
+        self.__settings.pinky_stretch = value

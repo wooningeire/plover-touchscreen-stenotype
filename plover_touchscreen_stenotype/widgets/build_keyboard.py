@@ -176,15 +176,15 @@ _VOWEL_ROW_KEYS_RIGHT = (
 # in centimeters
 key_width = Ref(2)
 _key_height = Ref(2.25)
-_compound_key_size = Ref(0.95)
+_compound_key_size = Ref(0.9)
 
 _reduced_key_width = computed(lambda: key_width.value - _compound_key_size.value / 2, key_width, _compound_key_size)
 _reduced_key_height = computed(lambda: _key_height.value - _compound_key_size.value / 2, _key_height, _compound_key_size)
 
 _key_height_num_bar = computed(lambda: _key_height.value / 2, _key_height)
 
-_INDEX_STRETCH = 0.2
-_PINKY_STRETCH = 0.8
+_index_stretch = Ref(0.2)
+_pinky_stretch = Ref(0.8)
 
 _VOWEL_SET_OFFSET = 0.875
 
@@ -197,17 +197,17 @@ _row_heights = (
 )
 
 _col_widths = (
-    computed(lambda: key_width.value + _PINKY_STRETCH, key_width),
+    computed(lambda: key_width.value + _pinky_stretch.value, key_width, _pinky_stretch),
     key_width,
     key_width,
-    computed(lambda: _reduced_key_width.value + _INDEX_STRETCH, _reduced_key_width),  # H-, R-
+    computed(lambda: _reduced_key_width.value + _index_stretch.value, _reduced_key_width, _index_stretch),  # H-, R-
     _compound_key_size,
     computed(lambda: _reduced_key_width.value * 2 + key_width.value * 2.5, _reduced_key_width, key_width),  # *
     _compound_key_size,
-    computed(lambda: _reduced_key_width.value + _INDEX_STRETCH, _reduced_key_width),  # -F, -R
+    computed(lambda: _reduced_key_width.value + _index_stretch.value, _reduced_key_width, _index_stretch),  # -F, -R
     key_width,
     key_width,
-    computed(lambda: _reduced_key_width.value + _PINKY_STRETCH, _reduced_key_width),  # -T, -S
+    computed(lambda: _reduced_key_width.value + _pinky_stretch.value, _reduced_key_width, _pinky_stretch),  # -T, -S
     _compound_key_size,
     _reduced_key_width,  # -D, -Z
 )
@@ -356,9 +356,11 @@ def _build_main_rows_layout_grid(keyboard_widget: KeyboardWidget, key_widgets: l
         layout.setColumnMinimumWidth(i, dpi.cm(size_cm.value))
         layout.setColumnStretch(i, 0)
 
-    # * column
+
     layout.setColumnStretch(_ASTERISK_COLUMN_INDEX, 1)
-    QTimer.singleShot(0, lambda: layout.setColumnMinimumWidth(_ASTERISK_COLUMN_INDEX, 0))
+    @watch(dpi.change, parent=layout)
+    def resize_asterisk_column():
+        QTimer.singleShot(0, lambda: layout.setColumnMinimumWidth(_ASTERISK_COLUMN_INDEX, 0))
 
 
     @on_many(dpi.change, *(height.change for height in _row_heights), *(width.change for width in _col_widths), parent=layout)
@@ -369,12 +371,6 @@ def _build_main_rows_layout_grid(keyboard_widget: KeyboardWidget, key_widgets: l
         for i, size_cm in enumerate(_col_widths):
             if i == _ASTERISK_COLUMN_INDEX: continue
             layout.setColumnMinimumWidth(i, dpi.cm(size_cm.value))
-
-
-    @on(dpi.change, parent=layout)
-    def resize_asterisk_column():
-        # * column
-        QTimer.singleShot(0, lambda: layout.setColumnMinimumWidth(_ASTERISK_COLUMN_INDEX, 0))
 
 
     layout.setSpacing(0)
@@ -418,9 +414,9 @@ def _build_vowel_row_layout(keyboard_widget: KeyboardWidget, key_widgets: list[K
     add_vowel_set(_VOWEL_ROW_KEYS_RIGHT)
     layout.addSpacerItem(right_spacer := QSpacerItem(0, 0))
 
-    @watch_many(dpi.change, key_width.change, parent=layout)
+    @watch_many(dpi.change, key_width.change, _pinky_stretch.change, _index_stretch.change, parent=layout)
     def resize_spacing():
-        left_bank_width = dpi.cm(key_width.value) * 4 + dpi.cm(_PINKY_STRETCH) + dpi.cm(_INDEX_STRETCH)
+        left_bank_width = dpi.cm(key_width.value) * 4 + dpi.cm(_pinky_stretch.value) + dpi.cm(_index_stretch.value)
         right_bank_width = left_bank_width + dpi.cm(key_width.value)
 
         left_spacer.changeSize(left_bank_width - dpi.cm(key_width.value) - dpi.cm(_VOWEL_SET_OFFSET), 0)
@@ -473,6 +469,14 @@ def _build_keyboard_layout(
     @on(keyboard_widget.settings.compound_key_size_change, parent=layout)
     def set_compund_key_size(value: float):
         _compound_key_size.value = value
+
+    @on(keyboard_widget.settings.index_stretch_change, parent=layout)
+    def set_index_stretch(value: float):
+        _index_stretch.value = value
+
+    @on(keyboard_widget.settings.pinky_stretch_change, parent=layout)
+    def set_pinky_stretch(value: float):
+        _pinky_stretch.value = value
 
     return layout
 
