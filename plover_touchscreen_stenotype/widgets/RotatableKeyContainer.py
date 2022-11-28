@@ -13,7 +13,7 @@ from PyQt5.QtGui import (
 )
 
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .KeyboardWidget import KeyboardWidget
 else:

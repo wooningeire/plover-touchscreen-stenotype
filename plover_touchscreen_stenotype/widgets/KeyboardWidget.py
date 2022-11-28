@@ -152,7 +152,7 @@ KeyWidget[touched="true"] {
             # For some reason, `touched_widget` is a widget that is a child of the QGraphicsView rather than the
             # QGraphicsView itself
             elif isinstance(touched_widget.parent(), RotatableKeyContainer):
-                view = touched_widget.parent()
+                view: RotatableKeyContainer = touched_widget.parent()
                 key_widget: KeyWidget = view.key_widget_at_point(touch.pos().toPoint())
                 
             else:
