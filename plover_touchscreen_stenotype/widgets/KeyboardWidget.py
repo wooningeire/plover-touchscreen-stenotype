@@ -19,10 +19,10 @@ else:
     Main = object
 
 
-from plover_touchscreen_stenotype.settings import Settings, KeyLayout
-from plover_touchscreen_stenotype.widgets.KeyWidget import KeyWidget
-from plover_touchscreen_stenotype.widgets.build_keyboard import build_keyboard
-from plover_touchscreen_stenotype.util import UseDpi
+from .KeyWidget import KeyWidget
+from .build_keyboard import use_build_keyboard
+from ..settings import Settings, KeyLayout
+from ..util import UseDpi
 
 
 class KeyboardWidget(QWidget):
@@ -87,8 +87,9 @@ class KeyboardWidget(QWidget):
     #endregion
 
     def __setup_ui(self):
-        self.dpi = UseDpi(self)
-        self.setLayout(build_keyboard[self.settings.key_layout](self, self._key_widgets))
+        self.__dpi = dpi = UseDpi(self)
+        self.__build_keyboard = build_keyboard = use_build_keyboard(self.settings, self, dpi)
+        self.setLayout(build_keyboard[self.settings.key_layout](self._key_widgets))
 
         self.settings.key_layout_change.connect(self.__rebuild_layout)
 
@@ -117,7 +118,7 @@ KeyWidget[touched="true"] {
     #     # self.vowel_row_layout.invalidate()
     #     # self.layout().invalidate()
 
-    #     self.dpi.change.emit()
+    #     self.__dpi.change.emit()
 
     #     # self.window().setMinimumSize(self.window().sizeHint()) # Needed in order to use QWidget.resize
     #     # cast(Main, self.window()).resize_from_center(0, 0)
@@ -127,12 +128,12 @@ KeyWidget[touched="true"] {
         self._key_widgets = []
         # Detach listeners on the old key widgets to avoid leaking memory
         # TODO removing all listeners may become overzealous in the future
-        self.dpi.change.disconnect()
+        self.__dpi.change.disconnect()
         self.num_bar_pressed_change.disconnect()
 
         # https://stackoverflow.com/questions/10416582/replacing-layout-on-a-qwidget-with-another-layout
         QWidget().setLayout(self.layout()) # Unparent and destroy the current layout so it can be replaced
-        self.setLayout(build_keyboard[value](self, self._key_widgets))
+        self.setLayout(self.__build_keyboard[value](self._key_widgets))
         
 
 
