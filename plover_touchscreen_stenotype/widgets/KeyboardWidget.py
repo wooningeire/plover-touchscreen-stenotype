@@ -7,6 +7,7 @@ from PyQt5.QtCore import (
 from PyQt5.QtWidgets import (
     QWidget,
     QSizePolicy,
+    QGraphicsView,
 )
 from PyQt5.QtGui import (
     QTouchEvent,
@@ -20,6 +21,7 @@ else:
 
 
 from .KeyWidget import KeyWidget
+from .RotatableKeyContainer import RotatableKeyContainer
 from .build_keyboard import use_build_keyboard
 from ..settings import Settings, KeyLayout
 from ..util import UseDpi
@@ -50,7 +52,7 @@ class KeyboardWidget(QWidget):
 
         self.after_touch_event.emit()
 
-        touched_key_widgets = self._find_touched_key_widgets(event.touchPoints())
+        touched_key_widgets = self.__find_touched_key_widgets(event.touchPoints())
 
         # Variables for detecting changes post-update
         had_num_bar = "#" in self._current_stroke_keys
@@ -137,15 +139,28 @@ KeyWidget[touched="true"] {
         
 
 
-    def _find_touched_key_widgets(self, touch_points: list[QTouchEvent.TouchPoint]):
+    def __find_touched_key_widgets(self, touch_points: list[QTouchEvent.TouchPoint]):
         touched_key_widgets: list[KeyWidget] = []
         for touch in touch_points:
             if touch.state() == Qt.TouchPointReleased: continue
 
-            key_widget = self.childAt(touch.pos().toPoint())
-            if not key_widget: continue
+            touched_widget = self.childAt(touch.pos().toPoint())
+            if not touched_widget: continue
+
+            if isinstance(touched_widget, KeyWidget):
+                key_widget = touched_widget
+
+            # For some reason, `touched_widget` is a widget that is a child of the QGraphicsView rather than the
+            # QGraphicsView itself
+            elif isinstance(touched_widget.parent(), RotatableKeyContainer):
+                view: RotatableKeyContainer = touched_widget.parent()
+                key_widget: KeyWidget = view.key_widget_at_point(touch.pos().toPoint())
+                
+            else:
+                raise TypeError
 
             touched_key_widgets.append(key_widget)
+                
 
         return touched_key_widgets
 
