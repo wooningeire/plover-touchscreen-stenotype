@@ -22,9 +22,8 @@ from PyQt5.QtGui import (
 
 from typing import Iterable
 
-from plover_touchscreen_stenotype.settings import Settings, KeyLayout
-from plover_touchscreen_stenotype.util import UseDpi, watch, watch_many, FONT_FAMILY
-from plover_touchscreen_stenotype.widgets.build_keyboard import key_width
+from ..settings import Settings, KeyLayout
+from ..util import UseDpi, watch, watch_many, FONT_FAMILY
 
 class StrokePreview(QWidget):
     def __init__(self, engine: Engine, settings: Settings, parent: QWidget=None):
@@ -92,9 +91,9 @@ class StrokePreview(QWidget):
         display_alignment_layout.setColumnStretch(0, 1)
         display_alignment_layout.setColumnStretch(1, 0)
 
-        @watch_many(dpi.change, key_width.change)
+        @watch_many(dpi.change, self.__settings.key_width_change)
         def resize_display_alignment():
-            display_alignment_layout.setColumnMinimumWidth(1, dpi.cm(key_width.value))
+            display_alignment_layout.setColumnMinimumWidth(1, dpi.cm(self.__settings.key_width))
 
 
         display_alignment_layout.addLayout(labels_layout, 0, 0)

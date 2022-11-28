@@ -101,7 +101,7 @@ class Ref(QObject, Generic[T]):
         self.change.emit(value)
 
 
-def computed(handler: Callable[[], T], *dependency_refs: Ref[T]):
+def _create_computed(handler: Callable[[], T]):
     ref = Ref(handler())
 
     def recompute_value():
@@ -113,8 +113,20 @@ def computed(handler: Callable[[], T], *dependency_refs: Ref[T]):
         ref.blockSignals(True)
         QTimer.singleShot(0, lambda: ref.blockSignals(False))
 
+    return ref, recompute_value
+
+
+def computed(handler: Callable[[], T], *dependency_refs: Ref[T]):
+    ref, recompute = _create_computed(handler)
     for dependency in dependency_refs:
-        dependency.change.connect(recompute_value)
+        dependency.change.connect(recompute)
+
+    return ref
+
+
+def computed_on_signal(handler: Callable[[], T], dependency_signal: pyqtBoundSignal):
+    ref, recompute = _create_computed(handler)
+    _connect(dependency_signal, recompute, parent=ref)
 
     return ref
 
