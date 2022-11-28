@@ -1,5 +1,7 @@
 from PyQt5.QtCore import (
     QTimer,
+    QEvent,
+    Qt,
 )
 from PyQt5.QtWidgets import (
     QLayout,
@@ -8,18 +10,23 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QSpacerItem,
     QSizePolicy,
+    QGraphicsView,
+    QGraphicsScene,
+    QWidget,
 )
+from PyQt5.QtGui import (QTouchEvent)
 
 from functools import partial
 from typing import TYPE_CHECKING, Callable
 if TYPE_CHECKING:
-    from plover_touchscreen_stenotype.widgets.KeyboardWidget import KeyboardWidget
+    from .KeyboardWidget import KeyboardWidget
 else:
     KeyboardWidget = object
 
-from plover_touchscreen_stenotype.widgets.KeyWidget import KeyWidget
-from plover_touchscreen_stenotype.settings import KeyLayout
-from plover_touchscreen_stenotype.util import Ref, computed, on, on_many, watch, watch_many
+from .KeyWidget import KeyWidget
+from .RotatableKeyContainer import RotatableKeyContainer
+from ..settings import KeyLayout
+from ..util import Ref, computed, on, on_many, watch, watch_many
 
 
 _TOP_ROW = 2
@@ -442,7 +449,21 @@ def _build_keyboard_layout(
     # start to grow along with the spacer item
     layout = QGridLayout()
 
-    layout.addLayout(build_main_rows(keyboard_widget, key_widgets), 0, 0)
+
+    scene = QGraphicsScene(keyboard_widget)
+    widget = QWidget()
+    widget.setAttribute(Qt.WA_TranslucentBackground) # Gives this container a transparent background
+    widget.setLayout(build_main_rows(keyboard_widget, key_widgets))
+    proxy = scene.addWidget(widget)
+
+    proxy.setRotation(-15)
+    proxy.setPos(0, 0)
+
+    view = RotatableKeyContainer(widget, proxy, scene, keyboard_widget)
+
+    layout.addWidget(view, 0, 0)
+
+    # layout.addLayout(build_main_rows(keyboard_widget, key_widgets), 0, 0)
 
     layout.setRowStretch(1, 1)
     
