@@ -1,5 +1,7 @@
 from PyQt5.QtCore import (
     QTimer,
+    QEvent,
+    Qt,
 )
 from PyQt5.QtWidgets import (
     QLayout,
@@ -8,6 +10,9 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QSpacerItem,
     QSizePolicy,
+    QGraphicsView,
+    QGraphicsScene,
+    QWidget,
 )
 
 from functools import partial
@@ -18,6 +23,7 @@ else:
     KeyboardWidget = object
 
 from .KeyWidget import KeyWidget
+from .RotatableKeyContainer import RotatableKeyContainer
 from ..settings import Settings, KeyLayout
 from ..util import UseDpi, Ref, computed, computed_on_signal, on, on_many, watch, watch_many
 
@@ -473,7 +479,19 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         # start to grow along with the spacer item
         layout = QGridLayout()
 
-        layout.addLayout(build_main_rows(key_widgets), 0, 0)
+
+        scene = QGraphicsScene(keyboard_widget)
+        widget = QWidget()
+        widget.setAttribute(Qt.WA_TranslucentBackground) # Gives this container a transparent background
+        widget.setLayout(build_main_rows(key_widgets))
+        proxy = scene.addWidget(widget)
+
+        proxy.setRotation(-15)
+        proxy.setPos(0, 0)
+
+        view = RotatableKeyContainer(widget, proxy, scene, keyboard_widget)
+
+        layout.addWidget(view, 0, 0)
 
         layout.setRowStretch(1, 1)
         
