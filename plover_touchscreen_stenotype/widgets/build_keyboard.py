@@ -197,7 +197,7 @@ _key_height_num_bar = computed(lambda: _key_height.value / 2, _key_height)
 _index_stretch = Ref(0.2)
 _pinky_stretch = Ref(0.8)
 
-_VOWEL_SET_OFFSET = 0
+_VOWEL_SET_OFFSET = 0.25
 
 _row_heights = (
     _key_height_num_bar,
@@ -251,9 +251,9 @@ _vowel_set_widths = (
 
 _ROWS_GAP = 2.25
 
-_COL_OFFSETS = (x + key_width.value * 0.45 for x in (
-    key_width.value * -0.45,  # S-
-    key_width.value * 0.125, # T-, K-
+_COL_OFFSETS = (x + key_width.value * 0.4 for x in (
+    key_width.value * -0.4,  # S-
+    key_width.value * 0.1, # T-, K-
     key_width.value * 0.5, # P-, W-
     0, # H-, R-
     0,
@@ -261,30 +261,30 @@ _COL_OFFSETS = (x + key_width.value * 0.45 for x in (
     0,
     0,  # -F, -R
     key_width.value * 0.5,  # -P, -B
-    key_width.value * 0.125,  # -L, -G
-    key_width.value * -0.45,  # -T, -S
-    key_width.value * -0.45,
-    key_width.value * -0.45,  # -D, -Z
+    key_width.value * 0.1,  # -L, -G
+    key_width.value * -0.4,  # -T, -S
+    key_width.value * -0.4,
+    key_width.value * -0.4,  # -D, -Z
 ))
 
-_COL_OFFSETS_LEFT = (x + key_width.value * 0.45 for x in (
-    key_width.value * -0.45,  # S-
-    key_width.value * 0.15,  # T-, K-
+_COL_OFFSETS_LEFT = (x + key_width.value * 0.4 for x in (
+    key_width.value * -0.4,  # S-
+    key_width.value * 0.1,  # T-, K-
     key_width.value * 0.5,  # P-, W-
     0,  # H-, R-
     0,
     0,
 ))
 
-_COL_OFFSETS_RIGHT = (x + key_width.value * 0.45 for x in (
+_COL_OFFSETS_RIGHT = (x + key_width.value * 0.4 for x in (
     0,
     0,
     0,  # -F, -R
     key_width.value * 0.5,  # -P, -B
-    key_width.value * 0.15,  # -L, -G
-    key_width.value * -0.45,  # -T, -S
-    key_width.value * -0.45,
-    key_width.value * -0.45,  # -D, -Z
+    key_width.value * 0.1,  # -L, -G
+    key_width.value * -0.4,  # -T, -S
+    key_width.value * -0.4,
+    key_width.value * -0.4,  # -D, -Z
 ))
 
 
@@ -377,11 +377,6 @@ def _build_main_rows_hand_container(
     widget.setLayout(_build_main_rows_hand_staggered(keyboard_widget, key_widgets, keys, col_widths, col_offsets))
     proxy = scene.addWidget(widget)
 
-    @on(keyboard_widget.key_polish)
-    def polish_key(key: KeyWidget):
-        widget.style().polish(key)
-
-    proxy.setTransformOriginPoint(0, 0)
     proxy.setRotation(angle)
 
     return RotatableKeyContainer(widget, proxy, scene, keyboard_widget)
