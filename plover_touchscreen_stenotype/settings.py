@@ -111,11 +111,11 @@ class Settings(QObject):
         self.index_stretch = 0.2
         self.pinky_stretch = 0.7
 
-        self.vowel_set_offset_fac = 0.4375
+        self.vowel_set_offset_fac = 0
 
-        self.index_stagger_fac = 0
-        self.middle_stagger_fac = 0.6
-        self.ring_stagger_fac = 0.375
+        self.index_stagger_fac = 0.45
+        self.middle_stagger_fac = 0.95
+        self.ring_stagger_fac = 0.575
         self.pinky_stagger_fac = 0
 
         @on_many(self.stroke_preview_stroke_ref.change, self.stroke_preview_translation_ref.change)

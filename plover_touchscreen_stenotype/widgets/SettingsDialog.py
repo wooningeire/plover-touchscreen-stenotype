@@ -191,7 +191,7 @@ class SettingsDialog(QDialog):
             entry, slider = _build_entry_slider_pair(
                 ref,
                 min=0,
-                max=1,
+                max=2,
                 spin_box_step=0.05,
                 slider_orientation=Qt.Vertical,
                 parent=size_box,

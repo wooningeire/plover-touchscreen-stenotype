@@ -31,7 +31,7 @@ _TOP_COMPOUND_ROW = 1
 _LOW_COMPOUND_ROW = 3
 
 # [keys], label, rowSpan?, numberLabel?
-_MAIN_ROWS_KEYS = (
+_MAIN_ROWS_KEYS_LEFT = (
     (
         (["#"], ""),
         (["#", "S-"], ""),
@@ -63,7 +63,15 @@ _MAIN_ROWS_KEYS = (
     ), (
         (["#"], "#"),
         (["#", "*"], ""),
-        (["*"], "*", 3),
+        (["*"], "🞱", 3),
+    ),
+)
+
+_MAIN_ROWS_KEYS_RIGHT = (
+    (
+        (["#"], "#"),
+        (["#", "*"], ""),
+        (["*"], "🞱", 3),
     ), (
         (["#"], ""),
         (["#", "*", "-F"], ""),
@@ -176,8 +184,6 @@ _VOWEL_ROW_KEYS_RIGHT = (
     (["-U"], "U"),
 )
 
-_ASTERISK_COLUMN_INDEX = 5
-
 
 #region Exports
 
@@ -232,6 +238,30 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         reduced_key_width,  # -D, -Z
     )
 
+    col_widths_left = (
+        computed(lambda: key_width.value + pinky_stretch.value,
+                key_width, pinky_stretch),
+        key_width,
+        key_width,
+        reduced_index_width,  # H-, R-
+        compound_key_size,
+        computed(lambda: reduced_key_width.value + key_width.value / 2,
+                reduced_key_width, key_width),  # *
+    )
+
+    col_widths_right = (
+        computed(lambda: reduced_key_width.value + key_width.value / 2,
+                reduced_key_width, key_width), # *
+        compound_key_size,
+        reduced_index_width,  # -F, -R
+        key_width,
+        key_width,
+        computed(lambda: reduced_key_width.value + pinky_stretch.value,
+                reduced_key_width, pinky_stretch),  # -T, -S
+        compound_key_size,
+        reduced_key_width,  # -D, -Z
+    )
+
     vowel_set_widths = (
         reduced_key_width,
         compound_key_size,
@@ -258,7 +288,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         pinky_offset,  # S-
         ring_offset,  # T-, K-
         middle_offset,  # P-, W-
-        index_offset, # H-, R-
+        index_offset,  # H-, R-
         index_offset,
         index_offset,
         index_offset,
@@ -270,16 +300,39 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         pinky_offset, # -D, -Z
     )
 
+    col_offsets_left = (
+        pinky_offset,  # S-
+        ring_offset,  # T-, K-
+        middle_offset,  # P-, W-
+        index_offset,  # H-, R-
+        index_offset,
+        index_offset,
+    )
 
-    def _build_main_rows_layout_staggered(key_widgets: list[KeyWidget]) -> QLayout:
+    col_offsets_right = (
+        index_offset,
+        index_offset,
+        index_offset,  # -F, -R
+        middle_offset,  # -P, -B
+        ring_offset,  # -L, -G
+        pinky_offset,  # -T, -S
+        pinky_offset,
+        pinky_offset, # -D, -Z
+    )
+
+    ASTERISK_COLUMN_INDEX = 5
+
+
+    def build_main_rows_hand_staggered(
+        key_widgets: list[KeyWidget],
+        keys: tuple[list[str], str, int, str],
+        col_widths: tuple[Ref[float]],
+        col_offsets: tuple[Ref[float]],
+    ) -> QLayout:
         # Parameter defaults on inner functions are used to create closures
 
         layout = QHBoxLayout()
-        for col_index, (column, col_width_cm, col_offset_cm) in enumerate(zip(
-            _MAIN_ROWS_KEYS,
-            col_widths,
-            col_offsets,
-        )):
+        for column, col_width_cm, col_offset_cm in zip(keys, col_widths, col_offsets):
             column_layout = QVBoxLayout()
             column_layout.addStretch(1)
 
@@ -302,41 +355,22 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
                     def height_boost(col_offset_cm: Ref[float]=col_offset_cm):
                         return col_offset_cm.value / 2
                     row_heights_cm = (*row_heights_cm, computed(height_boost, col_offset_cm))
-
-                if col_index == _ASTERISK_COLUMN_INDEX:
-                    @watch(dpi.change)
-                    def reset_width(
-                        key_widget: KeyWidget=key_widget,
-                        col_width_cm: Ref[float]=col_width_cm,
-                    ):
-                        key_widget.setMinimumWidth(dpi.cm(col_width_cm.value))
-
-                        # Defer setting the minimum width to later; setting it immediately causes it to shrink to this size initially
-                        QTimer.singleShot(0, lambda: key_widget.setMinimumWidth(0))
-
-                    @watch_many(dpi.change, *(height.change for height in row_heights_cm), parent=key_widget)
-                    def reset_height(
-                        key_widget: KeyWidget=key_widget,
-                        row_heights_cm: tuple[Ref[float]]=row_heights_cm,
-                    ):
-                        key_widget.setFixedHeight(sum(dpi.cm(height.value) for height in row_heights_cm))
                         
-                else:
-                    @watch_many(dpi.change, col_width_cm.change, *(height.change for height in row_heights_cm), parent=key_widget)
-                    def reset_height(
-                        key_widget: KeyWidget=key_widget,
-                        col_width_cm: Ref[float]=col_width_cm,
-                        row_heights_cm: tuple[Ref[float]]=row_heights_cm,
-                    ):
-                        key_widget.setFixedSize(dpi.cm(col_width_cm.value), sum(dpi.cm(height.value) for height in row_heights_cm))
+                @watch_many(dpi.change, col_width_cm.change, *(height.change for height in row_heights_cm), parent=key_widget)
+                def resize(
+                    key_widget: KeyWidget=key_widget,
+                    col_width_cm: Ref[float]=col_width_cm,
+                    row_heights_cm: tuple[Ref[float]]=row_heights_cm,
+                ):
+                    key_widget.setFixedSize(dpi.cm(col_width_cm.value), sum(dpi.cm(height.value) for height in row_heights_cm))
 
 
                 column_layout.addWidget(key_widget)
 
                 row_pos += row_span
-                
-            column_spacer = QSpacerItem(0, 0)
-            column_layout.addSpacerItem(column_spacer)
+
+
+            column_layout.addSpacerItem(column_spacer := QSpacerItem(0, 0))
 
             @watch_many(dpi.change, col_offset_cm.change, parent=column_layout)
             def resize_column_spacing(
@@ -345,31 +379,52 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
             ):
                 column_spacer.changeSize(0, dpi.cm(col_offset_cm.value / 2))
 
-            
+        
             layout.addLayout(column_layout)
-
-            # if i in (0, 9): # S- and -L, -G
-            #     layout.addSpacing(dpi.px(_PINKY_STRETCH))
-            if col_index == _ASTERISK_COLUMN_INDEX:
-                layout.setStretchFactor(column_layout, 1)
-
-
-        # def resize_asterisk_column():
-        #     asterisk_column = layout.itemAt(_ASTERISK_COLUMN_INDEX).layout()
-        #     for item in (asterisk_column.itemAt(i) for i in range(asterisk_column.count())):
-        #         if not (widget := item.widget()): continue
-        #         widget.setMinimumWidth(0)
-
-        # QTimer.singleShot(0, resize_asterisk_column)
+            layout.setSizeConstraint(QLayout.SetFixedSize)
             
-
         layout.setSpacing(0)
-
 
         return layout
 
 
-    def _build_main_rows_layout_grid(key_widgets: list[KeyWidget]) -> QLayout:
+    def build_main_rows_hand_container(
+        key_widgets: list[KeyWidget],
+        keys: tuple[list[str], str, int, str],
+        col_widths: tuple[Ref[float]],
+        col_offsets: tuple[float],
+        angle: float,
+    ) -> RotatableKeyContainer:
+        scene = QGraphicsScene(keyboard_widget)
+
+        widget = QWidget()
+        widget.setStyleSheet(KEY_STYLESHEET)
+        widget.setAttribute(Qt.WA_TranslucentBackground) # Gives this container a transparent background
+        widget.setLayout(build_main_rows_hand_staggered(key_widgets, keys, col_widths, col_offsets))
+        proxy = scene.addWidget(widget)
+
+        @on(keyboard_widget.key_polish)
+        def polish_key(key: KeyWidget):
+            widget.style().polish(key)
+
+        proxy.setTransformOriginPoint(0, 0)
+        proxy.setRotation(angle)
+
+        return RotatableKeyContainer(widget, proxy, scene, keyboard_widget)
+
+
+    def build_main_rows_layout_staggered(key_widgets: list[KeyWidget]) -> QLayout:
+        layout = QHBoxLayout()
+        layout.setSpacing(0)
+
+        layout.addWidget(build_main_rows_hand_container(key_widgets, _MAIN_ROWS_KEYS_LEFT, col_widths_left, col_offsets_left, 10))
+        layout.addStretch(1)
+        layout.addWidget(build_main_rows_hand_container(key_widgets, _MAIN_ROWS_KEYS_RIGHT, col_widths_right, col_offsets_right, -10))
+
+        return layout
+
+
+    def build_main_rows_layout_grid(key_widgets: list[KeyWidget]) -> QLayout:
         layout = QGridLayout()
         for values, label, grid_position, *rest in _MAIN_ROWS_KEYS_GRID:
             key_widget = KeyWidget(values, label, keyboard_widget)
@@ -390,10 +445,10 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
             layout.setColumnStretch(i, 0)
 
 
-        layout.setColumnStretch(_ASTERISK_COLUMN_INDEX, 1)
+        layout.setColumnStretch(ASTERISK_COLUMN_INDEX, 1)
         @watch(dpi.change, parent=layout)
         def resize_asterisk_column():
-            QTimer.singleShot(0, lambda: layout.setColumnMinimumWidth(_ASTERISK_COLUMN_INDEX, 0))
+            QTimer.singleShot(0, lambda: layout.setColumnMinimumWidth(ASTERISK_COLUMN_INDEX, 0))
 
 
         @on_many(dpi.change, *(height.change for height in row_heights), *(width.change for width in col_widths), parent=layout)
@@ -402,7 +457,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
                 layout.setRowMinimumHeight(i, dpi.cm(size_cm.value))
 
             for i, size_cm in enumerate(col_widths):
-                if i == _ASTERISK_COLUMN_INDEX: continue
+                if i == ASTERISK_COLUMN_INDEX: continue
                 layout.setColumnMinimumWidth(i, dpi.cm(size_cm.value))
 
 
@@ -412,7 +467,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         return layout
 
 
-    def _build_vowel_row_layout(key_widgets: list[KeyWidget]) -> QLayout:
+    def build_vowel_row_layout(key_widgets: list[KeyWidget]) -> QLayout:
         # Parameter defaults on inner functions are used to create closures
         
         layout = QHBoxLayout()
@@ -462,7 +517,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         return layout
 
 
-    def _build_keyboard_layout(
+    def build_keyboard_layout(
         build_main_rows: Callable[[KeyboardWidget, list[KeyWidget]], QLayout],
         build_vowel_row: Callable[[KeyboardWidget, list[KeyWidget]], QLayout],
         key_widgets: list[KeyWidget],
@@ -476,24 +531,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         # start to grow along with the spacer item
         layout = QGridLayout()
 
-
-        scene = QGraphicsScene(keyboard_widget)
-        widget = QWidget()
-        widget.setStyleSheet(KEY_STYLESHEET)
-        widget.setAttribute(Qt.WA_TranslucentBackground) # Gives this container a transparent background
-        widget.setLayout(build_main_rows(key_widgets))
-        proxy = scene.addWidget(widget)
-
-        @on(keyboard_widget.key_polish)
-        def polish_key(key: KeyWidget):
-            widget.style().polish(key)
-
-        proxy.setRotation(-10)
-        proxy.setPos(0, 0)
-
-        view = RotatableKeyContainer(widget, proxy, scene, keyboard_widget)
-
-        layout.addWidget(view, 0, 0)
+        layout.addLayout(build_main_rows(key_widgets), 0, 0)
 
         layout.setRowStretch(1, 1)
         
@@ -511,8 +549,8 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
 
     return {
-        KeyLayout.STAGGERED: partial(_build_keyboard_layout, _build_main_rows_layout_staggered, _build_vowel_row_layout),
-        KeyLayout.GRID: partial(_build_keyboard_layout, _build_main_rows_layout_grid, _build_vowel_row_layout),
+        KeyLayout.STAGGERED: partial(build_keyboard_layout, build_main_rows_layout_staggered, build_vowel_row_layout),
+        KeyLayout.GRID: partial(build_keyboard_layout, build_main_rows_layout_grid, build_vowel_row_layout),
     }
 
 #endregion
