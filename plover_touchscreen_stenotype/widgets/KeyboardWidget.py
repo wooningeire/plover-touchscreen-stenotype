@@ -15,7 +15,7 @@ from PyQt5.QtGui import (
 
 from typing import cast, TYPE_CHECKING
 if TYPE_CHECKING:
-    from plover_touchscreen_stenotype.Main import Main
+    from ..Main import Main
 else:
     Main = object
 
@@ -24,7 +24,7 @@ from .KeyWidget import KeyWidget
 from .RotatableKeyContainer import RotatableKeyContainer
 from .build_keyboard import use_build_keyboard
 from ..settings import Settings, KeyLayout
-from ..util import UseDpi
+from ..util import UseDpi, KEY_STYLESHEET
 
 
 class KeyboardWidget(QWidget):
@@ -32,6 +32,8 @@ class KeyboardWidget(QWidget):
     current_stroke_change = pyqtSignal(set)  # set[str]
     after_touch_event = pyqtSignal()
     num_bar_pressed_change = pyqtSignal(bool)
+    key_polish = pyqtSignal(KeyWidget)
+    """Emitted when a `KeyWidget`s is repolished"""
 
     #region Overrides
 
@@ -96,18 +98,7 @@ class KeyboardWidget(QWidget):
         self.settings.key_layout_ref.change.connect(self.__rebuild_layout)
 
 
-        self.setStyleSheet("""
-KeyWidget[matched="true"] {
-    background: #6f9f86;
-    color: #fff;
-    border: 1px solid;
-    border-color: #2a6361 #2a6361 #1f5153 #2a6361;
-}
-
-KeyWidget[touched="true"] {
-    background: #41796a;
-}
-""")
+        self.setStyleSheet(KEY_STYLESHEET)
 
         self.setAttribute(Qt.WA_AcceptTouchEvents)
         self.setFocusPolicy(Qt.NoFocus)
@@ -145,7 +136,7 @@ KeyWidget[touched="true"] {
             if touch.state() == Qt.TouchPointReleased: continue
 
             touched_widget = self.childAt(touch.pos().toPoint())
-            if not touched_widget: continue
+            if touched_widget is None: continue
 
             if isinstance(touched_widget, KeyWidget):
                 key_widget = touched_widget
@@ -155,6 +146,8 @@ KeyWidget[touched="true"] {
             elif isinstance(touched_widget.parent(), RotatableKeyContainer):
                 view: RotatableKeyContainer = touched_widget.parent()
                 key_widget: KeyWidget = view.key_widget_at_point(touch.pos().toPoint())
+
+                if key_widget is None: continue
                 
             else:
                 raise TypeError
@@ -185,3 +178,4 @@ KeyWidget[touched="true"] {
                 # Reload stylesheet for dynamic properties: https://stackoverflow.com/questions/1595476/are-qts-stylesheets-really-handling-dynamic-properties
                 # self.style().unpolish(key_widget)
                 self.style().polish(key_widget)
+                self.key_polish.emit(key_widget)

@@ -1,6 +1,5 @@
 from PyQt5.QtCore import (
     QTimer,
-    QEvent,
     Qt,
 )
 from PyQt5.QtWidgets import (
@@ -9,8 +8,6 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QVBoxLayout,
     QSpacerItem,
-    QSizePolicy,
-    QGraphicsView,
     QGraphicsScene,
     QWidget,
 )
@@ -25,7 +22,7 @@ else:
 from .KeyWidget import KeyWidget
 from .RotatableKeyContainer import RotatableKeyContainer
 from ..settings import Settings, KeyLayout
-from ..util import UseDpi, Ref, computed, computed_on_signal, on, on_many, watch, watch_many
+from ..util import UseDpi, Ref, computed, computed_on_signal, on, on_many, watch, watch_many, KEY_STYLESHEET
 
 
 _TOP_ROW = 2
@@ -482,11 +479,16 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
         scene = QGraphicsScene(keyboard_widget)
         widget = QWidget()
+        widget.setStyleSheet(KEY_STYLESHEET)
         widget.setAttribute(Qt.WA_TranslucentBackground) # Gives this container a transparent background
         widget.setLayout(build_main_rows(key_widgets))
         proxy = scene.addWidget(widget)
 
-        proxy.setRotation(-15)
+        @on(keyboard_widget.key_polish)
+        def polish_key(key: KeyWidget):
+            widget.style().polish(key)
+
+        proxy.setRotation(-10)
         proxy.setPos(0, 0)
 
         view = RotatableKeyContainer(widget, proxy, scene, keyboard_widget)
