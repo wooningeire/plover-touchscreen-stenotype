@@ -403,11 +403,6 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         widget.setLayout(build_main_rows_hand_staggered(key_widgets, keys, col_widths, col_offsets))
         proxy = scene.addWidget(widget)
 
-        @on(keyboard_widget.key_polish)
-        def polish_key(key: KeyWidget):
-            widget.style().polish(key)
-
-        proxy.setTransformOriginPoint(0, 0)
         proxy.setRotation(angle)
 
         return RotatableKeyContainer(widget, proxy, scene, keyboard_widget)
