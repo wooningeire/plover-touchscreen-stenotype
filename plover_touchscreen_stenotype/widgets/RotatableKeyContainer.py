@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import (
 	QTouchEvent,
+	QTransform,
 )
 
 
@@ -59,7 +60,14 @@ class RotatableKeyContainer(QGraphicsView):
 
 		return True """
 
-	def key_widget_at_point(self, screen_coords: QPoint) -> KeyWidget:
+	def key_widget_at_point(self, window_coords: QPoint) -> KeyWidget:
 		# Convert screen coords to container widget coords, which can then be used to retrieve the key widget
-		widget_coords = self.__proxy.deviceTransform(self.viewportTransform()).inverted()[0].map(screen_coords)
+
+		# Undo the widget's translation
+		widget_translation = QTransform()
+		widget_translation.translate(self.pos().x(), self.pos().y())
+		view_coords = widget_translation.inverted()[0].map(window_coords)
+
+		widget_coords = self.__proxy.deviceTransform(self.viewportTransform()).inverted()[0].map(view_coords)
+
 		return self.__widget.childAt(widget_coords)

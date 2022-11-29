@@ -31,7 +31,7 @@ _TOP_COMPOUND_ROW = 1
 _LOW_COMPOUND_ROW = 3
 
 # [keys], label, rowSpan?, numberLabel?
-_MAIN_ROWS_KEYS = (
+_MAIN_ROWS_KEYS_LEFT = (
     (
         (["#"], ""),
         (["#", "S-"], ""),
@@ -63,7 +63,15 @@ _MAIN_ROWS_KEYS = (
     ), (
         (["#"], "#"),
         (["#", "*"], ""),
-        (["*"], "*", 3),
+        (["*"], "🞱", 3),
+    ),
+)
+
+_MAIN_ROWS_KEYS_RIGHT = (
+    (
+        (["#"], "#"),
+        (["#", "*"], ""),
+        (["*"], "🞱", 3),
     ), (
         (["#"], ""),
         (["#", "*", "-F"], ""),
@@ -189,7 +197,7 @@ _key_height_num_bar = computed(lambda: _key_height.value / 2, _key_height)
 _index_stretch = Ref(0.2)
 _pinky_stretch = Ref(0.8)
 
-_VOWEL_SET_OFFSET = 0.875
+_VOWEL_SET_OFFSET = 0
 
 _row_heights = (
     _key_height_num_bar,
@@ -215,6 +223,26 @@ _col_widths = (
     _reduced_key_width,  # -D, -Z
 )
 
+_col_widths_left = (
+    computed(lambda: key_width.value + _pinky_stretch.value, key_width, _pinky_stretch),
+    key_width,
+    key_width,
+    computed(lambda: _reduced_key_width.value + _index_stretch.value, _reduced_key_width, _index_stretch),  # H-, R-
+    _compound_key_size,
+    computed(lambda: _reduced_key_width.value + key_width.value / 2, _reduced_key_width, key_width),  # *
+)
+
+_col_widths_right = (
+    computed(lambda: _reduced_key_width.value + key_width.value / 2, _reduced_key_width, key_width), # *
+    _compound_key_size,
+    computed(lambda: _reduced_key_width.value + _index_stretch.value, _reduced_key_width, _index_stretch),  # -F, -R
+    key_width,
+    key_width,
+    computed(lambda: _reduced_key_width.value + _pinky_stretch.value, _reduced_key_width, _pinky_stretch),  # -T, -S
+    _compound_key_size,
+    _reduced_key_width,  # -D, -Z
+)
+
 _vowel_set_widths = (
     _reduced_key_width,
     _compound_key_size,
@@ -223,38 +251,59 @@ _vowel_set_widths = (
 
 _ROWS_GAP = 2.25
 
-_COL_OFFSETS = (
-    0,  # S-
-    key_width.value * 0.375, # T-, K-
-    key_width.value * 0.6, # P-, W-
+_COL_OFFSETS = (x + key_width.value * 0.45 for x in (
+    key_width.value * -0.45,  # S-
+    key_width.value * 0.125, # T-, K-
+    key_width.value * 0.5, # P-, W-
     0, # H-, R-
     0,
     0,
     0,
     0,  # -F, -R
-    key_width.value * 0.6,  # -P, -B
-    key_width.value * 0.375,  # -L, -G
-    0,  # -T, -S
+    key_width.value * 0.5,  # -P, -B
+    key_width.value * 0.125,  # -L, -G
+    key_width.value * -0.45,  # -T, -S
+    key_width.value * -0.45,
+    key_width.value * -0.45,  # -D, -Z
+))
+
+_COL_OFFSETS_LEFT = (x + key_width.value * 0.45 for x in (
+    key_width.value * -0.45,  # S-
+    key_width.value * 0.15,  # T-, K-
+    key_width.value * 0.5,  # P-, W-
+    0,  # H-, R-
     0,
-    0, # -D, -Z
-)
+    0,
+))
+
+_COL_OFFSETS_RIGHT = (x + key_width.value * 0.45 for x in (
+    0,
+    0,
+    0,  # -F, -R
+    key_width.value * 0.5,  # -P, -B
+    key_width.value * 0.15,  # -L, -G
+    key_width.value * -0.45,  # -T, -S
+    key_width.value * -0.45,
+    key_width.value * -0.45,  # -D, -Z
+))
 
 
 _ASTERISK_COLUMN_INDEX = 5
 
 
-
-def _build_main_rows_layout_staggered(keyboard_widget: KeyboardWidget, key_widgets: list[KeyWidget]) -> QLayout:
+def _build_main_rows_hand_staggered(
+    keyboard_widget: KeyboardWidget,
+    key_widgets: list[KeyWidget],
+    keys: tuple[list[str], str, int, str],
+    col_widths: tuple[Ref[float]],
+    col_offsets: tuple[float],
+) -> QLayout:
     # Parameter defaults on inner functions are used to create closures
 
     dpi = keyboard_widget.dpi
 
     layout = QHBoxLayout()
-    for col_index, (column, col_width_cm, col_offset_cm) in enumerate(zip(
-        _MAIN_ROWS_KEYS,
-        _col_widths,
-        _COL_OFFSETS,
-    )):
+    for column, col_width_cm, col_offset_cm in zip(keys, col_widths, col_offsets):
         column_layout = QVBoxLayout()
         column_layout.addStretch(1)
 
@@ -273,66 +322,78 @@ def _build_main_rows_layout_staggered(keyboard_widget: KeyboardWidget, key_widge
                 keyboard_widget.num_bar_pressed_change.connect(key_widget.num_bar_pressed_handler(label, num_bar_label))
 
 
-            if row_pos <= _LOW_ROW < row_pos + row_span:
+            if row_pos <= _LOW_ROW < row_pos + row_span and col_offset_cm > 0:
                 row_heights_cm = (*row_heights_cm, Ref(col_offset_cm / 2))
 
-            if col_index == _ASTERISK_COLUMN_INDEX:
-                @watch_many(dpi.change, *(height.change for height in row_heights_cm), parent=key_widget)
-                def resize(
-                    key_widget: KeyWidget=key_widget,
-                    col_width_cm: Ref[float]=col_width_cm,
-                    row_heights_cm: tuple[Ref[float]]=row_heights_cm,
-                ):
-                    key_widget.setMinimumWidth(dpi.cm(col_width_cm.value))
-                    key_widget.setFixedHeight(sum(dpi.cm(height.value) for height in row_heights_cm))
-
-                    # Defer setting the minimum width to later; setting it immediately causes it to shrink to this size initially
-                    QTimer.singleShot(0, lambda: key_widget.setMinimumWidth(0))
-                    
-            else:
-                @watch_many(dpi.change, col_width_cm.change, *(height.change for height in row_heights_cm), parent=key_widget)
-                def resize(
-                    key_widget: KeyWidget=key_widget,
-                    col_width_cm: Ref[float]=col_width_cm,
-                    row_heights_cm: tuple[Ref[float]]=row_heights_cm,
-                ):
-                    key_widget.setFixedSize(dpi.cm(col_width_cm.value), sum(dpi.cm(height.value) for height in row_heights_cm))
+            @watch_many(dpi.change, col_width_cm.change, *(height.change for height in row_heights_cm), parent=key_widget)
+            def resize(
+                key_widget: KeyWidget=key_widget,
+                col_width_cm: Ref[float]=col_width_cm,
+                row_heights_cm: tuple[Ref[float]]=row_heights_cm,
+            ):
+                key_widget.setFixedSize(dpi.cm(col_width_cm.value), sum(dpi.cm(height.value) for height in row_heights_cm))
 
 
             column_layout.addWidget(key_widget)
 
             row_pos += row_span
-            
-        column_spacer = QSpacerItem(0, 0)
-        column_layout.addSpacerItem(column_spacer)
 
-        @watch(dpi.change, parent=column_layout)
-        def resize_column_spacing(
-            column_spacer: QSpacerItem=column_spacer,
-            col_offset_cm: float=col_offset_cm,
-        ):
-            column_spacer.changeSize(0, dpi.cm(col_offset_cm / 2))
+
+        if col_offset_cm != 0:
+            column_spacer = QSpacerItem(0, 0)
+            column_layout.addSpacerItem(column_spacer)
+
+            @watch(dpi.change, parent=column_layout)
+            def resize_column_spacing(
+                column_spacer: QSpacerItem=column_spacer,
+                col_offset_cm: float=col_offset_cm,
+            ):
+                height = col_offset_cm / 2 if col_offset_cm > 0 else col_offset_cm
+
+                column_spacer.changeSize(0, dpi.cm(height))
 
         
         layout.addLayout(column_layout)
-
-        # if i in (0, 9): # S- and -L, -G
-        #     layout.addSpacing(dpi.px(_PINKY_STRETCH))
-        if col_index == _ASTERISK_COLUMN_INDEX:
-            layout.setStretchFactor(column_layout, 1)
-
-
-    # def resize_asterisk_column():
-    #     asterisk_column = layout.itemAt(_ASTERISK_COLUMN_INDEX).layout()
-    #     for item in (asterisk_column.itemAt(i) for i in range(asterisk_column.count())):
-    #         if not (widget := item.widget()): continue
-    #         widget.setMinimumWidth(0)
-
-    # QTimer.singleShot(0, resize_asterisk_column)
+        layout.setSizeConstraint(QLayout.SetFixedSize)
         
-
     layout.setSpacing(0)
 
+    return layout
+
+
+def _build_main_rows_hand_container(
+    keyboard_widget: KeyboardWidget,
+    key_widgets: list[KeyWidget],
+    keys: tuple[list[str], str, int, str],
+    col_widths: tuple[Ref[float]],
+    col_offsets: tuple[float],
+    angle: float,
+) -> RotatableKeyContainer:
+    scene = QGraphicsScene(keyboard_widget)
+
+    widget = QWidget()
+    widget.setStyleSheet(KEY_STYLESHEET)
+    widget.setAttribute(Qt.WA_TranslucentBackground) # Gives this container a transparent background
+    widget.setLayout(_build_main_rows_hand_staggered(keyboard_widget, key_widgets, keys, col_widths, col_offsets))
+    proxy = scene.addWidget(widget)
+
+    @on(keyboard_widget.key_polish)
+    def polish_key(key: KeyWidget):
+        widget.style().polish(key)
+
+    proxy.setTransformOriginPoint(0, 0)
+    proxy.setRotation(angle)
+
+    return RotatableKeyContainer(widget, proxy, scene, keyboard_widget)
+
+
+def _build_main_rows_layout_staggered(keyboard_widget: KeyboardWidget, key_widgets: list[KeyWidget]) -> QLayout:
+    layout = QHBoxLayout()
+    layout.setSpacing(0)
+
+    layout.addWidget(_build_main_rows_hand_container(keyboard_widget, key_widgets, _MAIN_ROWS_KEYS_LEFT, _col_widths_left, _COL_OFFSETS_LEFT, 10))
+    layout.addStretch(1)
+    layout.addWidget(_build_main_rows_hand_container(keyboard_widget, key_widgets, _MAIN_ROWS_KEYS_RIGHT, _col_widths_right, _COL_OFFSETS_RIGHT, -10))
 
     return layout
 
@@ -446,11 +507,11 @@ def _build_keyboard_layout(
     layout = QGridLayout()
 
 
-    scene = QGraphicsScene(keyboard_widget)
+    """ scene = QGraphicsScene(keyboard_widget)
     widget = QWidget()
     widget.setStyleSheet(KEY_STYLESHEET)
     widget.setAttribute(Qt.WA_TranslucentBackground) # Gives this container a transparent background
-    widget.setLayout(build_main_rows(keyboard_widget, key_widgets))
+    widget.setLayout()
     proxy = scene.addWidget(widget)
 
     @on(keyboard_widget.key_polish)
@@ -460,11 +521,9 @@ def _build_keyboard_layout(
     proxy.setRotation(-10)
     proxy.setPos(0, 0)
 
-    view = RotatableKeyContainer(widget, proxy, scene, keyboard_widget)
+    view = RotatableKeyContainer(widget, proxy, scene, keyboard_widget) """
 
-    layout.addWidget(view, 0, 0)
-
-    # layout.addLayout(build_main_rows(keyboard_widget, key_widgets), 0, 0)
+    layout.addLayout(build_main_rows(keyboard_widget, key_widgets), 0, 0)
 
     layout.setRowStretch(1, 1)
     
