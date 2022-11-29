@@ -204,7 +204,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
     index_stretch = computed_on_signal(lambda: settings.index_stretch, settings.index_stretch_change)
     pinky_stretch = computed_on_signal(lambda: settings.pinky_stretch, settings.pinky_stretch_change)
 
-    VOWEL_SET_OFFSET = 0
+    VOWEL_SET_OFFSET = 0.25
 
     row_heights = (
         key_height_num_bar,
@@ -269,9 +269,9 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
     ROWS_GAP = 2.25
 
-    col_offsets = (x + key_width.value * 0.45 for x in (
-        key_width.value * -0.45,  # S-
-        key_width.value * 0.125, # T-, K-
+    col_offsets = (width + key_width.value * 0.4 for width in (
+        key_width.value * -0.4,  # S-
+        key_width.value * 0.1, # T-, K-
         key_width.value * 0.5, # P-, W-
         0, # H-, R-
         0,
@@ -279,30 +279,30 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         0,
         0,  # -F, -R
         key_width.value * 0.5,  # -P, -B
-        key_width.value * 0.125,  # -L, -G
-        key_width.value * -0.45,  # -T, -S
-        key_width.value * -0.45,
-        key_width.value * -0.45,  # -D, -Z
+        key_width.value * 0.1,  # -L, -G
+        key_width.value * -0.4,  # -T, -S
+        key_width.value * -0.4,
+        key_width.value * -0.4,  # -D, -Z
     ))
 
-    col_offsets_left = tuple(x + key_width.value * 0.45 for x in (
-        key_width.value * -0.45,  # S-
-        key_width.value * 0.15,  # T-, K-
+    col_offsets_left = tuple(width + key_width.value * 0.4 for width in (
+        key_width.value * -0.4,  # S-
+        key_width.value * 0.1,  # T-, K-
         key_width.value * 0.5,  # P-, W-
         0,  # H-, R-
         0,
         0,
     ))
 
-    col_offsets_right = tuple(x + key_width.value * 0.45 for x in (
+    col_offsets_right = tuple(width + key_width.value * 0.4 for width in (
         0,
         0,
         0,  # -F, -R
         key_width.value * 0.5,  # -P, -B
-        key_width.value * 0.15,  # -L, -G
-        key_width.value * -0.45,  # -T, -S
-        key_width.value * -0.45,
-        key_width.value * -0.45,  # -D, -Z
+        key_width.value * 0.1,  # -L, -G
+        key_width.value * -0.4,  # -T, -S
+        key_width.value * -0.4,
+        key_width.value * -0.4,  # -D, -Z
     ))
 
 
@@ -390,11 +390,6 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         widget.setLayout(build_main_rows_hand_staggered(key_widgets, keys, col_widths, col_offsets))
         proxy = scene.addWidget(widget)
 
-        @on(keyboard_widget.key_polish)
-        def polish_key(key: KeyWidget):
-            widget.style().polish(key)
-
-        proxy.setTransformOriginPoint(0, 0)
         proxy.setRotation(angle)
 
         return RotatableKeyContainer(widget, proxy, scene, keyboard_widget)

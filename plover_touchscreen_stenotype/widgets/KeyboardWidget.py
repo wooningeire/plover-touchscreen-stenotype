@@ -33,8 +33,6 @@ class KeyboardWidget(QWidget):
     current_stroke_change = pyqtSignal(set)  # set[str]
     after_touch_event = pyqtSignal()
     num_bar_pressed_change = pyqtSignal(bool)
-    key_polish = pyqtSignal(KeyWidget)
-    """Emitted when a `KeyWidget`s is repolished"""
 
     #region Overrides
 
@@ -179,4 +177,3 @@ class KeyboardWidget(QWidget):
                 # Reload stylesheet for dynamic properties: https://stackoverflow.com/questions/1595476/are-qts-stylesheets-really-handling-dynamic-properties
                 # self.style().unpolish(key_widget)
                 self.style().polish(key_widget)
-                self.key_polish.emit(key_widget)
