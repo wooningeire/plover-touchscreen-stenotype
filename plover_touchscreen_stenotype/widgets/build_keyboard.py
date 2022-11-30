@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from math import sin, radians
 from functools import partial
 from typing import TYPE_CHECKING, Callable
 if TYPE_CHECKING:
@@ -384,6 +385,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
             layout.setSizeConstraint(QLayout.SetFixedSize)
             
         layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         return layout
 
@@ -394,7 +396,8 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         col_widths: tuple[Ref[float]],
         col_offsets: tuple[float],
         angle: float,
-    ) -> RotatableKeyContainer:
+        anchor: int,
+    ) -> QLayout:
         scene = QGraphicsScene(keyboard_widget)
 
         widget = QWidget()
@@ -403,18 +406,45 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         widget.setLayout(build_main_rows_hand_staggered(key_widgets, keys, col_widths, col_offsets))
         proxy = scene.addWidget(widget)
 
+        proxy.setPos(-widget.geometry().width() * anchor, -widget.geometry().height())
+        proxy.setTransformOriginPoint(widget.rect().bottomLeft() if anchor == 0 else widget.rect().bottomRight())
         proxy.setRotation(angle)
 
-        return RotatableKeyContainer(widget, proxy, scene, keyboard_widget)
+        container = RotatableKeyContainer(widget, proxy, scene, keyboard_widget)
+
+
+        offset_layout = QVBoxLayout()
+        offset_layout.addStretch(1) # Forces containers to be aligned to bottom
+
+        # Allows height to be subtracted from container without being consumed by the stretch spacer
+        direct_layout = QVBoxLayout()
+        direct_layout.addSpacerItem(offset_spacer := QSpacerItem(0, 0))
+        @watch(dpi.change)
+        def set_offset():
+            # Removes the additional height caused by the rotation when the layout and key widget corners do not match
+            if anchor == 0:
+                widths = col_widths_right[-4:]
+            else:
+                widths = col_widths_left[:3]
+
+            radius = sum(dpi.cm(width.value) for width in widths)
+            offset = radius * -sin(radians(abs(angle)))
+            offset_spacer.changeSize(0, round(offset))
+
+        direct_layout.addWidget(container)
+
+        offset_layout.addLayout(direct_layout)
+
+        return offset_layout
 
 
     def build_main_rows_layout_staggered(key_widgets: list[KeyWidget]) -> QLayout:
         layout = QHBoxLayout()
         layout.setSpacing(0)
 
-        layout.addWidget(build_main_rows_hand_container(key_widgets, _MAIN_ROWS_KEYS_LEFT, col_widths_left, col_offsets_left, 10))
+        layout.addLayout(build_main_rows_hand_container(key_widgets, _MAIN_ROWS_KEYS_LEFT, col_widths_left, col_offsets_left, 10, 1))
         layout.addStretch(1)
-        layout.addWidget(build_main_rows_hand_container(key_widgets, _MAIN_ROWS_KEYS_RIGHT, col_widths_right, col_offsets_right, -10))
+        layout.addLayout(build_main_rows_hand_container(key_widgets, _MAIN_ROWS_KEYS_RIGHT, col_widths_right, col_offsets_right, -10, 0))
 
         return layout
 
