@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from math import sin, radians
 from functools import partial
 from typing import TYPE_CHECKING, Callable
 if TYPE_CHECKING:
@@ -197,7 +198,7 @@ _key_height_num_bar = computed(lambda: _key_height.value / 2, _key_height)
 _index_stretch = Ref(0.2)
 _pinky_stretch = Ref(0.8)
 
-_VOWEL_SET_OFFSET = 0.25
+_VOWEL_SET_OFFSET = 0.45
 
 _row_heights = (
     _key_height_num_bar,
@@ -252,25 +253,25 @@ _vowel_set_widths = (
 _ROWS_GAP = 2.25
 
 _COL_OFFSETS = (x + key_width.value * 0.4 for x in (
-    key_width.value * -0.4,  # S-
-    key_width.value * 0.1, # T-, K-
-    key_width.value * 0.5, # P-, W-
+    key_width.value * -0.25,  # S-
+    key_width.value * 0.15, # T-, K-
+    key_width.value * 0.45, # P-, W-
     0, # H-, R-
     0,
     0,
     0,
     0,  # -F, -R
-    key_width.value * 0.5,  # -P, -B
-    key_width.value * 0.1,  # -L, -G
-    key_width.value * -0.4,  # -T, -S
-    key_width.value * -0.4,
-    key_width.value * -0.4,  # -D, -Z
+    key_width.value * 0.45,  # -P, -B
+    key_width.value * 0.15,  # -L, -G
+    key_width.value * -0.25,  # -T, -S
+    key_width.value * -0.25,
+    key_width.value * -0.25,  # -D, -Z
 ))
 
 _COL_OFFSETS_LEFT = (x + key_width.value * 0.4 for x in (
-    key_width.value * -0.4,  # S-
-    key_width.value * 0.1,  # T-, K-
-    key_width.value * 0.5,  # P-, W-
+    key_width.value * -0.25,  # S-
+    key_width.value * 0.15,  # T-, K-
+    key_width.value * 0.45,  # P-, W-
     0,  # H-, R-
     0,
     0,
@@ -280,11 +281,11 @@ _COL_OFFSETS_RIGHT = (x + key_width.value * 0.4 for x in (
     0,
     0,
     0,  # -F, -R
-    key_width.value * 0.5,  # -P, -B
-    key_width.value * 0.1,  # -L, -G
-    key_width.value * -0.4,  # -T, -S
-    key_width.value * -0.4,
-    key_width.value * -0.4,  # -D, -Z
+    key_width.value * 0.45,  # -P, -B
+    key_width.value * 0.15,  # -L, -G
+    key_width.value * -0.25,  # -T, -S
+    key_width.value * -0.25,
+    key_width.value * -0.25,  # -D, -Z
 ))
 
 
@@ -357,6 +358,7 @@ def _build_main_rows_hand_staggered(
         layout.setSizeConstraint(QLayout.SetFixedSize)
         
     layout.setSpacing(0)
+    layout.setContentsMargins(0, 0, 0, 0)
 
     return layout
 
@@ -368,7 +370,10 @@ def _build_main_rows_hand_container(
     col_widths: tuple[Ref[float]],
     col_offsets: tuple[float],
     angle: float,
-) -> RotatableKeyContainer:
+    anchor: int,
+) -> QLayout:
+    dpi = keyboard_widget.dpi
+
     scene = QGraphicsScene(keyboard_widget)
 
     widget = QWidget()
@@ -377,18 +382,45 @@ def _build_main_rows_hand_container(
     widget.setLayout(_build_main_rows_hand_staggered(keyboard_widget, key_widgets, keys, col_widths, col_offsets))
     proxy = scene.addWidget(widget)
 
+    proxy.setPos(-widget.geometry().width() * anchor, -widget.geometry().height())
+    proxy.setTransformOriginPoint(widget.rect().bottomLeft() if anchor == 0 else widget.rect().bottomRight())
     proxy.setRotation(angle)
 
-    return RotatableKeyContainer(widget, proxy, scene, keyboard_widget)
+    container = RotatableKeyContainer(widget, proxy, scene, keyboard_widget)
+
+
+    offset_layout = QVBoxLayout()
+    offset_layout.addStretch(1) # Forces containers to be aligned to bottom
+
+    # Allows height to be subtracted from container without being consumed by the stretch spacer
+    direct_layout = QVBoxLayout()
+    direct_layout.addSpacerItem(offset_spacer := QSpacerItem(0, 0))
+    @watch(dpi.change)
+    def set_offset():
+        # Removes the additional height caused by the rotation when the layout and key widget corners do not match
+        if anchor == 0:
+            widths = _col_widths_right[-4:]
+        else:
+            widths = _col_widths_left[:3]
+
+        radius = sum(dpi.cm(width.value) for width in widths)
+        offset = radius * -sin(radians(abs(angle)))
+        offset_spacer.changeSize(0, round(offset))
+
+    direct_layout.addWidget(container)
+
+    offset_layout.addLayout(direct_layout)
+
+    return offset_layout
 
 
 def _build_main_rows_layout_staggered(keyboard_widget: KeyboardWidget, key_widgets: list[KeyWidget]) -> QLayout:
     layout = QHBoxLayout()
     layout.setSpacing(0)
 
-    layout.addWidget(_build_main_rows_hand_container(keyboard_widget, key_widgets, _MAIN_ROWS_KEYS_LEFT, _col_widths_left, _COL_OFFSETS_LEFT, 10))
+    layout.addLayout(_build_main_rows_hand_container(keyboard_widget, key_widgets, _MAIN_ROWS_KEYS_LEFT, _col_widths_left, _COL_OFFSETS_LEFT, 10, 1))
     layout.addStretch(1)
-    layout.addWidget(_build_main_rows_hand_container(keyboard_widget, key_widgets, _MAIN_ROWS_KEYS_RIGHT, _col_widths_right, _COL_OFFSETS_RIGHT, -10))
+    layout.addLayout(_build_main_rows_hand_container(keyboard_widget, key_widgets, _MAIN_ROWS_KEYS_RIGHT, _col_widths_right, _COL_OFFSETS_RIGHT, -10, 0))
 
     return layout
 

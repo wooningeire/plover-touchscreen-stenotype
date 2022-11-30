@@ -2,6 +2,7 @@ from PyQt5.QtCore import (
     QEvent,
    	QPoint,
     Qt,
+	QTimer,
 )
 from PyQt5.QtWidgets import (
     QGraphicsView,
@@ -39,9 +40,17 @@ class RotatableKeyContainer(QGraphicsView):
 	def __setup_ui(self):
 		# self.setAttribute(Qt.WA_AcceptTouchEvents)
 
-		# Disable scrolling
+		# Disable scrolling and hide scrollbars
+		h_scrollbar = self.horizontalScrollBar()
+		v_scrollbar = self.verticalScrollBar()
+
+		h_scrollbar.setEnabled(False)
+		v_scrollbar.setEnabled(False)
 		self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 		self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+		# Scroll to the bottom of the container (bottom-align the key groups)
+		QTimer.singleShot(0, lambda: v_scrollbar.setValue(v_scrollbar.maximum()))
 
 		# Clear default styling
 		self.setStyleSheet("background: #00000000; border: none;")
