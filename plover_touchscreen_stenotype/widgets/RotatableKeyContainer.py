@@ -42,7 +42,7 @@ class RotatableKeyContainer(QGraphicsView):
 
 		# Disable scrolling and hide scrollbars
 		h_scrollbar = self.horizontalScrollBar()
-		v_scrollbar = self.verticalScrollBar()
+		self.__v_scrollbar = v_scrollbar = self.verticalScrollBar()
 
 		h_scrollbar.setEnabled(False)
 		v_scrollbar.setEnabled(False)
@@ -50,7 +50,7 @@ class RotatableKeyContainer(QGraphicsView):
 		self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
 		# Scroll to the bottom of the container (bottom-align the key groups)
-		QTimer.singleShot(0, lambda: v_scrollbar.setValue(v_scrollbar.maximum()))
+		QTimer.singleShot(0, self.scroll_to_bottom)
 
 		# Clear default styling
 		self.setStyleSheet("background: #00000000; border: none;")
@@ -80,3 +80,6 @@ class RotatableKeyContainer(QGraphicsView):
 		widget_coords = self.__proxy.deviceTransform(self.viewportTransform()).inverted()[0].map(view_coords)
 
 		return self.__widget.childAt(widget_coords)
+
+	def scroll_to_bottom(self):
+		self.__v_scrollbar.setValue(self.__v_scrollbar.maximum())

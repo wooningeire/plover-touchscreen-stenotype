@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
     QSpacerItem,
     QGraphicsScene,
     QWidget,
+    QSizePolicy,
 )
 
 from math import sin, radians
@@ -196,9 +197,9 @@ _reduced_key_height = computed(lambda: _key_height.value - _compound_key_size.va
 _key_height_num_bar = computed(lambda: _key_height.value / 2, _key_height)
 
 _index_stretch = Ref(0.2)
-_pinky_stretch = Ref(0.8)
+_pinky_stretch = Ref(0.7)
 
-_VOWEL_SET_OFFSET = 0.45
+_VOWEL_SET_OFFSET = 0.8
 
 _row_heights = (
     _key_height_num_bar,
@@ -245,9 +246,9 @@ _col_widths_right = (
 )
 
 _vowel_set_widths = (
-    _reduced_key_width,
+    computed(lambda: _reduced_key_width.value + 0.5, _reduced_key_width),
     _compound_key_size,
-    _reduced_key_width,
+    computed(lambda: _reduced_key_width.value + 0.5, _reduced_key_width),
 )
 
 _ROWS_GAP = 2.25
@@ -268,7 +269,7 @@ _COL_OFFSETS = (x + key_width.value * 0.4 for x in (
     key_width.value * -0.25,  # -D, -Z
 ))
 
-_COL_OFFSETS_LEFT = (x + key_width.value * 0.4 for x in (
+_COL_OFFSETS_LEFT = (x + key_width.value * 0.25 for x in (
     key_width.value * -0.25,  # S-
     key_width.value * 0.15,  # T-, K-
     key_width.value * 0.45,  # P-, W-
@@ -277,7 +278,7 @@ _COL_OFFSETS_LEFT = (x + key_width.value * 0.4 for x in (
     0,
 ))
 
-_COL_OFFSETS_RIGHT = (x + key_width.value * 0.4 for x in (
+_COL_OFFSETS_RIGHT = (x + key_width.value * 0.25 for x in (
     0,
     0,
     0,  # -F, -R
@@ -306,6 +307,7 @@ def _build_main_rows_hand_staggered(
     layout = QHBoxLayout()
     for column, col_width_cm, col_offset_cm in zip(keys, col_widths, col_offsets):
         column_layout = QVBoxLayout()
+        column_layout.setSizeConstraint(QLayout.SetFixedSize)
         column_layout.addStretch(1)
 
         row_pos = 0
@@ -355,7 +357,7 @@ def _build_main_rows_hand_staggered(
 
         
         layout.addLayout(column_layout)
-        layout.setSizeConstraint(QLayout.SetFixedSize)
+    layout.setSizeConstraint(QLayout.SetFixedSize)
         
     layout.setSpacing(0)
     layout.setContentsMargins(0, 0, 0, 0)
@@ -379,12 +381,11 @@ def _build_main_rows_hand_container(
     widget = QWidget()
     widget.setStyleSheet(KEY_STYLESHEET)
     widget.setAttribute(Qt.WA_TranslucentBackground) # Gives this container a transparent background
-    widget.setLayout(_build_main_rows_hand_staggered(keyboard_widget, key_widgets, keys, col_widths, col_offsets))
-    proxy = scene.addWidget(widget)
 
-    proxy.setPos(-widget.geometry().width() * anchor, -widget.geometry().height())
-    proxy.setTransformOriginPoint(widget.rect().bottomLeft() if anchor == 0 else widget.rect().bottomRight())
-    proxy.setRotation(angle)
+    layout = _build_main_rows_hand_staggered(keyboard_widget, key_widgets, keys, col_widths, col_offsets)
+    widget.setLayout(layout)
+
+    proxy = scene.addWidget(widget)
 
     container = RotatableKeyContainer(widget, proxy, scene, keyboard_widget)
 
@@ -395,21 +396,45 @@ def _build_main_rows_hand_container(
     # Allows height to be subtracted from container without being consumed by the stretch spacer
     direct_layout = QVBoxLayout()
     direct_layout.addSpacerItem(offset_spacer := QSpacerItem(0, 0))
-    @watch(dpi.change)
-    def set_offset():
+
+
+    @watch_many(dpi.change, key_width.change, _key_height.change, _compound_key_size.change, _pinky_stretch.change, _index_stretch.change)
+    def set_proxy_transform_and_container_size():
+        proxy.setPos(-widget.geometry().width() * anchor, -widget.geometry().height())
+        proxy.setTransformOriginPoint(widget.rect().bottomLeft() if anchor == 0 else widget.rect().bottomRight())
+        proxy.setRotation(angle)
+
+        for i in range(layout.count()):
+            layout.itemAt(i).layout().invalidate()
+
+        # Constrains the widget to the size of its layout
+        # TODO explain why this works/find a clearer method
+        widget.setMinimumSize(0, 0)
+        widget.setMaximumSize(layout.sizeHint())
+        widget.setMinimumSize(layout.sizeHint())
+
+        scene.setSceneRect(scene.itemsBoundingRect())
+
+
         # Removes the additional height caused by the rotation when the layout and key widget corners do not match
         if anchor == 0:
             widths = _col_widths_right[-4:]
         else:
-            widths = _col_widths_left[:3]
+            widths = _col_widths_left[:2]
 
         radius = sum(dpi.cm(width.value) for width in widths)
         offset = radius * -sin(radians(abs(angle)))
+
         offset_spacer.changeSize(0, round(offset))
+        container.setMaximumSize(scene.sceneRect().size().toSize())
+
+        QTimer.singleShot(0, container.scroll_to_bottom)
 
     direct_layout.addWidget(container)
 
     offset_layout.addLayout(direct_layout)
+
+    # scene.addLine(0, 0, 0, -400)
 
     return offset_layout
 
