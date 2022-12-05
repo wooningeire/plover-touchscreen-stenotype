@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
     QSpacerItem,
     QGraphicsScene,
     QWidget,
+    QSizePolicy,
 )
 
 from math import sin, radians
@@ -264,9 +265,11 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
     )
 
     vowel_set_widths = (
-        reduced_key_width,
+        computed(lambda: reduced_key_width.value + 0.5,
+                reduced_key_width),
         compound_key_size,
-        reduced_key_width,
+        computed(lambda: reduced_key_width.value + 0.5,
+                reduced_key_width),
     )
 
     INITIAL_ROWS_GAP = 2.25
@@ -335,6 +338,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         layout = QHBoxLayout()
         for column, col_width_cm, col_offset_cm in zip(keys, col_widths, col_offsets):
             column_layout = QVBoxLayout()
+            column_layout.setSizeConstraint(QLayout.SetFixedSize)
             column_layout.addStretch(1)
 
             row_pos = 0
@@ -382,7 +386,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
         
             layout.addLayout(column_layout)
-            layout.setSizeConstraint(QLayout.SetFixedSize)
+        layout.setSizeConstraint(QLayout.SetFixedSize)
             
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -403,12 +407,10 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         widget = QWidget()
         widget.setStyleSheet(KEY_STYLESHEET)
         widget.setAttribute(Qt.WA_TranslucentBackground) # Gives this container a transparent background
-        widget.setLayout(build_main_rows_hand_staggered(key_widgets, keys, col_widths, col_offsets))
-        proxy = scene.addWidget(widget)
 
-        proxy.setPos(-widget.geometry().width() * anchor, -widget.geometry().height())
-        proxy.setTransformOriginPoint(widget.rect().bottomLeft() if anchor == 0 else widget.rect().bottomRight())
-        proxy.setRotation(angle)
+        layout = build_main_rows_hand_staggered(key_widgets, keys, col_widths, col_offsets)
+        widget.setLayout(layout)
+        proxy = scene.addWidget(widget)
 
         container = RotatableKeyContainer(widget, proxy, scene, keyboard_widget)
 
@@ -419,17 +421,39 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         # Allows height to be subtracted from container without being consumed by the stretch spacer
         direct_layout = QVBoxLayout()
         direct_layout.addSpacerItem(offset_spacer := QSpacerItem(0, 0))
-        @watch(dpi.change)
-        def set_offset():
+
+
+        @watch_many(dpi.change, key_width.change, key_height.change, compound_key_size.change, pinky_stretch.change, index_stretch.change)
+        def set_proxy_transform_and_container_size():
+            proxy.setPos(-widget.geometry().width() * anchor, -widget.geometry().height())
+            proxy.setTransformOriginPoint(widget.rect().bottomLeft() if anchor == 0 else widget.rect().bottomRight())
+            proxy.setRotation(angle)
+
+            for i in range(layout.count()):
+                layout.itemAt(i).layout().invalidate()
+
+            # Constrains the widget to the size of its layout
+            # TODO explain why this works/find a clearer method
+            widget.setMinimumSize(0, 0)
+            widget.setMaximumSize(layout.sizeHint())
+            widget.setMinimumSize(layout.sizeHint())
+
+            scene.setSceneRect(scene.itemsBoundingRect())
+
+
             # Removes the additional height caused by the rotation when the layout and key widget corners do not match
             if anchor == 0:
                 widths = col_widths_right[-4:]
             else:
-                widths = col_widths_left[:3]
+                widths = col_widths_left[:2]
 
             radius = sum(dpi.cm(width.value) for width in widths)
             offset = radius * -sin(radians(abs(angle)))
+
             offset_spacer.changeSize(0, round(offset))
+            container.setMaximumSize(scene.sceneRect().size().toSize())
+
+            QTimer.singleShot(0, container.scroll_to_bottom)
 
         direct_layout.addWidget(container)
 

@@ -111,7 +111,7 @@ class Settings(QObject):
         self.index_stretch = 0.2
         self.pinky_stretch = 0.7
 
-        self.vowel_set_offset_fac = 0.45
+        self.vowel_set_offset_fac = 0.4
 
         self.index_stagger_fac = 0.25
         self.middle_stagger_fac = 0.7
