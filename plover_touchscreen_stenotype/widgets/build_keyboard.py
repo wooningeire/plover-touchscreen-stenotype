@@ -8,7 +8,6 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QVBoxLayout,
     QSpacerItem,
-    QGraphicsScene,
     QWidget,
     QSizePolicy,
 )
@@ -24,7 +23,7 @@ else:
 from .KeyWidget import KeyWidget
 from .RotatableKeyContainer import RotatableKeyContainer
 from ..settings import Settings, KeyLayout
-from ..util import UseDpi, Ref, computed, computed_on_signal, on, on_many, watch, watch_many, KEY_STYLESHEET
+from ..util import UseDpi, Ref, computed, computed_on_signal, on, on_many, watch, watch_many
 
 
 _TOP_ROW = 2
@@ -241,7 +240,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
     )
 
     col_widths_left = (
-        computed(lambda: key_width.value + pinky_stretch.value,
+        computed(lambda: key_width.value + pinky_stretch.value + 0.55,
                 key_width, pinky_stretch),
         key_width,
         key_width,
@@ -261,7 +260,8 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         computed(lambda: reduced_key_width.value + pinky_stretch.value,
                 reduced_key_width, pinky_stretch),  # -T, -S
         compound_key_size,
-        reduced_key_width,  # -D, -Z
+        computed(lambda: reduced_key_width.value + 0.5,
+                reduced_key_width),  # -D, -Z
     )
 
     vowel_set_widths = (
@@ -400,19 +400,10 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         col_widths: tuple[Ref[float]],
         col_offsets: tuple[float],
         angle: float,
-        anchor: int,
+        align_left: bool,
     ) -> QLayout:
-        scene = QGraphicsScene(keyboard_widget)
-
-        widget = QWidget()
-        widget.setStyleSheet(KEY_STYLESHEET)
-        widget.setAttribute(Qt.WA_TranslucentBackground) # Gives this container a transparent background
-
         layout = build_main_rows_hand_staggered(key_widgets, keys, col_widths, col_offsets)
-        widget.setLayout(layout)
-        proxy = scene.addWidget(widget)
-
-        container = RotatableKeyContainer(widget, proxy, scene, keyboard_widget)
+        container = RotatableKeyContainer.of_layout(layout, align_left, angle, keyboard_widget)
 
 
         offset_layout = QVBoxLayout()
@@ -423,26 +414,12 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         direct_layout.addSpacerItem(offset_spacer := QSpacerItem(0, 0))
 
 
-        @watch_many(dpi.change, key_width.change, key_height.change, compound_key_size.change, pinky_stretch.change, index_stretch.change)
+        @watch_many(dpi.change, key_width.change, key_height.change, compound_key_size.change,
+                pinky_stretch.change, index_stretch.change,
+                parent=container)
         def set_proxy_transform_and_container_size():
-            proxy.setPos(-widget.geometry().width() * anchor, -widget.geometry().height())
-            proxy.setTransformOriginPoint(widget.rect().bottomLeft() if anchor == 0 else widget.rect().bottomRight())
-            proxy.setRotation(angle)
-
-            for i in range(layout.count()):
-                layout.itemAt(i).layout().invalidate()
-
-            # Constrains the widget to the size of its layout
-            # TODO explain why this works/find a clearer method
-            widget.setMinimumSize(0, 0)
-            widget.setMaximumSize(layout.sizeHint())
-            widget.setMinimumSize(layout.sizeHint())
-
-            scene.setSceneRect(scene.itemsBoundingRect())
-
-
             # Removes the additional height caused by the rotation when the layout and key widget corners do not match
-            if anchor == 0:
+            if align_left:
                 widths = col_widths_right[-4:]
             else:
                 widths = col_widths_left[:2]
@@ -451,9 +428,8 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
             offset = radius * -sin(radians(abs(angle)))
 
             offset_spacer.changeSize(0, round(offset))
-            container.setMaximumSize(scene.sceneRect().size().toSize())
 
-            QTimer.singleShot(0, container.scroll_to_bottom)
+            container.update_size()
 
         direct_layout.addWidget(container)
 
@@ -466,9 +442,11 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         layout = QHBoxLayout()
         layout.setSpacing(0)
 
-        layout.addLayout(build_main_rows_hand_container(key_widgets, _MAIN_ROWS_KEYS_LEFT, col_widths_left, col_offsets_left, 10, 1))
+        layout.addLayout(build_main_rows_hand_container(
+            key_widgets, _MAIN_ROWS_KEYS_LEFT, col_widths_left, col_offsets_left, 10, False))
         layout.addStretch(1)
-        layout.addLayout(build_main_rows_hand_container(key_widgets, _MAIN_ROWS_KEYS_RIGHT, col_widths_right, col_offsets_right, -10, 0))
+        layout.addLayout(build_main_rows_hand_container(
+            key_widgets, _MAIN_ROWS_KEYS_RIGHT, col_widths_right, col_offsets_right, -10, True))
 
         return layout
 
