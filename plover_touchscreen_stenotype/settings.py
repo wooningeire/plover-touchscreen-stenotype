@@ -108,14 +108,14 @@ class Settings(QObject):
         self.key_height = 2.25
         self.compound_key_size = 0.9
 
-        self.index_stretch = 0.2
-        self.pinky_stretch = 0.7
+        self.index_stretch = 0.1
+        self.pinky_stretch = 0.6
 
-        self.vowel_set_offset_fac = 0.4
+        self.vowel_set_offset_fac = 0.35
 
-        self.index_stagger_fac = 0.25
-        self.middle_stagger_fac = 0.7
-        self.ring_stagger_fac = 0.4
+        self.index_stagger_fac = 0.4
+        self.middle_stagger_fac = 0.8
+        self.ring_stagger_fac = 0.55
         self.pinky_stagger_fac = 0
 
         @on_many(self.stroke_preview_stroke_ref.change, self.stroke_preview_translation_ref.change)

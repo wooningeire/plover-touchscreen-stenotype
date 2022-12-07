@@ -10,11 +10,13 @@ from PyQt5.QtWidgets import (
     QSpacerItem,
     QWidget,
     QSizePolicy,
+    QWidgetItem,
+    QLayoutItem,
 )
 
 from math import sin, radians
 from functools import partial
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Iterable
 if TYPE_CHECKING:
     from .KeyboardWidget import KeyboardWidget
 else:
@@ -130,7 +132,7 @@ _MAIN_ROWS_KEYS_GRID = (
     (["R-"], "R", (_LOW_ROW, 3)),
     (["H-", "*"], "", (_TOP_ROW, 4)),
     (["R-", "*"], "", (_LOW_ROW, 4)),
-    (["*"], "*", (_TOP_ROW, 5, 3, 1)),
+    (["*"], "🞱", (_TOP_ROW, 5, 3, 1)),
     (["*", "-F"], "", (_TOP_ROW, 6)),
     (["*", "-R"], "", (_LOW_ROW, 6)),
     (["-F"], "F", (_TOP_ROW, 7), "6"),
@@ -265,10 +267,10 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
     )
 
     vowel_set_widths = (
-        computed(lambda: reduced_key_width.value + 0.5,
+        computed(lambda: reduced_key_width.value + 0.25,
                 reduced_key_width),
         compound_key_size,
-        computed(lambda: reduced_key_width.value + 0.5,
+        computed(lambda: reduced_key_width.value + 0.25,
                 reduced_key_width),
     )
 
@@ -304,6 +306,25 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         pinky_offset, # -D, -Z
     )
 
+    """
+    col_offsets = (
+        0,  # S-
+        key_width.value * 0.375,  # T-, K-
+        key_width.value * 0.6,  # P-, W-
+        0,  # H-, R-
+        0,
+        0,
+        0,
+        0,  # -F, -R
+        key_width.value * 0.6,  # -P, -B
+        key_width.value * 0.375,  # -L, -G
+        0,  # -T, -S
+        0,
+        0,  # -D, -Z
+    )
+    """
+
+
     col_offsets_left = (
         pinky_offset,  # S-
         ring_offset,  # T-, K-
@@ -323,6 +344,11 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         pinky_offset,
         pinky_offset, # -D, -Z
     )
+
+    # in degrees
+    MAIN_ROWS_ANGLE = 10
+    VOWEL_ROWS_ANGLE = 15
+
 
     ASTERISK_COLUMN_INDEX = 5
 
@@ -443,12 +469,18 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         layout.setSpacing(0)
 
         layout.addLayout(build_main_rows_hand_container(
-            key_widgets, _MAIN_ROWS_KEYS_LEFT, col_widths_left, col_offsets_left, 10, False))
+                key_widgets, _MAIN_ROWS_KEYS_LEFT, col_widths_left, col_offsets_left, MAIN_ROWS_ANGLE, False))
         layout.addStretch(1)
         layout.addLayout(build_main_rows_hand_container(
-            key_widgets, _MAIN_ROWS_KEYS_RIGHT, col_widths_right, col_offsets_right, -10, True))
+                key_widgets, _MAIN_ROWS_KEYS_RIGHT, col_widths_right, col_offsets_right, -MAIN_ROWS_ANGLE, True))
 
         return layout
+
+        """ container_layout = QVBoxLayout()
+        container_layout.addLayout(layout)
+        container_layout.addStretch(1)
+
+        return container_layout """
 
 
     def build_main_rows_layout_grid(key_widgets: list[KeyWidget]) -> QLayout:
@@ -494,37 +526,44 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         return layout
 
 
-    def build_vowel_row_layout(key_widgets: list[KeyWidget]) -> QLayout:
+    def build_vowel_set_layout(vowel_key_descriptors: tuple[Iterable[str], str, str], key_widgets: list[KeyWidget]):
         # Parameter defaults on inner functions are used to create closures
+
+        set_layout = QHBoxLayout()
+        set_layout.setSpacing(0)
+        set_layout.setContentsMargins(0, 0, 0, 0)
+        set_layout.setSizeConstraint(QLayout.SetFixedSize)
+
+        for (values, label, *rest), width in zip(vowel_key_descriptors, vowel_set_widths):
+            key_widget = KeyWidget(values, label, keyboard_widget)
+            key_widgets.append(key_widget)
         
+            if len(rest) > 0:
+                num_bar_label: str = rest[0]
+                keyboard_widget.num_bar_pressed_change.connect(key_widget.num_bar_pressed_handler(label, num_bar_label))
+
+
+            @watch_many(dpi.change, width.change, key_height.change, parent=key_widget)
+            def resize(
+                key_widget: KeyWidget=key_widget,
+                width: Ref[float]=width,
+            ):
+                key_widget.setFixedSize(dpi.cm(width.value), dpi.cm(key_height.value))
+
+
+            set_layout.addWidget(key_widget)
+
+        return set_layout
+
+    def build_vowel_row_containing_sets(left_set: QLayoutItem, right_set: QLayoutItem) -> QLayout:
         layout = QHBoxLayout()
         layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        def add_vowel_set(vowel_key_descriptors):
-            for (values, label, *rest), width in zip(vowel_key_descriptors, vowel_set_widths):
-                key_widget = KeyWidget(values, label, keyboard_widget)
-                key_widgets.append(key_widget)
-            
-                if len(rest) > 0:
-                    num_bar_label: str = rest[0]
-                    keyboard_widget.num_bar_pressed_change.connect(key_widget.num_bar_pressed_handler(label, num_bar_label))
-
-
-                @watch_many(dpi.change, width.change, key_height.change, parent=key_widget)
-                def resize(
-                    key_widget: KeyWidget=key_widget,
-                    width: Ref[float]=width,
-                ):
-                    key_widget.setFixedSize(dpi.cm(width.value), dpi.cm(key_height.value))
-
-
-                layout.addWidget(key_widget)
-
-        
         layout.addSpacerItem(left_spacer := QSpacerItem(0, 0))
-        add_vowel_set(_VOWEL_ROW_KEYS_LEFT)
+        layout.addItem(left_set)
         layout.addStretch(1)
-        add_vowel_set(_VOWEL_ROW_KEYS_RIGHT)
+        layout.addItem(right_set)
         layout.addSpacerItem(right_spacer := QSpacerItem(0, 0))
 
         @watch_many(dpi.change, key_width.change, pinky_stretch.change, index_stretch.change, vowel_set_offset.change,
@@ -540,8 +579,35 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         def invalidate_layout():
             layout.invalidate()
 
-
         return layout
+
+
+    def build_vowel_row_layout_staggered(key_widgets: list[KeyWidget]) -> QLayout:
+        left_set_layout = build_vowel_set_layout(_VOWEL_ROW_KEYS_LEFT, key_widgets)
+        left_container = RotatableKeyContainer.of_layout(left_set_layout, False, VOWEL_ROWS_ANGLE, keyboard_widget)
+        
+        right_set_layout = build_vowel_set_layout(_VOWEL_ROW_KEYS_RIGHT, key_widgets)
+        right_container = RotatableKeyContainer.of_layout(right_set_layout, True, -VOWEL_ROWS_ANGLE, keyboard_widget)
+
+
+        layout = build_vowel_row_containing_sets(QWidgetItem(left_container), QWidgetItem(right_container))
+
+
+        @watch_many(dpi.change, key_width.change, key_height.change, compound_key_size.change,
+                pinky_stretch.change, index_stretch.change,
+                parent=layout)
+        def update_sizes():
+            left_container.update_size()
+            right_container.update_size()
+        
+        return layout
+
+
+    def build_vowel_row_layout_grid(key_widgets: list[KeyWidget]) -> QLayout:
+        return build_vowel_row_containing_sets(
+            build_vowel_set_layout(_VOWEL_ROW_KEYS_LEFT, key_widgets),
+            build_vowel_set_layout(_VOWEL_ROW_KEYS_RIGHT, key_widgets),
+        )
 
 
     def build_keyboard_layout(
@@ -563,9 +629,10 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         layout.setRowStretch(1, 1)
         
         @watch(dpi.change)
-        def resize_row_spacer():
+        def resize_spacer_row():
             layout.setRowMinimumHeight(1, dpi.cm(INITIAL_ROWS_GAP))
-            QTimer.singleShot(0, lambda: layout.setRowMinimumHeight(1, 0))
+            # Allow negative stretch so the other grid rows can overlap
+            QTimer.singleShot(0, lambda: layout.setRowMinimumHeight(1, -16777216))
 
         layout.addLayout(build_vowel_row(key_widgets), 2, 0)
 
@@ -576,8 +643,8 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
 
     return {
-        KeyLayout.STAGGERED: partial(build_keyboard_layout, build_main_rows_layout_staggered, build_vowel_row_layout),
-        KeyLayout.GRID: partial(build_keyboard_layout, build_main_rows_layout_grid, build_vowel_row_layout),
+        KeyLayout.STAGGERED: partial(build_keyboard_layout, build_main_rows_layout_staggered, build_vowel_row_layout_staggered),
+        KeyLayout.GRID: partial(build_keyboard_layout, build_main_rows_layout_grid, build_vowel_row_layout_grid),
     }
 
 #endregion
