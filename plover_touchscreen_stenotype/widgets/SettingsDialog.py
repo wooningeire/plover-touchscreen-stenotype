@@ -1,17 +1,16 @@
 from PyQt5.QtCore import (
     Qt,
+    pyqtBoundSignal,
 )
 from PyQt5.QtWidgets import (
     QWidget,
     QDialog,
     QVBoxLayout,
-    QHBoxLayout,
     QGridLayout,
     QGroupBox,
     QButtonGroup,
     QRadioButton,
     QCheckBox,
-    QSlider,
     QDoubleSpinBox,
     QLabel,
     QSizePolicy,
@@ -22,14 +21,15 @@ from PyQt5.QtGui import (
     QTextDocument,
 )
 
-from typing import TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING
 if TYPE_CHECKING:
-    from plover_touchscreen_stenotype.Main import Main
+    from ..Main import Main
 else:
     Main = object
 
-from plover_touchscreen_stenotype.settings import Settings, KeyLayout
-from plover_touchscreen_stenotype.util import watch_many, FONT_FAMILY
+from .FloatSlider import FloatSlider
+from ..settings import Settings, KeyLayout
+from ..util import on, watch_many, FONT_FAMILY
 
 
 class SettingsDialog(QDialog):
@@ -72,7 +72,10 @@ class SettingsDialog(QDialog):
             key_layout_group.addButton(radio)
         key_layout_box.setLayout(key_layout_box_layout)
 
-        key_layout_group.buttonToggled.connect(self.__on_keyboard_layout_change)
+        @on(key_layout_group.buttonToggled)
+        def update_keyboard_layout(button: QRadioButton, checked: bool):
+            if not checked: return
+            self.__settings.key_layout = self.__key_layout_radios[id(button)]
 
 
         stroke_preview_box = QGroupBox("Stroke preview", self)
@@ -89,78 +92,96 @@ class SettingsDialog(QDialog):
             stroke_preview_box_layout.addWidget(checkbox)
         stroke_preview_box.setLayout(stroke_preview_box_layout)
 
-        stroke_preview_checkboxes[0].toggled.connect(self.__on_stroke_preview_stroke_change)
-        stroke_preview_checkboxes[1].toggled.connect(self.__on_stroke_preview_translation_change)
+        @on(stroke_preview_checkboxes[0].toggled)
+        def update_stroke_preview_stroke(checked: bool):
+            self.__settings.stroke_preview_stroke = checked
+
+        @on(stroke_preview_checkboxes[1].toggled)
+        def update_stroke_preview_translation(checked: bool):
+            self.__settings.stroke_preview_translation = checked
 
 
-        size_box = QGroupBox("Key/layout geometry", self)
+        size_box = QGroupBox("Key and layout geometry", self)
         size_box_layout = QGridLayout()
 
-        # key_width_slider = QSlider(Qt.Horizontal, size_box)
-        # key_width_slider.setMinimum(0.5)
-        # key_width_slider.setMaximum(4)
-        # key_width_slider.setSingleStep(0.1)
-        # key_width_slider.setValue(self.__settings.key_width)
+        def update_key_width(value: float):
+            self.__settings.key_width = value
 
-        # key_width_slider.valueChanged.connect(self.__on_key_width_change)
+        def update_key_height(value: float):
+            self.__settings.key_height = value
 
-        key_width_box = QDoubleSpinBox(size_box)
-        key_width_box.setMinimum(0.5)
-        key_width_box.setMaximum(3)
-        key_width_box.setSingleStep(0.1)
-        key_width_box.setValue(self.__settings.key_width)
-        
-        key_width_box.valueChanged.connect(self.__on_key_width_change)
+        def update_compound_key_size(value: float):
+            self.__settings.compound_key_size = value
 
+        def update_index_stretch(value: float):
+            self.__settings.index_stretch = value
 
-        key_height_box = QDoubleSpinBox(size_box)
-        key_height_box.setMinimum(0.5)
-        key_height_box.setMaximum(3)
-        key_height_box.setSingleStep(0.1)
-        key_height_box.setValue(self.__settings.key_height)
-
-        key_height_box.valueChanged.connect(self.__on_key_height_change)
+        def update_pinky_stretch(value: float):
+            self.__settings.pinky_stretch = value
 
 
-        compound_key_box = QDoubleSpinBox(size_box)
-        compound_key_box.setMinimum(0.25)
+        compound_key_box, compound_key_slider = _build_box_slider_pair(
+            self.__settings.compound_key_size,
+            update_compound_key_size,
+            0.25,
+            min(self.__settings.key_width, self.__settings.key_height),
+            self.__settings.compound_key_size_change,
+            parent=size_box,
+        )
+
         @watch_many(self.__settings.key_width_change, self.__settings.key_height_change)
         def set_compound_key_size_max():
-            compound_key_box.setMaximum(min(self.__settings.key_width, self.__settings.key_height))
-        compound_key_box.setSingleStep(0.05)
-        compound_key_box.setValue(self.__settings.compound_key_size)
+            new_max = min(self.__settings.key_width, self.__settings.key_height)
 
-        compound_key_box.valueChanged.connect(self.__on_compound_key_size_change)
-
-
-        index_stretch_box = QDoubleSpinBox(size_box)
-        index_stretch_box.setMinimum(0)
-        index_stretch_box.setMaximum(1)
-        index_stretch_box.setSingleStep(0.05)
-        index_stretch_box.setValue(self.__settings.index_stretch)
-
-        index_stretch_box.valueChanged.connect(self.__on_index_stretch_change)
+            compound_key_box.setMaximum(new_max)
+            compound_key_slider.max = new_max
 
 
-        pinky_stretch_box = QDoubleSpinBox(size_box)
-        pinky_stretch_box.setMinimum(0)
-        pinky_stretch_box.setMaximum(1.5)
-        pinky_stretch_box.setSingleStep(0.05)
-        pinky_stretch_box.setValue(self.__settings.pinky_stretch)
-
-        pinky_stretch_box.valueChanged.connect(self.__on_pinky_stretch_change)
-
-
-        for i, (label, box, after_label) in enumerate((
-            ("Base key width", key_width_box, "cm"),
-            ("Base key height", key_height_box, "cm"),
-            ("Compound key size", compound_key_box, "cm"),
-            ("Index finger stretch", index_stretch_box, "cm"),
-            ("Pinky finger stretch", pinky_stretch_box, "cm"),
+        for i, (label, box, slider, after_label) in enumerate((
+            ("Base key width",
+                *_build_box_slider_pair(
+                    self.__settings.key_width,
+                    update_key_width,
+                    0.5,
+                    3,
+                    self.__settings.key_width_change,
+                    parent=size_box,
+                ), "cm"),
+            ("Base key height",
+                *_build_box_slider_pair(
+                    self.__settings.key_height,
+                    update_key_height,
+                    0.5,
+                    3,
+                    self.__settings.key_height_change,
+                    parent=size_box,
+                ), "cm"),
+            ("Compound key size", compound_key_box, compound_key_slider, "cm"),
+            ("Index finger stretch",
+                *_build_box_slider_pair(
+                    self.__settings.index_stretch,
+                    update_index_stretch,
+                    0,
+                    1,
+                    self.__settings.index_stretch_change,
+                    spin_box_step=0.05,
+                    parent=size_box,
+                ), "cm"),
+            ("Pinky finger stretch",
+                *_build_box_slider_pair(
+                    self.__settings.pinky_stretch,
+                    update_pinky_stretch,
+                    0,
+                    1.5,
+                    self.__settings.pinky_stretch_change,
+                    spin_box_step=0.05,
+                    parent=size_box,
+                ), "cm"),
         )):
-            size_box_layout.addWidget(QLabel(label), i, 0, Qt.AlignRight)
-            size_box_layout.addWidget(box, i, 1)
-            size_box_layout.addWidget(QLabel(after_label), i, 2)
+            size_box_layout.addWidget(QLabel(label), i * 2, 0, 1, 3)
+            size_box_layout.addWidget(slider, i * 2 + 1, 0)
+            size_box_layout.addWidget(box, i * 2 + 1, 1)
+            size_box_layout.addWidget(QLabel(after_label), i * 2 + 1, 2)
             
         size_box.setLayout(size_box_layout)
 
@@ -186,27 +207,33 @@ class SettingsDialog(QDialog):
         self.setLayout(layout)
 
 
-    def __on_keyboard_layout_change(self, button: QRadioButton, checked: bool):
-        if not checked: return
-        self.__settings.key_layout = self.__key_layout_radios[id(button)]
 
-    def __on_stroke_preview_stroke_change(self, checked: bool):
-        self.__settings.stroke_preview_stroke = checked
+def _build_box_slider_pair(
+    current_value: float,
+    update_settings_attr: Callable[[float], None],
+    min: float,
+    max: float,
+    settings_signal: pyqtBoundSignal,
+    spin_box_step=0.1,
+    parent: QWidget=None,
+) -> tuple[QDoubleSpinBox, FloatSlider]:
+    box = QDoubleSpinBox(parent)
+    box.setMinimum(min)
+    box.setMaximum(max)
+    box.setSingleStep(spin_box_step)
+    box.setValue(current_value)
+    
+    slider = FloatSlider(current_value, min=min, max=max, parent=parent)
+    @on(box.valueChanged)
+    @on(slider.input)
+    def update_settings(value: float):
+        update_settings_attr(value)
 
-    def __on_stroke_preview_translation_change(self, checked: bool):
-        self.__settings.stroke_preview_translation = checked
+    @on(settings_signal)
+    def update_displays(value: float):
+        if not box.hasFocus():
+            box.setValue(value)
+        if not slider.hasFocus():
+            slider.current_value = value
 
-    def __on_key_width_change(self, value: float):
-        self.__settings.key_width = value
-
-    def __on_key_height_change(self, value: float):
-        self.__settings.key_height = value
-
-    def __on_compound_key_size_change(self, value: float):
-        self.__settings.compound_key_size = value
-
-    def __on_index_stretch_change(self, value: float):
-        self.__settings.index_stretch = value
-
-    def __on_pinky_stretch_change(self, value: float):
-        self.__settings.pinky_stretch = value
+    return box, slider

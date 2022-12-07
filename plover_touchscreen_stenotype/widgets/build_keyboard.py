@@ -282,21 +282,26 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
                     row_heights_cm = (*row_heights_cm, Ref(col_offset_cm / 2))
 
                 if col_index == _ASTERISK_COLUMN_INDEX:
-                    @watch_many(dpi.change, *(height.change for height in row_heights_cm), parent=key_widget)
-                    def resize(
+                    @watch(dpi.change)
+                    def reset_width(
                         key_widget: KeyWidget=key_widget,
                         col_width_cm: Ref[float]=col_width_cm,
-                        row_heights_cm: tuple[Ref[float]]=row_heights_cm,
                     ):
                         key_widget.setMinimumWidth(dpi.cm(col_width_cm.value))
-                        key_widget.setFixedHeight(sum(dpi.cm(height.value) for height in row_heights_cm))
 
                         # Defer setting the minimum width to later; setting it immediately causes it to shrink to this size initially
                         QTimer.singleShot(0, lambda: key_widget.setMinimumWidth(0))
+
+                    @watch_many(dpi.change, *(height.change for height in row_heights_cm), parent=key_widget)
+                    def reset_height(
+                        key_widget: KeyWidget=key_widget,
+                        row_heights_cm: tuple[Ref[float]]=row_heights_cm,
+                    ):
+                        key_widget.setFixedHeight(sum(dpi.cm(height.value) for height in row_heights_cm))
                         
                 else:
                     @watch_many(dpi.change, col_width_cm.change, *(height.change for height in row_heights_cm), parent=key_widget)
-                    def resize(
+                    def reset_height(
                         key_widget: KeyWidget=key_widget,
                         col_width_cm: Ref[float]=col_width_cm,
                         row_heights_cm: tuple[Ref[float]]=row_heights_cm,
