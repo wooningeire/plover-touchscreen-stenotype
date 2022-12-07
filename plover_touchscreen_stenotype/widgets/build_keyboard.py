@@ -234,20 +234,24 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
     ROWS_GAP = 2.25
 
-    COL_OFFSETS = (
-        0,  # S-
-        key_width.value * 0.375, # T-, K-
-        key_width.value * 0.6, # P-, W-
-        0, # H-, R-
-        0,
-        0,
-        0,
-        0,  # -F, -R
-        key_width.value * 0.6,  # -P, -B
-        key_width.value * 0.375,  # -L, -G
-        0,  # -T, -S
-        0,
-        0, # -D, -Z
+    col_offsets = (
+        Ref(0),  # S-
+        computed(lambda: key_width.value * 0.375,
+                key_width), # T-, K-
+        computed(lambda: key_width.value * 0.6,
+                key_width), # P-, W-
+        Ref(0), # H-, R-
+        Ref(0),
+        Ref(0),
+        Ref(0),
+        Ref(0),  # -F, -R
+        computed(lambda: key_width.value * 0.6,
+                key_width),  # -P, -B
+        computed(lambda: key_width.value * 0.375,
+                key_width),  # -L, -G
+        Ref(0),  # -T, -S
+        Ref(0),
+        Ref(0), # -D, -Z
     )
 
 
@@ -258,7 +262,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         for col_index, (column, col_width_cm, col_offset_cm) in enumerate(zip(
             _MAIN_ROWS_KEYS,
             col_widths,
-            COL_OFFSETS,
+            col_offsets,
         )):
             column_layout = QVBoxLayout()
             column_layout.addStretch(1)
@@ -279,7 +283,9 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
 
                 if row_pos <= _LOW_ROW < row_pos + row_span:
-                    row_heights_cm = (*row_heights_cm, Ref(col_offset_cm / 2))
+                    def height_boost(col_offset_cm: Ref[float]=col_offset_cm):
+                        return col_offset_cm.value / 2
+                    row_heights_cm = (*row_heights_cm, computed(height_boost, col_offset_cm))
 
                 if col_index == _ASTERISK_COLUMN_INDEX:
                     @watch(dpi.change)
@@ -316,12 +322,12 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
             column_spacer = QSpacerItem(0, 0)
             column_layout.addSpacerItem(column_spacer)
 
-            @watch(dpi.change, parent=column_layout)
+            @watch_many(dpi.change, col_offset_cm.change, parent=column_layout)
             def resize_column_spacing(
                 column_spacer: QSpacerItem=column_spacer,
-                col_offset_cm: float=col_offset_cm,
+                col_offset_cm: Ref[float]=col_offset_cm,
             ):
-                column_spacer.changeSize(0, dpi.cm(col_offset_cm / 2))
+                column_spacer.changeSize(0, dpi.cm(col_offset_cm.value / 2))
 
             
             layout.addLayout(column_layout)
