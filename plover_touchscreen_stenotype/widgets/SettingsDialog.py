@@ -5,6 +5,8 @@ from PyQt5.QtWidgets import (
     QWidget,
     QDialog,
     QVBoxLayout,
+    QHBoxLayout,
+    QGridLayout,
     QGroupBox,
     QButtonGroup,
     QRadioButton,
@@ -42,7 +44,7 @@ class SettingsDialog(QDialog):
         self.setWindowTitle("Touch stenotype settings")
 
         size = self.size()
-        size.setWidth(350)
+        size.setWidth(400)
         self.resize(size)
 
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
@@ -91,8 +93,8 @@ class SettingsDialog(QDialog):
         stroke_preview_checkboxes[1].toggled.connect(self.__on_stroke_preview_translation_change)
 
 
-        size_box = QGroupBox("", self)
-        size_box_layout = QVBoxLayout()
+        size_box = QGroupBox("Key/layout geometry", self)
+        size_box_layout = QGridLayout()
 
         # key_width_slider = QSlider(Qt.Horizontal, size_box)
         # key_width_slider.setMinimum(0.5)
@@ -125,7 +127,7 @@ class SettingsDialog(QDialog):
         @watch_many(self.__settings.key_width_change, self.__settings.key_height_change)
         def set_compound_key_size_max():
             compound_key_box.setMaximum(min(self.__settings.key_width, self.__settings.key_height))
-        compound_key_box.setSingleStep(0.1)
+        compound_key_box.setSingleStep(0.05)
         compound_key_box.setValue(self.__settings.compound_key_size)
 
         compound_key_box.valueChanged.connect(self.__on_compound_key_size_change)
@@ -134,7 +136,7 @@ class SettingsDialog(QDialog):
         index_stretch_box = QDoubleSpinBox(size_box)
         index_stretch_box.setMinimum(0)
         index_stretch_box.setMaximum(1)
-        index_stretch_box.setSingleStep(0.1)
+        index_stretch_box.setSingleStep(0.05)
         index_stretch_box.setValue(self.__settings.index_stretch)
 
         index_stretch_box.valueChanged.connect(self.__on_index_stretch_change)
@@ -143,17 +145,22 @@ class SettingsDialog(QDialog):
         pinky_stretch_box = QDoubleSpinBox(size_box)
         pinky_stretch_box.setMinimum(0)
         pinky_stretch_box.setMaximum(1.5)
-        pinky_stretch_box.setSingleStep(0.1)
+        pinky_stretch_box.setSingleStep(0.05)
         pinky_stretch_box.setValue(self.__settings.pinky_stretch)
 
         pinky_stretch_box.valueChanged.connect(self.__on_pinky_stretch_change)
 
 
-        size_box_layout.addWidget(key_width_box)
-        size_box_layout.addWidget(key_height_box)
-        size_box_layout.addWidget(compound_key_box)
-        size_box_layout.addWidget(index_stretch_box)
-        size_box_layout.addWidget(pinky_stretch_box)
+        for i, (label, box, after_label) in enumerate((
+            ("Base key width", key_width_box, "cm"),
+            ("Base key height", key_height_box, "cm"),
+            ("Compound key size", compound_key_box, "cm"),
+            ("Index finger stretch", index_stretch_box, "cm"),
+            ("Pinky finger stretch", pinky_stretch_box, "cm"),
+        )):
+            size_box_layout.addWidget(QLabel(label), i, 0, Qt.AlignRight)
+            size_box_layout.addWidget(box, i, 1)
+            size_box_layout.addWidget(QLabel(after_label), i, 2)
             
         size_box.setLayout(size_box_layout)
 
