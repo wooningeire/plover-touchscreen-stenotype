@@ -5,9 +5,48 @@ from PyQt5.QtCore import (
 )
 
 from enum import Enum, auto
+from weakref import WeakKeyDictionary
+from typing import TypeVar, Generic, Any
 
-from plover_touchscreen_stenotype.util import RefAttr, on_many
+from .util import RefAttr, on_many
 
+
+T = TypeVar("T")
+class _PersistentSetting(RefAttr, Generic[T]):
+    """`RefAttr` whose class records which settings are on a `Settings` object so they can all be saved/loaded 
+        easily.
+    """
+
+    setting_types_on_object: WeakKeyDictionary[Any, dict[str, type]] = WeakKeyDictionary()
+
+    #region Overrides
+
+    def __init__(self, expected_type: type[T], qsettings_type_arg: "type | None"=None):
+        """
+            :param qsettings_type_arg: The type object that should be passed as `type` to `QSettings::value`. If
+            `NoneType` (`type(None)`), then the parameter should be omitted.
+        """
+        super().__init__(expected_type)
+        self.__qsettings_type_arg = qsettings_type_arg if qsettings_type_arg is not None else expected_type
+
+    def __set_name__(self, owner_class: type, attr_name: str):
+        super().__set_name__(owner_class, attr_name)
+        self.__attr_name = attr_name
+
+    def __set__(self, instance: Any, value: T):
+        # The owner instance is not accessible before any `__get__` and `__set__` calls, so the recording is done in
+        # `__set__` (and `__set__` specifically since values are initialized in the constructor of `Settings`)
+        if instance is not None:
+            if instance not in _PersistentSetting.setting_types_on_object:
+                _PersistentSetting.setting_types_on_object[instance] = {}
+            setting_types_dict = _PersistentSetting.setting_types_on_object[instance]
+
+            if self.__attr_name not in setting_types_dict:
+                setting_types_dict[self.__attr_name] = self.__qsettings_type_arg
+
+        return super().__set__(instance, value)
+
+    #endregion
 
 class KeyLayout(Enum):
     STAGGERED = auto()
@@ -15,17 +54,17 @@ class KeyLayout(Enum):
 
 
 class Settings(QObject):
-    key_layout = RefAttr(KeyLayout)
+    key_layout = _PersistentSetting(KeyLayout, type(None))
 
-    stroke_preview_stroke = RefAttr(bool)
-    stroke_preview_translation = RefAttr(bool)
+    stroke_preview_stroke = _PersistentSetting(bool)
+    stroke_preview_translation = _PersistentSetting(bool)
 
-    key_width = RefAttr(float)
-    key_height = RefAttr(float)
-    compound_key_size = RefAttr(float)
+    key_width = _PersistentSetting(float)
+    key_height = _PersistentSetting(float)
+    compound_key_size = _PersistentSetting(float)
 
-    index_stretch = RefAttr(float)
-    pinky_stretch = RefAttr(float)
+    index_stretch = _PersistentSetting(float)
+    pinky_stretch = _PersistentSetting(float)
 
 
     key_layout_change = key_layout.signal
@@ -64,14 +103,16 @@ class Settings(QObject):
         
 
     def load(self, settings: QSettings):
-        self.key_layout = settings.value("key_layout", self.key_layout)
-        self.stroke_preview_stroke = settings.value("stroke_preview_stroke", self.stroke_preview_stroke, type=bool)
-        self.stroke_preview_translation = settings.value("stroke_preview_translation", self.stroke_preview_translation, type=bool)
+        for attr_name, setting_type in _PersistentSetting.setting_types_on_object[self].items():
+            default_value = getattr(self, attr_name)
+            if setting_type is type(None):
+                setattr(self, attr_name, settings.value(attr_name, default_value))
+            else:
+                setattr(self, attr_name, settings.value(attr_name, default_value, type=setting_type))
 
     def save(self, settings: QSettings):
-        settings.setValue("key_layout", self.key_layout)
-        settings.setValue("stroke_preview_stroke", self.stroke_preview_stroke)
-        settings.setValue("stroke_preview_translation", self.stroke_preview_translation)
+        for attr_name in _PersistentSetting.setting_types_on_object[self].keys():
+            settings.setValue(attr_name, getattr(self, attr_name))
 
     @property
     def stroke_preview_full(self):

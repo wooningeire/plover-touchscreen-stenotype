@@ -68,14 +68,16 @@ T = TypeVar("T")
 class RefAttr(Generic[T]):
     """Descriptor for one shallow reactive value."""
 
-    def __set_name__(self, instance: Any, name: str):
-        self.__private_attr_name = f"_{name}"
-        self.__signal_name = f"{name}_change"
-
     def __init__(self, expected_type: type[T]):
         self.signal = pyqtSignal(expected_type)
 
-    def __get__(self, instance: Any, owner: type) -> T:
+    def __set_name__(self, owner_class: type, attr_name: str):
+        self.__private_attr_name = f"_{attr_name}"
+        self.__signal_name = f"{attr_name}_change"
+
+    def __get__(self, instance: Any, owner_class: type) -> T:
+        if instance == None:
+            return self
         return getattr(instance, self.__private_attr_name)
 
     def __set__(self, instance: Any, value: T):
