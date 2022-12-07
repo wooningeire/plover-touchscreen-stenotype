@@ -115,7 +115,7 @@ class RotatableKeyContainer(QGraphicsView):
         for i in range(layout.count()):
             if child_layout := layout.itemAt(i).layout():
                 child_layout.invalidate()
-                
+
         # Constrains the widget to the size of its layout
         widget.setMaximumSize(layout.sizeHint())
 

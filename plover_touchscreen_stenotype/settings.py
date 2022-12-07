@@ -55,8 +55,8 @@ class Settings(QObject):
         self.key_height = 2.25
         self.compound_key_size = 0.9
 
-        self.index_stretch = 0.2
-        self.pinky_stretch = 0.7
+        self.index_stretch = 0.1
+        self.pinky_stretch = 0.6
 
         @on_many(self.stroke_preview_stroke_change, self.stroke_preview_translation_change)
         def emit_stroke_preview_change():
