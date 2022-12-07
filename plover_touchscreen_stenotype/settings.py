@@ -66,6 +66,8 @@ class Settings(QObject):
     index_stretch = _PersistentSetting(float)
     pinky_stretch = _PersistentSetting(float)
 
+    vowel_set_offset = _PersistentSetting(float)
+
 
     key_layout_change = key_layout.signal
 
@@ -78,6 +80,8 @@ class Settings(QObject):
 
     index_stretch_change = index_stretch.signal
     pinky_stretch_change = pinky_stretch.signal
+
+    vowel_set_offset_change = vowel_set_offset.signal
 
 
     stroke_preview_change = pyqtSignal()
@@ -96,6 +100,8 @@ class Settings(QObject):
 
         self.index_stretch = 0.2
         self.pinky_stretch = 0.8
+
+        self.vowel_set_offset = 0.875
 
         @on_many(self.stroke_preview_stroke_change, self.stroke_preview_translation_change)
         def emit_stroke_preview_change():

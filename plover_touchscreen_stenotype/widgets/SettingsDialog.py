@@ -119,6 +119,9 @@ class SettingsDialog(QDialog):
         def update_pinky_stretch(value: float):
             self.__settings.pinky_stretch = value
 
+        def update_vowel_set_offset(value: float):
+            self.__settings.vowel_set_offset = value
+
 
         compound_key_box, compound_key_slider = _build_box_slider_pair(
             self.__settings.compound_key_size,
@@ -175,6 +178,16 @@ class SettingsDialog(QDialog):
                     1.5,
                     self.__settings.pinky_stretch_change,
                     spin_box_step=0.05,
+                    parent=size_box,
+                ), "cm"),
+            ("Vowels offset",
+                *_build_box_slider_pair(
+                    self.__settings.vowel_set_offset,
+                    update_vowel_set_offset,
+                    0,
+                    1.5,
+                    self.__settings.vowel_set_offset_change,
+                    spin_box_step=0.1,
                     parent=size_box,
                 ), "cm"),
         )):

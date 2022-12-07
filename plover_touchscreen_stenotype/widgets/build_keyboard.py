@@ -195,7 +195,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
     index_stretch = computed_on_signal(lambda: settings.index_stretch, settings.index_stretch_change)
     pinky_stretch = computed_on_signal(lambda: settings.pinky_stretch, settings.pinky_stretch_change)
 
-    VOWEL_SET_OFFSET = 0.875
+    vowel_set_offset = computed_on_signal(lambda: settings.vowel_set_offset, settings.vowel_set_offset_change)
 
     row_heights = (
         key_height_num_bar,
@@ -429,15 +429,16 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         add_vowel_set(_VOWEL_ROW_KEYS_RIGHT)
         layout.addSpacerItem(right_spacer := QSpacerItem(0, 0))
 
-        @watch_many(dpi.change, key_width.change, pinky_stretch.change, index_stretch.change, parent=layout)
+        @watch_many(dpi.change, key_width.change, pinky_stretch.change, index_stretch.change, vowel_set_offset.change,
+                parent=layout)
         def resize_spacing():
             left_bank_width = dpi.cm(key_width.value) * 4 + dpi.cm(pinky_stretch.value) + dpi.cm(index_stretch.value)
             right_bank_width = left_bank_width + dpi.cm(key_width.value)
 
-            left_spacer.changeSize(left_bank_width - dpi.cm(key_width.value) - dpi.cm(VOWEL_SET_OFFSET), 0)
-            right_spacer.changeSize(right_bank_width - dpi.cm(key_width.value) - dpi.cm(VOWEL_SET_OFFSET), 0)
+            left_spacer.changeSize(left_bank_width - dpi.cm(key_width.value) - dpi.cm(vowel_set_offset.value), 0)
+            right_spacer.changeSize(right_bank_width - dpi.cm(key_width.value) - dpi.cm(vowel_set_offset.value), 0)
 
-        @on(key_width.change, parent=layout)
+        @on_many(key_width.change, vowel_set_offset.change, parent=layout)
         def invalidate_layout():
             layout.invalidate()
 
