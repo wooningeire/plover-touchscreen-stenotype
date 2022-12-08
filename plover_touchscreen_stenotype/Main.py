@@ -155,8 +155,11 @@ class Main(Tool):
     def __on_stroked(self, stroke: Stroke):
         if not self.__last_stroke_from_widget or self.__last_stroke_keys != set(stroke.keys()): return
 
-        # self.last_stroke_label.setText(stroke.rtfcre or "…")
-        self.engine.output = self.__last_stroke_engine_enabled
+        if self.engine.output == False:
+            # The engine output was disabled before it was set again; {PLOVER:TOGGLE} was likely triggered
+            self.engine.output = not self.__last_stroke_engine_enabled
+        else:
+            self.engine.output = self.__last_stroke_engine_enabled
         
         self.__last_stroke_from_widget = False
         self.__last_stroke_keys = None
@@ -166,25 +169,20 @@ class Main(Tool):
         self.translation_display.display_keys(stroke_keys)
 
 
-    def resize_from_center(self, width: int, height: int):
-        try:
-            rect = self.geometry()
-            old_center = rect.center()
+    """ def resize_from_center(self, width: int, height: int):
+        rect = self.geometry()
+        old_center = rect.center()
 
-            # In practice, the new size will be constrained to the minimum size, so it is not necessarily the given size
-            new_size = QSize(
-                max(self.minimumWidth(), width),
-                max(self.minimumHeight(), height),
-            )
+        # In practice, the new size will be constrained to the minimum size, so it is not necessarily the given size
+        new_size = QSize(
+            max(self.minimumWidth(), width),
+            max(self.minimumHeight(), height),
+        )
 
-            rect.setSize(new_size)
-            rect.moveCenter(old_center)
-            
-            self.setGeometry(rect)
-
-        except Exception as error:
-            # self.last_stroke_label.setText(str(error))
-            pass
+        rect.setSize(new_size)
+        rect.moveCenter(old_center)
+        
+        self.setGeometry(rect) """
 
 
     def __launch_settings_dialog(self):
