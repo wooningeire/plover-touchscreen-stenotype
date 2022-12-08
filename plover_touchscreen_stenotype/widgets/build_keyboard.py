@@ -28,92 +28,66 @@ from ..settings import Settings, KeyLayout
 from ..util import UseDpi, Ref, computed, computed_on_signal, on, on_many, watch, watch_many
 
 
-_TOP_ROW = 2
-_LOW_ROW = 4
-_TOP_COMPOUND_ROW = 1
-_LOW_COMPOUND_ROW = 3
+_TOP_ROW = 0
+_LOW_ROW = 2
+_TOP_COMPOUND_ROW = -1
+_LOW_COMPOUND_ROW = 1
 
 # [keys], label, rowSpan?, numberLabel?
 _MAIN_ROWS_KEYS_LEFT = (
     (
-        (["#"], ""),
+        (["#"], "#"),
         (["#", "S-"], ""),
-        (["S-"], "S", 3, "1"),
+        (["S-"], "S", 1, "1"),
     ), (
-        (["#"], ""),
-        (["#", "T-"], ""),
         (["T-"], "T", 1, "2"),
         (["T-", "K-"], ""),
         (["K-"], "K"),
     ), (
-        (["#"], ""),
-        (["#", "P-"], ""),
         (["P-"], "P", 1, "3"),
         (["P-", "W-"], ""),
         (["W-"], "W"),
     ), (
-        (["#"], ""),
-        (["#", "H-"], ""),
         (["H-"], "H", 1, "4"),
         (["H-", "R-"], ""),
         (["R-"], "R"),
     ), (
-        (["#"], ""),
-        (["#", "H-", "*"], ""),
         (["H-", "*"], ""),
         (["H-", "R-", "*"], ""),
         (["R-", "*"], ""),
     ), (
-        (["#"], "#"),
-        (["#", "*"], ""),
         (["*"], "🞱", 3),
     ),
 )
 
 _MAIN_ROWS_KEYS_RIGHT = (
     (
-        (["#"], "#"),
-        (["#", "*"], ""),
         (["*"], "🞱", 3),
     ), (
-        (["#"], ""),
-        (["#", "*", "-F"], ""),
         (["*", "-F"], ""),
         (["*", "-F", "-R"], ""),
         (["*", "-R"], ""),
     ), (
-        (["#"], ""),
-        (["#", "-F"], ""),
         (["-F"], "F", 1, "6"),
         (["-F", "-R"], ""),
         (["-R"], "R"),
     ), (
-        (["#"], ""),
-        (["#", "-P"], ""),
         (["-P"], "P", 1, "7"),
         (["-P", "-B"], ""),
         (["-B"], "B"),
     ), (
-        (["#"], ""),
-        (["#", "-L"], ""),
         (["-L"], "L", 1, "8"),
         (["-L", "-G"], ""),
         (["-G"], "G"),
     ), (
-        (["#"], ""),
-        (["#", "-T"], ""),
         (["-T"], "T", 1, "9"),
         (["-T", "-S"], ""),
         (["-S"], "S"),
     ), (
-        (["#"], ""),
-        (["#", "-T", "-D"], ""),
         (["-T", "-D"], ""),
         (["-T", "-S", "-D", "-Z"], ""),
         (["-S", "-Z"], ""),
     ), (
-        (["#"], ""),
-        (["#", "-D"], ""),
         (["-D"], "D"),
         (["-D", "-Z"], ""),
         (["-Z"], "Z"),
@@ -122,8 +96,8 @@ _MAIN_ROWS_KEYS_RIGHT = (
 
 # [keys], label, (row, column, rowSpan?, columnSpan?), numberLabel?
 _MAIN_ROWS_KEYS_GRID = (
-    (["#"], "#", (0, 0, 1, -1)),
-    (["S-"], "S", (_TOP_ROW, 0, 3, 1), "1"),
+    (["#"], "#", (_TOP_ROW, 0)),
+    (["S-"], "S", (_LOW_ROW, 0), "1"),
     (["T-"], "T", (_TOP_ROW, 1), "2"),
     (["K-"], "K", (_LOW_ROW, 1)),
     (["P-"], "P", (_TOP_ROW, 2), "3"),
@@ -148,20 +122,7 @@ _MAIN_ROWS_KEYS_GRID = (
     (["-D"], "D", (_TOP_ROW, 12)),
     (["-Z"], "Z", (_LOW_ROW, 12)),
 
-    (["#", "S-"], "", (_TOP_COMPOUND_ROW, 0)),
-    (["#", "T-"], "", (_TOP_COMPOUND_ROW, 1)),
-    (["#", "P-"], "", (_TOP_COMPOUND_ROW, 2)),
-    (["#", "H-"], "", (_TOP_COMPOUND_ROW, 3)),
-    (["#", "H-", "*"], "", (_TOP_COMPOUND_ROW, 4)),
-    (["#", "*"], "", (_TOP_COMPOUND_ROW, 5)),
-    (["#", "*", "-F"], "", (_TOP_COMPOUND_ROW, 6)),
-    (["#", "-F"], "", (_TOP_COMPOUND_ROW, 7)),
-    (["#", "-P"], "", (_TOP_COMPOUND_ROW, 8)),
-    (["#", "-L"], "", (_TOP_COMPOUND_ROW, 9)),
-    (["#", "-T"], "", (_TOP_COMPOUND_ROW, 10)),
-    (["#", "-T", "-D"], "", (_TOP_COMPOUND_ROW, 11)),
-    (["#", "-D"], "", (_TOP_COMPOUND_ROW, 12)),
-
+    (["#", "S-"], "", (_LOW_COMPOUND_ROW, 0)),
     (["T-", "K-"], "", (_LOW_COMPOUND_ROW, 1)),
     (["P-", "W-"], "", (_LOW_COMPOUND_ROW, 2)),
     (["H-", "R-"], "", (_LOW_COMPOUND_ROW, 3)),
@@ -212,8 +173,6 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
             key_width, vowel_set_offset_fac)
 
     row_heights = (
-        key_height_num_bar,
-        compound_key_size,
         reduced_key_height,  # top row
         compound_key_size,
         reduced_key_height,  # bottom row
