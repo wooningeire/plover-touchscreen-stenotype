@@ -68,6 +68,11 @@ class Settings(QObject):
 
     vowel_set_offset = _PersistentSetting(float)
 
+    index_stagger_fac = _PersistentSetting(float)
+    middle_stagger_fac = _PersistentSetting(float)
+    ring_stagger_fac = _PersistentSetting(float)
+    pinky_stagger_fac = _PersistentSetting(float)
+
 
     key_layout_change = key_layout.signal
 
@@ -82,6 +87,11 @@ class Settings(QObject):
     pinky_stretch_change = pinky_stretch.signal
 
     vowel_set_offset_change = vowel_set_offset.signal
+
+    index_stagger_fac_change = index_stagger_fac.signal
+    middle_stagger_fac_change = middle_stagger_fac.signal 
+    ring_stagger_fac_change = ring_stagger_fac.signal 
+    pinky_stagger_fac_change = pinky_stagger_fac.signal
 
 
     stroke_preview_change = pyqtSignal()
@@ -102,6 +112,11 @@ class Settings(QObject):
         self.pinky_stretch = 0.8
 
         self.vowel_set_offset = 0.875
+
+        self.index_stagger_fac = 0
+        self.middle_stagger_fac = 0.6
+        self.ring_stagger_fac = 0.375
+        self.pinky_stagger_fac = 0
 
         @on_many(self.stroke_preview_stroke_change, self.stroke_preview_translation_change)
         def emit_stroke_preview_change():

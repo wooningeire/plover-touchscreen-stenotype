@@ -205,19 +205,20 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         reduced_key_height,  # bottom row
     )
 
+    reduced_index_width = computed(lambda: reduced_key_width.value + index_stretch.value,
+            reduced_key_width, index_stretch)
+
     col_widths = (
         computed(lambda: key_width.value + pinky_stretch.value,
                 key_width, pinky_stretch),
         key_width,
         key_width,
-        computed(lambda: reduced_key_width.value + index_stretch.value,
-                reduced_key_width, index_stretch),  # H-, R-
+        reduced_index_width,  # H-, R-
         compound_key_size,
         computed(lambda: reduced_key_width.value * 2 + key_width.value * 2.5,
                 reduced_key_width, key_width),  # *
         compound_key_size,
-        computed(lambda: reduced_key_width.value + index_stretch.value,
-                reduced_key_width, index_stretch),  # -F, -R
+        reduced_index_width,  # -F, -R
         key_width,
         key_width,
         computed(lambda: reduced_key_width.value + pinky_stretch.value,
@@ -234,24 +235,34 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
     ROWS_GAP = 2.25
 
+    index_stagger_fac = computed_on_signal(lambda: settings.index_stagger_fac, settings.index_stagger_fac_change)
+    middle_stagger_fac = computed_on_signal(lambda: settings.middle_stagger_fac, settings.middle_stagger_fac_change)
+    ring_stagger_fac = computed_on_signal(lambda: settings.ring_stagger_fac, settings.ring_stagger_fac_change)
+    pinky_stagger_fac = computed_on_signal(lambda: settings.pinky_stagger_fac, settings.pinky_stagger_fac_change)
+
+    index_offset = computed(lambda: key_width.value * index_stagger_fac.value,
+            key_width, index_stagger_fac)
+    middle_offset = computed(lambda: key_width.value * middle_stagger_fac.value,
+            key_width, middle_stagger_fac)
+    ring_offset = computed(lambda: key_width.value * ring_stagger_fac.value,
+            key_width, ring_stagger_fac)
+    pinky_offset = computed(lambda: key_width.value * pinky_stagger_fac.value,
+            key_width, pinky_stagger_fac)
+
     col_offsets = (
-        Ref(0),  # S-
-        computed(lambda: key_width.value * 0.375,
-                key_width), # T-, K-
-        computed(lambda: key_width.value * 0.6,
-                key_width), # P-, W-
-        Ref(0), # H-, R-
-        Ref(0),
-        Ref(0),
-        Ref(0),
-        Ref(0),  # -F, -R
-        computed(lambda: key_width.value * 0.6,
-                key_width),  # -P, -B
-        computed(lambda: key_width.value * 0.375,
-                key_width),  # -L, -G
-        Ref(0),  # -T, -S
-        Ref(0),
-        Ref(0), # -D, -Z
+        pinky_offset,  # S-
+        ring_offset,  # T-, K-
+        middle_offset,  # P-, W-
+        index_offset, # H-, R-
+        index_offset,
+        index_offset,
+        index_offset,
+        index_offset,  # -F, -R
+        middle_offset,  # -P, -B
+        ring_offset,  # -L, -G
+        pinky_offset,  # -T, -S
+        pinky_offset,
+        pinky_offset, # -D, -Z
     )
 
 

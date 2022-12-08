@@ -17,6 +17,8 @@ from ..util import on
 
 class FloatSlider(QSlider):
     """Slider that supports float values."""
+    # Implemented by having a QSlider that can be dragged to every pixel value in its range. From there, the slider
+    # values from Qt can be mapped to values in the range [0, 1]
 
     input = pyqtSignal(float)
     """Emitted when the user changes the value of this widget"""
@@ -29,9 +31,10 @@ class FloatSlider(QSlider):
         convert_out: Callable[[float], float]=IDENTITY,
         min: float=0,
         max: float=1,
+        orientation: Qt.Orientation=Qt.Horizontal,
         parent: QWidget=None,
     ):
-        super().__init__(Qt.Horizontal, parent)
+        super().__init__(orientation, parent)
 
         self.__convert_in = convert_in
         self.__convert_out = convert_out
@@ -52,7 +55,7 @@ class FloatSlider(QSlider):
 
     def resizeEvent(self, event: QResizeEvent) -> None:
         self.setMinimum(0)
-        self.setMaximum(event.size().width())
+        self.setMaximum(self.__internal_max)
 
         self.__update_slider_position()
 
@@ -75,7 +78,12 @@ class FloatSlider(QSlider):
 
     @property
     def __internal_max(self):
-        return self.size().width()
+        """Qt's maximum value of the QSlider. (= the number of pixels it can be dragged to)"""
+
+        if self.orientation() == Qt.Horizontal:
+            return self.size().width()
+        else:
+            return self.size().height()
 
     @property
     def current_value(self):
@@ -97,6 +105,8 @@ class FloatSlider(QSlider):
 
 
 class FloatEntry(QDoubleSpinBox):
+    # Main purpose of this class is to define an alternative method for `setValue` that does not emit `valueChanged`
+
     input = pyqtSignal(float)
     """Emitted when the user changes the value of this widget"""
 

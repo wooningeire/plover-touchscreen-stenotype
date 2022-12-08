@@ -6,12 +6,12 @@ from PyQt5.QtWidgets import (
     QWidget,
     QDialog,
     QVBoxLayout,
+    QHBoxLayout,
     QGridLayout,
     QGroupBox,
     QButtonGroup,
     QRadioButton,
     QCheckBox,
-    QDoubleSpinBox,
     QLabel,
     QSizePolicy,
 )
@@ -52,6 +52,9 @@ class SettingsDialog(QDialog):
         self.setFont(QFont(FONT_FAMILY, 11))
 
 
+        settings = self.__settings
+
+
         key_layout_box = QGroupBox("Key layout", self)
         key_layout_group = QButtonGroup(key_layout_box)
 
@@ -59,7 +62,7 @@ class SettingsDialog(QDialog):
             KeyLayout.STAGGERED: QRadioButton("Staggered", key_layout_box),
             KeyLayout.GRID: QRadioButton("Grid", key_layout_box),
         }
-        key_layout_radios[self.__settings.key_layout].setChecked(True)
+        key_layout_radios[settings.key_layout].setChecked(True)
 
         self.__key_layout_radios = {
             id(button): value
@@ -70,12 +73,14 @@ class SettingsDialog(QDialog):
         for radio in key_layout_radios.values():
             key_layout_box_layout.addWidget(radio)
             key_layout_group.addButton(radio)
+
+        key_layout_box_layout.addStretch(1)
         key_layout_box.setLayout(key_layout_box_layout)
 
         @on(key_layout_group.buttonToggled)
         def update_keyboard_layout(button: QRadioButton, checked: bool):
             if not checked: return
-            self.__settings.key_layout = self.__key_layout_radios[id(button)]
+            settings.key_layout = self.__key_layout_radios[id(button)]
 
 
         stroke_preview_box = QGroupBox("Stroke preview", self)
@@ -84,118 +89,162 @@ class SettingsDialog(QDialog):
             QCheckBox("Show stroke", stroke_preview_box),
             QCheckBox("Show translation", stroke_preview_box),
         )
-        stroke_preview_checkboxes[0].setChecked(self.__settings.stroke_preview_stroke)
-        stroke_preview_checkboxes[1].setChecked(self.__settings.stroke_preview_translation)
+        stroke_preview_checkboxes[0].setChecked(settings.stroke_preview_stroke)
+        stroke_preview_checkboxes[1].setChecked(settings.stroke_preview_translation)
 
         stroke_preview_box_layout = QVBoxLayout()
         for checkbox in stroke_preview_checkboxes:
             stroke_preview_box_layout.addWidget(checkbox)
+            
+        stroke_preview_box_layout.addStretch(1)
         stroke_preview_box.setLayout(stroke_preview_box_layout)
 
         @on(stroke_preview_checkboxes[0].toggled)
         def update_stroke_preview_stroke(checked: bool):
-            self.__settings.stroke_preview_stroke = checked
+            settings.stroke_preview_stroke = checked
 
         @on(stroke_preview_checkboxes[1].toggled)
         def update_stroke_preview_translation(checked: bool):
-            self.__settings.stroke_preview_translation = checked
+            settings.stroke_preview_translation = checked
 
 
         size_box = QGroupBox("Key and layout geometry", self)
         size_box_layout = QGridLayout()
 
         def update_key_width(value: float):
-            self.__settings.key_width = value
+            settings.key_width = value
 
         def update_key_height(value: float):
-            self.__settings.key_height = value
+            settings.key_height = value
 
         def update_compound_key_size(value: float):
-            self.__settings.compound_key_size = value
+            settings.compound_key_size = value
 
         def update_index_stretch(value: float):
-            self.__settings.index_stretch = value
+            settings.index_stretch = value
 
         def update_pinky_stretch(value: float):
-            self.__settings.pinky_stretch = value
+            settings.pinky_stretch = value
 
         def update_vowel_set_offset(value: float):
-            self.__settings.vowel_set_offset = value
+            settings.vowel_set_offset = value
+
+        def update_index_stagger_fac(value: float):
+            settings.index_stagger_fac = value
+
+        def update_middle_stagger_fac(value: float):
+            settings.middle_stagger_fac = value
+
+        def update_ring_stagger_fac(value: float):
+            settings.ring_stagger_fac = value
+
+        def update_pinky_stagger_fac(value: float):
+            settings.pinky_stagger_fac = value
 
 
-        compound_key_box, compound_key_slider = _build_box_slider_pair(
-            self.__settings.compound_key_size,
+        compound_key_box, compound_key_slider = _build_entry_slider_pair(
+            settings.compound_key_size,
             update_compound_key_size,
-            0.25,
-            min(self.__settings.key_width, self.__settings.key_height),
-            self.__settings.compound_key_size_change,
+            settings.compound_key_size_change,
+            min=0.25,
+            max=min(settings.key_width, settings.key_height),
             parent=size_box,
         )
 
-        @watch_many(self.__settings.key_width_change, self.__settings.key_height_change)
+        @watch_many(settings.key_width_change, settings.key_height_change)
         def set_compound_key_size_max():
-            new_max = min(self.__settings.key_width, self.__settings.key_height)
+            new_max = min(settings.key_width, settings.key_height)
 
             compound_key_box.setMaximum(new_max)
             compound_key_slider.max = new_max
 
 
-        for i, (label, box, slider, after_label) in enumerate((
+        for size_box_index, (label, box, slider, after_label) in enumerate((
             ("Base key width",
-                *_build_box_slider_pair(
-                    self.__settings.key_width,
+                *_build_entry_slider_pair(
+                    settings.key_width,
                     update_key_width,
-                    0.5,
-                    3,
-                    self.__settings.key_width_change,
+                    settings.key_width_change,
+                    min=0.5,
+                    max=3,
                     parent=size_box,
                 ), "cm"),
             ("Base key height",
-                *_build_box_slider_pair(
-                    self.__settings.key_height,
+                *_build_entry_slider_pair(
+                    settings.key_height,
                     update_key_height,
-                    0.5,
-                    3,
-                    self.__settings.key_height_change,
+                    settings.key_height_change,
+                    min=0.5,
+                    max=3,
                     parent=size_box,
                 ), "cm"),
             ("Compound key size", compound_key_box, compound_key_slider, "cm"),
             ("Index finger stretch",
-                *_build_box_slider_pair(
-                    self.__settings.index_stretch,
+                *_build_entry_slider_pair(
+                    settings.index_stretch,
                     update_index_stretch,
-                    0,
-                    1,
-                    self.__settings.index_stretch_change,
+                    settings.index_stretch_change,
+                    min=0,
+                    max=1,
                     spin_box_step=0.05,
                     parent=size_box,
                 ), "cm"),
             ("Pinky finger stretch",
-                *_build_box_slider_pair(
-                    self.__settings.pinky_stretch,
+                *_build_entry_slider_pair(
+                    settings.pinky_stretch,
                     update_pinky_stretch,
-                    0,
-                    1.5,
-                    self.__settings.pinky_stretch_change,
+                    settings.pinky_stretch_change,
+                    min=0,
+                    max=1.5,
                     spin_box_step=0.05,
                     parent=size_box,
                 ), "cm"),
             ("Vowels offset",
-                *_build_box_slider_pair(
-                    self.__settings.vowel_set_offset,
+                *_build_entry_slider_pair(
+                    settings.vowel_set_offset,
                     update_vowel_set_offset,
-                    0,
-                    1.5,
-                    self.__settings.vowel_set_offset_change,
+                    settings.vowel_set_offset_change,
+                    min=0,
+                    max=1.5,
                     spin_box_step=0.1,
                     parent=size_box,
                 ), "cm"),
         )):
-            size_box_layout.addWidget(QLabel(label), i * 2, 0, 1, 3)
-            size_box_layout.addWidget(slider, i * 2 + 1, 0)
-            size_box_layout.addWidget(box, i * 2 + 1, 1)
-            size_box_layout.addWidget(QLabel(after_label), i * 2 + 1, 2)
-            
+            size_box_layout.addWidget(QLabel(label), size_box_index * 2, 0, 1, 3)
+            size_box_layout.addWidget(slider, size_box_index * 2 + 1, 0)
+            size_box_layout.addWidget(box, size_box_index * 2 + 1, 1)
+            size_box_layout.addWidget(QLabel(after_label), size_box_index * 2 + 1, 2)
+
+        size_box_index += 1
+
+        size_box_layout.addWidget(QLabel("Column stagger factors"), size_box_index * 2, 0, 1, 3)
+
+        stagger_layout = QGridLayout()
+        stagger_layout.setContentsMargins(0, 0, 0, 0)
+        stagger_layout.setRowMinimumHeight(0, 120)
+        for stagger_index, (value, callback, signal) in enumerate((
+            (settings.index_stagger_fac, update_index_stagger_fac, settings.index_stagger_fac_change),
+            (settings.middle_stagger_fac, update_middle_stagger_fac, settings.middle_stagger_fac_change),
+            (settings.ring_stagger_fac, update_ring_stagger_fac, settings.ring_stagger_fac_change),
+            (settings.pinky_stagger_fac, update_pinky_stagger_fac, settings.pinky_stagger_fac_change),
+        )):
+            entry, slider = _build_entry_slider_pair(
+                value,
+                callback,
+                signal,
+                min=0,
+                max=1,
+                spin_box_step=0.05,
+                slider_orientation=Qt.Vertical,
+                parent=size_box,
+            )
+
+            stagger_layout.addWidget(slider, 0, stagger_index, Qt.AlignHCenter)
+            stagger_layout.addWidget(entry, 1, stagger_index, Qt.AlignHCenter)
+
+        size_box_layout.addLayout(stagger_layout, size_box_index * 2 + 1, 0, 1, 3)
+        
+        # size_box_layout.setRowStretch(2 * (size_box_index + 1), 1)
         size_box.setLayout(size_box_layout)
 
 
@@ -209,29 +258,38 @@ class SettingsDialog(QDialog):
         label_troubleshooting.setStyleSheet("font-style: italic; color: #7f000000;")
 
 
-        layout = QVBoxLayout()
-        layout.addWidget(key_layout_box)
-        layout.addWidget(stroke_preview_box)
-        layout.addWidget(size_box)
-        layout.addWidget(label_resizing)
-        layout.addSpacing(8)
-        layout.addWidget(label_troubleshooting)
+        layout = QGridLayout()
+        layout.addWidget(key_layout_box, 0, 0)
+        layout.addWidget(stroke_preview_box, 1, 0)
+        layout.addWidget(size_box, 0, 1, 3, 1)
+        layout.setRowStretch(2, 1)
+        layout.addWidget(label_resizing, 3, 0, 1, 2)
+        layout.addWidget(label_troubleshooting, 4, 0, 1, 2)
         # layout.addWidget(sizes_box)
         self.setLayout(layout)
 
 
 
-def _build_box_slider_pair(
+def _build_entry_slider_pair(
     current_value: float,
     update_settings_attr: Callable[[float], None],
-    min: float,
-    max: float,
     settings_signal: pyqtBoundSignal,
+    min: float=0,
+    max: float=1,
     spin_box_step=0.1,
+    slider_orientation: Qt.Orientation=Qt.Horizontal,
     parent: QWidget=None,
 ) -> tuple[FloatEntry, FloatSlider]:
-    entry = FloatEntry(current_value, min=min, max=max, spin_step=spin_box_step, parent=parent)
-    slider = FloatSlider(current_value, min=min, max=max, parent=parent)
+    entry = FloatEntry(current_value,
+            min=min,
+            max=max,
+            spin_step=spin_box_step,
+            parent=parent)
+    slider = FloatSlider(current_value,
+            min=min,
+            max=max,
+            orientation=slider_orientation,
+            parent=parent)
 
     last_edit_from_entry = False
     last_edit_from_slider = False
