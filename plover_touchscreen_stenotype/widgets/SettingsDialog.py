@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 else:
     Main = object
 
-from .FloatSlider import FloatSlider
+from .FloatInput import FloatSlider, FloatEntry
 from ..settings import Settings, KeyLayout
 from ..util import on, watch_many, FONT_FAMILY
 
@@ -229,24 +229,40 @@ def _build_box_slider_pair(
     settings_signal: pyqtBoundSignal,
     spin_box_step=0.1,
     parent: QWidget=None,
-) -> tuple[QDoubleSpinBox, FloatSlider]:
-    box = QDoubleSpinBox(parent)
-    box.setMinimum(min)
-    box.setMaximum(max)
-    box.setSingleStep(spin_box_step)
-    box.setValue(current_value)
-    
+) -> tuple[FloatEntry, FloatSlider]:
+    entry = FloatEntry(current_value, min=min, max=max, spin_step=spin_box_step, parent=parent)
     slider = FloatSlider(current_value, min=min, max=max, parent=parent)
-    @on(box.valueChanged)
+
+    last_edit_from_entry = False
+    last_edit_from_slider = False
+
+    @on(entry.input)
+    def on_entry_input(value: float):
+        nonlocal last_edit_from_entry
+        last_edit_from_entry = True
+    @on(slider.input)
+    def on_slider_input(value: float):
+        nonlocal last_edit_from_slider
+        last_edit_from_slider = True
+
+    @on(entry.input)
     @on(slider.input)
     def update_settings(value: float):
         update_settings_attr(value)
 
     @on(settings_signal)
     def update_displays(value: float):
-        if not box.hasFocus():
-            box.setValue(value)
-        if not slider.hasFocus():
+        nonlocal last_edit_from_entry
+        nonlocal last_edit_from_slider
+
+        # if not box.hasFocus():
+        if not last_edit_from_entry:
+            entry.current_value = value
+        # if not slider.hasFocus():
+        if not last_edit_from_slider:
             slider.current_value = value
 
-    return box, slider
+        last_edit_from_entry = False
+        last_edit_from_slider = False
+
+    return entry, slider
