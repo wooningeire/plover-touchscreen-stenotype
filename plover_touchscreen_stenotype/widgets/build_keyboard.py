@@ -195,7 +195,9 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
     index_stretch = computed_on_signal(lambda: settings.index_stretch, settings.index_stretch_change)
     pinky_stretch = computed_on_signal(lambda: settings.pinky_stretch, settings.pinky_stretch_change)
 
-    vowel_set_offset = computed_on_signal(lambda: settings.vowel_set_offset, settings.vowel_set_offset_change)
+    vowel_set_offset_fac = computed_on_signal(lambda: settings.vowel_set_offset_fac, settings.vowel_set_offset_fac_change)
+    vowel_set_offset = computed(lambda: key_width.value * vowel_set_offset_fac.value,
+            key_width, vowel_set_offset_fac)
 
     row_heights = (
         key_height_num_bar,
@@ -233,7 +235,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         reduced_key_width,
     )
 
-    ROWS_GAP = 2.25
+    INITIAL_ROWS_GAP = 2.25
 
     index_stagger_fac = computed_on_signal(lambda: settings.index_stagger_fac, settings.index_stagger_fac_change)
     middle_stagger_fac = computed_on_signal(lambda: settings.middle_stagger_fac, settings.middle_stagger_fac_change)
@@ -477,7 +479,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         
         @watch(dpi.change)
         def resize_row_spacer():
-            layout.setRowMinimumHeight(1, dpi.cm(ROWS_GAP))
+            layout.setRowMinimumHeight(1, dpi.cm(INITIAL_ROWS_GAP))
             QTimer.singleShot(0, lambda: layout.setRowMinimumHeight(1, 0))
 
         layout.addLayout(build_vowel_row(key_widgets), 2, 0)

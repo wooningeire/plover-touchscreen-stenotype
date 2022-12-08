@@ -66,7 +66,7 @@ class Settings(QObject):
     index_stretch = _PersistentSetting(float)
     pinky_stretch = _PersistentSetting(float)
 
-    vowel_set_offset = _PersistentSetting(float)
+    vowel_set_offset_fac = _PersistentSetting(float)
 
     index_stagger_fac = _PersistentSetting(float)
     middle_stagger_fac = _PersistentSetting(float)
@@ -86,7 +86,7 @@ class Settings(QObject):
     index_stretch_change = index_stretch.signal
     pinky_stretch_change = pinky_stretch.signal
 
-    vowel_set_offset_change = vowel_set_offset.signal
+    vowel_set_offset_fac_change = vowel_set_offset_fac.signal
 
     index_stagger_fac_change = index_stagger_fac.signal
     middle_stagger_fac_change = middle_stagger_fac.signal 
@@ -111,7 +111,7 @@ class Settings(QObject):
         self.index_stretch = 0.2
         self.pinky_stretch = 0.8
 
-        self.vowel_set_offset = 0.875
+        self.vowel_set_offset_fac = 0.4375
 
         self.index_stagger_fac = 0
         self.middle_stagger_fac = 0.6

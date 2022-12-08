@@ -127,7 +127,7 @@ class SettingsDialog(QDialog):
             settings.pinky_stretch = value
 
         def update_vowel_set_offset(value: float):
-            settings.vowel_set_offset = value
+            settings.vowel_set_offset_fac = value
 
         def update_index_stagger_fac(value: float):
             settings.index_stagger_fac = value
@@ -199,16 +199,16 @@ class SettingsDialog(QDialog):
                     spin_box_step=0.05,
                     parent=size_box,
                 ), "cm"),
-            ("Vowels offset",
+            ("Vowels offset factor",
                 *_build_entry_slider_pair(
-                    settings.vowel_set_offset,
+                    settings.vowel_set_offset_fac,
                     update_vowel_set_offset,
-                    settings.vowel_set_offset_change,
+                    settings.vowel_set_offset_fac_change,
                     min=0,
-                    max=1.5,
-                    spin_box_step=0.1,
+                    max=1,
+                    spin_box_step=0.05,
                     parent=size_box,
-                ), "cm"),
+                ), ""),
         )):
             size_box_layout.addWidget(QLabel(label), size_box_index * 2, 0, 1, 3)
             size_box_layout.addWidget(slider, size_box_index * 2 + 1, 0)
