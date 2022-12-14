@@ -91,7 +91,7 @@ class KeyboardWidget(QWidget):
         self.__build_keyboard = build_keyboard = use_build_keyboard(self.settings, self, dpi)
         self.setLayout(build_keyboard[self.settings.key_layout](self._key_widgets))
 
-        self.settings.key_layout_change.connect(self.__rebuild_layout)
+        self.settings.key_layout_ref.change.connect(self.__rebuild_layout)
 
 
         self.setStyleSheet("""

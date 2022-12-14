@@ -91,14 +91,14 @@ class StrokePreview(QWidget):
         display_alignment_layout.setColumnStretch(0, 1)
         display_alignment_layout.setColumnStretch(1, 0)
 
-        @watch_many(dpi.change, self.__settings.key_width_change)
+        @watch_many(dpi.change, self.__settings.key_width_ref.change)
         def resize_display_alignment():
             display_alignment_layout.setColumnMinimumWidth(1, dpi.cm(self.__settings.key_width))
 
 
         display_alignment_layout.addLayout(labels_layout, 0, 0)
 
-        @watch_many(dpi.change, self.__settings.key_layout_change)
+        @watch_many(dpi.change, self.__settings.key_layout_ref.change)
         def reposition_labels():
             if self.__settings.key_layout == KeyLayout.GRID:
                 labels_layout.setAlignment(Qt.AlignBottom)

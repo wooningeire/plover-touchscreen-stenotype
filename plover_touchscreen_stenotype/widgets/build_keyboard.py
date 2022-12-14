@@ -180,9 +180,9 @@ _ASTERISK_COLUMN_INDEX = 5
 
 def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi: UseDpi):
     # in centimeters
-    key_width = computed_on_signal(lambda: settings.key_width, settings.key_width_change)
-    key_height = computed_on_signal(lambda: settings.key_height, settings.key_height_change)
-    compound_key_size = computed_on_signal(lambda: settings.compound_key_size, settings.compound_key_size_change)
+    key_width = settings.key_width_ref
+    key_height = settings.key_height_ref
+    compound_key_size = settings.compound_key_size_ref
 
     reduced_key_width = computed(lambda: key_width.value - compound_key_size.value / 2,
             key_width, compound_key_size)
@@ -192,10 +192,10 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
     key_height_num_bar = computed(lambda: key_height.value / 2,
             key_height)
 
-    index_stretch = computed_on_signal(lambda: settings.index_stretch, settings.index_stretch_change)
-    pinky_stretch = computed_on_signal(lambda: settings.pinky_stretch, settings.pinky_stretch_change)
+    index_stretch = settings.index_stretch_ref
+    pinky_stretch = settings.pinky_stretch_ref
 
-    vowel_set_offset_fac = computed_on_signal(lambda: settings.vowel_set_offset_fac, settings.vowel_set_offset_fac_change)
+    vowel_set_offset_fac = settings.vowel_set_offset_fac_ref
     vowel_set_offset = computed(lambda: key_width.value * vowel_set_offset_fac.value,
             key_width, vowel_set_offset_fac)
 
@@ -237,10 +237,10 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
     INITIAL_ROWS_GAP = 2.25
 
-    index_stagger_fac = computed_on_signal(lambda: settings.index_stagger_fac, settings.index_stagger_fac_change)
-    middle_stagger_fac = computed_on_signal(lambda: settings.middle_stagger_fac, settings.middle_stagger_fac_change)
-    ring_stagger_fac = computed_on_signal(lambda: settings.ring_stagger_fac, settings.ring_stagger_fac_change)
-    pinky_stagger_fac = computed_on_signal(lambda: settings.pinky_stagger_fac, settings.pinky_stagger_fac_change)
+    index_stagger_fac = settings.index_stagger_fac_ref
+    middle_stagger_fac = settings.middle_stagger_fac_ref
+    ring_stagger_fac = settings.ring_stagger_fac_ref
+    pinky_stagger_fac = settings.pinky_stagger_fac_ref
 
     index_offset = computed(lambda: key_width.value * index_stagger_fac.value,
             key_width, index_stagger_fac)

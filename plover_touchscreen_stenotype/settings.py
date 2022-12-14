@@ -74,24 +74,24 @@ class Settings(QObject):
     pinky_stagger_fac = _PersistentSetting(float)
 
 
-    key_layout_change = key_layout.signal
+    key_layout_ref = key_layout.ref_getter()
 
-    stroke_preview_stroke_change = stroke_preview_stroke.signal
-    stroke_preview_translation_change = stroke_preview_translation.signal
+    stroke_preview_stroke_ref = stroke_preview_stroke.ref_getter()
+    stroke_preview_translation_ref = stroke_preview_translation.ref_getter()
 
-    key_width_change = key_width.signal
-    key_height_change = key_height.signal
-    compound_key_size_change = compound_key_size.signal
+    key_width_ref = key_width.ref_getter()
+    key_height_ref = key_height.ref_getter()
+    compound_key_size_ref = compound_key_size.ref_getter()
 
-    index_stretch_change = index_stretch.signal
-    pinky_stretch_change = pinky_stretch.signal
+    index_stretch_ref = index_stretch.ref_getter()
+    pinky_stretch_ref = pinky_stretch.ref_getter()
 
-    vowel_set_offset_fac_change = vowel_set_offset_fac.signal
+    vowel_set_offset_fac_ref = vowel_set_offset_fac.ref_getter()
 
-    index_stagger_fac_change = index_stagger_fac.signal
-    middle_stagger_fac_change = middle_stagger_fac.signal 
-    ring_stagger_fac_change = ring_stagger_fac.signal 
-    pinky_stagger_fac_change = pinky_stagger_fac.signal
+    index_stagger_fac_ref = index_stagger_fac.ref_getter()
+    middle_stagger_fac_ref = middle_stagger_fac.ref_getter() 
+    ring_stagger_fac_ref = ring_stagger_fac.ref_getter() 
+    pinky_stagger_fac_ref = pinky_stagger_fac.ref_getter()
 
 
     stroke_preview_change = pyqtSignal()
@@ -109,7 +109,7 @@ class Settings(QObject):
         self.compound_key_size = 0.9
 
         self.index_stretch = 0.2
-        self.pinky_stretch = 0.8
+        self.pinky_stretch = 0.7
 
         self.vowel_set_offset_fac = 0.4375
 
@@ -118,7 +118,7 @@ class Settings(QObject):
         self.ring_stagger_fac = 0.375
         self.pinky_stagger_fac = 0
 
-        @on_many(self.stroke_preview_stroke_change, self.stroke_preview_translation_change)
+        @on_many(self.stroke_preview_stroke_ref.change, self.stroke_preview_translation_ref.change)
         def emit_stroke_preview_change():
             self.stroke_preview_change.emit()
         

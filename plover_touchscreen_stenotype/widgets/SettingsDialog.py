@@ -29,7 +29,7 @@ else:
 
 from .FloatInput import FloatSlider, FloatEntry
 from ..settings import Settings, KeyLayout
-from ..util import on, watch_many, FONT_FAMILY
+from ..util import Ref, on, watch_many, FONT_FAMILY
 
 
 class SettingsDialog(QDialog):
@@ -111,79 +111,33 @@ class SettingsDialog(QDialog):
         size_box = QGroupBox("Key and layout geometry", self)
         size_box_layout = QGridLayout()
 
-        def update_key_width(value: float):
-            settings.key_width = value
-
-        def update_key_height(value: float):
-            settings.key_height = value
-
-        def update_compound_key_size(value: float):
-            settings.compound_key_size = value
-
-        def update_index_stretch(value: float):
-            settings.index_stretch = value
-
-        def update_pinky_stretch(value: float):
-            settings.pinky_stretch = value
-
-        def update_vowel_set_offset(value: float):
-            settings.vowel_set_offset_fac = value
-
-        def update_index_stagger_fac(value: float):
-            settings.index_stagger_fac = value
-
-        def update_middle_stagger_fac(value: float):
-            settings.middle_stagger_fac = value
-
-        def update_ring_stagger_fac(value: float):
-            settings.ring_stagger_fac = value
-
-        def update_pinky_stagger_fac(value: float):
-            settings.pinky_stagger_fac = value
-
-
-        compound_key_box, compound_key_slider = _build_entry_slider_pair(
-            settings.compound_key_size,
-            update_compound_key_size,
-            settings.compound_key_size_change,
-            min=0.25,
-            max=min(settings.key_width, settings.key_height),
-            parent=size_box,
-        )
-
-        @watch_many(settings.key_width_change, settings.key_height_change)
-        def set_compound_key_size_max():
-            new_max = min(settings.key_width, settings.key_height)
-
-            compound_key_box.setMaximum(new_max)
-            compound_key_slider.max = new_max
 
 
         for size_box_index, (label, box, slider, after_label) in enumerate((
             ("Base key width",
                 *_build_entry_slider_pair(
-                    settings.key_width,
-                    update_key_width,
-                    settings.key_width_change,
+                    settings.key_width_ref,
                     min=0.5,
                     max=3,
                     parent=size_box,
                 ), "cm"),
             ("Base key height",
                 *_build_entry_slider_pair(
-                    settings.key_height,
-                    update_key_height,
-                    settings.key_height_change,
+                    settings.key_height_ref,
                     min=0.5,
                     max=3,
                     parent=size_box,
                 ), "cm"),
-            ("Compound key size", compound_key_box, compound_key_slider, "cm"),
+            ("Compound key size",
+                    *(compound_input_pair := _build_entry_slider_pair(
+                        settings.compound_key_size_ref,
+                        min=0.25,
+                        max=min(settings.key_width, settings.key_height),
+                        parent=size_box,
+                    )), "cm"),
             ("Index finger stretch",
                 *_build_entry_slider_pair(
-                    settings.index_stretch,
-                    update_index_stretch,
-                    settings.index_stretch_change,
+                    settings.index_stretch_ref,
                     min=0,
                     max=1,
                     spin_box_step=0.05,
@@ -191,9 +145,7 @@ class SettingsDialog(QDialog):
                 ), "cm"),
             ("Pinky finger stretch",
                 *_build_entry_slider_pair(
-                    settings.pinky_stretch,
-                    update_pinky_stretch,
-                    settings.pinky_stretch_change,
+                    settings.pinky_stretch_ref,
                     min=0,
                     max=1.5,
                     spin_box_step=0.05,
@@ -201,11 +153,9 @@ class SettingsDialog(QDialog):
                 ), "cm"),
             ("Vowels offset factor",
                 *_build_entry_slider_pair(
-                    settings.vowel_set_offset_fac,
-                    update_vowel_set_offset,
-                    settings.vowel_set_offset_fac_change,
+                    settings.vowel_set_offset_fac_ref,
                     min=0,
-                    max=1,
+                    max=1.5,
                     spin_box_step=0.05,
                     parent=size_box,
                 ), ""),
@@ -215,6 +165,16 @@ class SettingsDialog(QDialog):
             size_box_layout.addWidget(box, size_box_index * 2 + 1, 1)
             size_box_layout.addWidget(QLabel(after_label), size_box_index * 2 + 1, 2)
 
+
+        compound_key_box, compound_key_slider = compound_input_pair
+        @watch_many(settings.key_width_ref.change, settings.key_height_ref.change)
+        def set_compound_key_size_max():
+            new_max = min(settings.key_width, settings.key_height)
+
+            compound_key_box.setMaximum(new_max)
+            compound_key_slider.max = new_max
+            
+
         size_box_index += 1
 
         size_box_layout.addWidget(QLabel("Column stagger factors"), size_box_index * 2, 0, 1, 3)
@@ -222,16 +182,14 @@ class SettingsDialog(QDialog):
         stagger_layout = QGridLayout()
         stagger_layout.setContentsMargins(0, 0, 0, 0)
         stagger_layout.setRowMinimumHeight(0, 120)
-        for stagger_index, (value, callback, signal) in enumerate((
-            (settings.index_stagger_fac, update_index_stagger_fac, settings.index_stagger_fac_change),
-            (settings.middle_stagger_fac, update_middle_stagger_fac, settings.middle_stagger_fac_change),
-            (settings.ring_stagger_fac, update_ring_stagger_fac, settings.ring_stagger_fac_change),
-            (settings.pinky_stagger_fac, update_pinky_stagger_fac, settings.pinky_stagger_fac_change),
+        for stagger_index, ref in enumerate((
+            settings.index_stagger_fac_ref,
+            settings.middle_stagger_fac_ref,
+            settings.ring_stagger_fac_ref,
+            settings.pinky_stagger_fac_ref,
         )):
             entry, slider = _build_entry_slider_pair(
-                value,
-                callback,
-                signal,
+                ref,
                 min=0,
                 max=1,
                 spin_box_step=0.05,
@@ -271,21 +229,19 @@ class SettingsDialog(QDialog):
 
 
 def _build_entry_slider_pair(
-    current_value: float,
-    update_settings_attr: Callable[[float], None],
-    settings_signal: pyqtBoundSignal,
+    ref: Ref[float],
     min: float=0,
     max: float=1,
     spin_box_step=0.1,
     slider_orientation: Qt.Orientation=Qt.Horizontal,
     parent: QWidget=None,
 ) -> tuple[FloatEntry, FloatSlider]:
-    entry = FloatEntry(current_value,
+    entry = FloatEntry(ref.value,
             min=min,
             max=max,
             spin_step=spin_box_step,
             parent=parent)
-    slider = FloatSlider(current_value,
+    slider = FloatSlider(ref.value,
             min=min,
             max=max,
             orientation=slider_orientation,
@@ -306,9 +262,9 @@ def _build_entry_slider_pair(
     @on(entry.input)
     @on(slider.input)
     def update_settings(value: float):
-        update_settings_attr(value)
+        ref.set(value)
 
-    @on(settings_signal)
+    @on(ref.change)
     def update_displays(value: float):
         nonlocal last_edit_from_entry
         nonlocal last_edit_from_slider
