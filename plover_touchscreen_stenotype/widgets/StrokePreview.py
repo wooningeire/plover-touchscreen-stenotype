@@ -20,8 +20,10 @@ from PyQt5.QtGui import (
 )
 
 
+from math import cos, radians
 from typing import Iterable
 
+from .build_keyboard import MAIN_ROWS_ANGLE
 from ..settings import Settings, KeyLayout
 from ..util import UseDpi, watch, watch_many, FONT_FAMILY
 
@@ -93,7 +95,9 @@ class StrokePreview(QWidget):
 
         @watch_many(dpi.change, self.__settings.key_width_ref.change)
         def resize_display_alignment():
-            display_alignment_layout.setColumnMinimumWidth(1, dpi.cm(self.__settings.key_width))
+            display_alignment_layout.setColumnMinimumWidth(1,
+                    dpi.cm(self.__settings.key_width) * cos(radians(MAIN_ROWS_ANGLE)))
+            # TODO replace MAIN_ROWS_ANGLE import with setting value when this becomes a setting
 
 
         display_alignment_layout.addLayout(labels_layout, 0, 0)

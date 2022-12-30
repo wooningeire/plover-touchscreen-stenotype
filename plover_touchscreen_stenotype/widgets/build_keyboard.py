@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
     QLayoutItem,
 )
 
-from math import sin, radians
+from math import sin, cos, radians
 from functools import partial
 from typing import TYPE_CHECKING, Callable, Iterable
 if TYPE_CHECKING:
@@ -148,6 +148,8 @@ _VOWEL_ROW_KEYS_RIGHT = (
     (["-U"], "U"),
 )
 
+MAIN_ROWS_ANGLE = 11.25 # TODO temporary for export in StrokePreview
+
 
 #region Exports
 
@@ -200,8 +202,10 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         reduced_key_width,  # -D, -Z
     )
 
+    END_COLUMN_BOOST = 0.4
+
     col_widths_left = (
-        computed(lambda: key_width.value + pinky_stretch.value + 0.55,
+        computed(lambda: key_width.value + pinky_stretch.value + END_COLUMN_BOOST,
                 key_width, pinky_stretch),
         key_width,
         key_width,
@@ -221,15 +225,17 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         computed(lambda: reduced_key_width.value + pinky_stretch.value,
                 reduced_key_width, pinky_stretch),  # -T, -S
         compound_key_size,
-        computed(lambda: reduced_key_width.value + 0.5,
+        computed(lambda: reduced_key_width.value + END_COLUMN_BOOST,
                 reduced_key_width),  # -D, -Z
     )
 
+    VOWEL_KEY_BOOST = 0.25
+
     vowel_set_widths = (
-        computed(lambda: reduced_key_width.value + 0.25,
+        computed(lambda: reduced_key_width.value + VOWEL_KEY_BOOST,
                 reduced_key_width),
         compound_key_size,
-        computed(lambda: reduced_key_width.value + 0.25,
+        computed(lambda: reduced_key_width.value + VOWEL_KEY_BOOST,
                 reduced_key_width),
     )
 
@@ -305,8 +311,8 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
     )
 
     # in degrees
-    MAIN_ROWS_ANGLE = 10
-    VOWEL_ROWS_ANGLE = 15
+    # MAIN_ROWS_ANGLE = 11.25
+    VOWEL_ROWS_ANGLE = 17.5
 
 
     ASTERISK_COLUMN_INDEX = 5
@@ -400,7 +406,8 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
 
         @watch_many(dpi.change, key_width.change, key_height.change, compound_key_size.change,
-                pinky_stretch.change, index_stretch.change,
+                pinky_stretch.change, index_stretch.change, index_stagger_fac.change,
+                middle_stagger_fac.change, ring_stagger_fac.change, pinky_stagger_fac.change,
                 parent=container)
         def set_proxy_transform_and_container_size():
             # Removes the additional height caused by the rotation when the layout and key widget corners do not match
@@ -529,10 +536,15 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
                 parent=layout)
         def resize_spacing():
             left_bank_width = dpi.cm(key_width.value) * 4 + dpi.cm(pinky_stretch.value) + dpi.cm(index_stretch.value)
-            right_bank_width = left_bank_width + dpi.cm(key_width.value)
+            right_bank_width = left_bank_width + dpi.cm(key_width.value) * cos(radians(MAIN_ROWS_ANGLE))
 
-            left_spacer.changeSize(left_bank_width - dpi.cm(key_width.value) - dpi.cm(vowel_set_offset.value), 0)
-            right_spacer.changeSize(right_bank_width - dpi.cm(key_width.value) - dpi.cm(vowel_set_offset.value), 0)
+            offset = dpi.cm(key_width.value) + dpi.cm(vowel_set_offset.value)
+
+            left_bank_spacing = left_bank_width - offset
+            right_bank_spacing = right_bank_width - offset
+
+            left_spacer.changeSize(left_bank_spacing, 0)
+            right_spacer.changeSize(right_bank_spacing, 0)
 
         @on_many(key_width.change, vowel_set_offset.change, parent=layout)
         def invalidate_layout():
