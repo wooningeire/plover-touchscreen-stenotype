@@ -11,9 +11,21 @@ from PyQt5.QtGui import (
     QResizeEvent,
 )
 
-from typing import Callable
+from functools import wraps
+from typing import Callable, Any
 
 from ..util import on
+
+
+def block_signals(fn: Callable[[Any], None]):
+    @wraps(fn)
+    def wrapper(self: "FloatSlider", *args):
+        old_signals_blocked = self.blockSignals(True) # Prevent `valueChanged` from being fired
+        fn(self, *args)
+        self.blockSignals(old_signals_blocked)
+
+    return wrapper
+
 
 class FloatSlider(QSlider):
     """Slider that supports float values."""
@@ -61,6 +73,15 @@ class FloatSlider(QSlider):
 
         return super().resizeEvent(event)
 
+    @block_signals
+    def setMaximum(self, maximum: int) -> None:
+        # setMaximum can emit `valueChanged` when value > maximum
+        return super().setMaximum(maximum)
+
+    @block_signals
+    def setValue(self, value: int) -> None:
+        return super().setValue(value)
+
 
     def __set_progress(self, progress: float):
         self.setValue(round(progress * self.__internal_max))
@@ -72,9 +93,7 @@ class FloatSlider(QSlider):
         return progress * (self.__max_value - self.__min_value) + self.__min_value
 
     def __update_slider_position(self):
-        old_signals_blocked = self.blockSignals(True) # Prevent `valueChanged` from being fired
         self.__set_progress(self.__progress_at(self.__current_value))
-        self.blockSignals(old_signals_blocked)
 
     @property
     def __internal_max(self):
