@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import (
     QTouchEvent,
     QTransform,
+    QResizeEvent,
 )
 
 
@@ -61,7 +62,7 @@ class RotatableKeyContainer(QGraphicsView):
         # self.setAttribute(Qt.WA_AcceptTouchEvents)
 
         # Disable scrolling and hide scrollbars
-        h_scrollbar = self.horizontalScrollBar()
+        self.__h_scrollbar = h_scrollbar = self.horizontalScrollBar()
         self.__v_scrollbar = v_scrollbar = self.verticalScrollBar()
 
         h_scrollbar.setEnabled(False)
@@ -70,7 +71,7 @@ class RotatableKeyContainer(QGraphicsView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         # Scroll to the bottom of the container (bottom-align the key groups)
-        QTimer.singleShot(0, self.scroll_to_bottom)
+        QTimer.singleShot(0, self.__rescroll)
 
         # Clear default styling
         self.setStyleSheet("background: #00000000; border: none;")
@@ -101,12 +102,24 @@ class RotatableKeyContainer(QGraphicsView):
 
         return self.__widget.childAt(widget_coords)
 
+    def __rescroll(self):
+        self.scroll_to_bottom()
+        self.scroll_to_horizontal_edge()
+
     def scroll_to_bottom(self):
         self.__v_scrollbar.setValue(self.__v_scrollbar.maximum())
 
+    def scroll_to_horizontal_edge(self):
+        if self.__align_left:
+            self.__h_scrollbar.setValue(self.__h_scrollbar.maximum())
+        else:
+            self.__h_scrollbar.setValue(self.__h_scrollbar.minimum())
+
+
     def update_size(self):
         self.__update_widget_size_and_position()
-        self.__update_own_size()
+        QTimer.singleShot(0, self.__update_own_size)
+        # self.__update_own_size()
 
     def __update_widget_size_and_position(self):
         widget = self.__widget
@@ -134,4 +147,8 @@ class RotatableKeyContainer(QGraphicsView):
         scene.setSceneRect(scene.itemsBoundingRect())
         self.setMaximumSize(scene.sceneRect().size().toSize())
 
-        QTimer.singleShot(0, self.scroll_to_bottom)
+        QTimer.singleShot(0, self.__rescroll)
+
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        self.scroll_to_horizontal_edge()
+        return super().resizeEvent(event)
