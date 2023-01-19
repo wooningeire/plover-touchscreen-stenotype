@@ -139,12 +139,12 @@ class KeyboardWidget(QWidget):
                 old_key_widget = self.__touches_to_key_widgets[touch.id()]
                 self.__key_widget_touch_counter[old_key_widget] -= 1
 
+                del self.__touches_to_key_widgets[touch.id()]
+
                 if self.__key_widget_touch_counter[old_key_widget] == 0:
                     del self.__key_widget_touch_counter[old_key_widget]
 
-            if touch.state() == Qt.TouchPointReleased:
-                del self.__touches_to_key_widgets[touch.id()]
-                continue
+            if touch.state() == Qt.TouchPointReleased: continue
 
 
             key_widget = self.__key_widget_at(touch.pos().toPoint())
