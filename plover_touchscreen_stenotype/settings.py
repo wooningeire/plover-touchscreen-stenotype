@@ -73,6 +73,8 @@ class Settings(QObject):
     ring_stagger_fac = _PersistentSetting(float)
     pinky_stagger_fac = _PersistentSetting(float)
 
+    window_opacity = _PersistentSetting(float)
+
 
     key_layout_ref = key_layout.ref_getter()
 
@@ -92,6 +94,8 @@ class Settings(QObject):
     middle_stagger_fac_ref = middle_stagger_fac.ref_getter() 
     ring_stagger_fac_ref = ring_stagger_fac.ref_getter() 
     pinky_stagger_fac_ref = pinky_stagger_fac.ref_getter()
+
+    window_opacity_ref = window_opacity.ref_getter()
 
 
     stroke_preview_change = pyqtSignal()
@@ -117,6 +121,8 @@ class Settings(QObject):
         self.middle_stagger_fac = 0.8
         self.ring_stagger_fac = 0.55
         self.pinky_stagger_fac = 0
+
+        self.window_opacity = 0.9375
 
         @on_many(self.stroke_preview_stroke_ref.change, self.stroke_preview_translation_ref.change)
         def emit_stroke_preview_change():

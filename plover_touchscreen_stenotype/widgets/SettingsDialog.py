@@ -108,10 +108,26 @@ class SettingsDialog(QDialog):
             settings.stroke_preview_translation = checked
 
 
+        misc_box = QGroupBox("Misc", self)
+        misc_box_layout = QGridLayout()
+
+        opacity_entry, opacity_slider = _build_entry_slider_pair(
+            settings.window_opacity_ref,
+            min=0.25,
+            max=1,
+            parent=misc_box,
+        )
+        
+        misc_box_layout.addWidget(QLabel("Window opacity"), 0, 0, 1, 2)
+        misc_box_layout.addWidget(opacity_slider, 1, 0)
+        misc_box_layout.addWidget(opacity_entry, 1, 1)
+
+        misc_box.setLayout(misc_box_layout)
+
+
+
         size_box = QGroupBox("Key and layout geometry", self)
         size_box_layout = QGridLayout()
-
-
 
         for size_box_index, (label, box, slider, after_label) in enumerate((
             ("Base key width",
@@ -219,10 +235,11 @@ class SettingsDialog(QDialog):
         layout = QGridLayout()
         layout.addWidget(key_layout_box, 0, 0)
         layout.addWidget(stroke_preview_box, 1, 0)
-        layout.addWidget(size_box, 0, 1, 3, 1)
-        layout.setRowStretch(2, 1)
-        layout.addWidget(label_resizing, 3, 0, 1, 2)
-        layout.addWidget(label_troubleshooting, 4, 0, 1, 2)
+        layout.addWidget(misc_box, 2, 0)
+        layout.addWidget(size_box, 0, 1, 4, 1)
+        layout.setRowStretch(3, 1)
+        layout.addWidget(label_resizing, 4, 0, 1, 2)
+        layout.addWidget(label_troubleshooting, 5, 0, 1, 2)
         # layout.addWidget(sizes_box)
         self.setLayout(layout)
 

@@ -19,10 +19,11 @@ from PyQt5.QtGui import (
 )
 
 
-from plover_touchscreen_stenotype.settings import Settings
-from plover_touchscreen_stenotype.widgets.KeyboardWidget import KeyboardWidget
-from plover_touchscreen_stenotype.widgets.StrokePreview import StrokePreview
-from plover_touchscreen_stenotype.widgets.SettingsDialog import SettingsDialog
+from .settings import Settings
+from .util import watch
+from .widgets.KeyboardWidget import KeyboardWidget
+from .widgets.StrokePreview import StrokePreview
+from .widgets.SettingsDialog import SettingsDialog
 
 
 class Main(Tool):
@@ -97,7 +98,9 @@ class Main(Tool):
         self.setLayout(layout)
 
 
-        self.setWindowOpacity(0.9375)
+        @watch(self.__settings.window_opacity_ref.change)
+        def set_window_opacity():
+            self.setWindowOpacity(self.__settings.window_opacity)
 
 
     # https://stackoverflow.com/questions/24582525/how-to-show-clickable-qframe-without-loosing-focus-from-main-window
