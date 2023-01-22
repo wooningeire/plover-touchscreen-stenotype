@@ -73,6 +73,9 @@ class Settings(QObject):
     ring_stagger_fac = _PersistentSetting(float)
     pinky_stagger_fac = _PersistentSetting(float)
 
+    main_rows_angle = _PersistentSetting(float)
+    vowel_rows_angle = _PersistentSetting(float)
+
     window_opacity = _PersistentSetting(float)
 
 
@@ -94,6 +97,9 @@ class Settings(QObject):
     middle_stagger_fac_ref = middle_stagger_fac.ref_getter() 
     ring_stagger_fac_ref = ring_stagger_fac.ref_getter() 
     pinky_stagger_fac_ref = pinky_stagger_fac.ref_getter()
+
+    main_rows_angle_ref = main_rows_angle.ref_getter()
+    vowel_rows_angle_ref = vowel_rows_angle.ref_getter()
 
     window_opacity_ref = window_opacity.ref_getter()
 
@@ -121,6 +127,9 @@ class Settings(QObject):
         self.middle_stagger_fac = 0.8
         self.ring_stagger_fac = 0.55
         self.pinky_stagger_fac = 0
+
+        self.main_rows_angle = 15
+        self.vowel_rows_angle = 22.5
 
         self.window_opacity = 0.9375
 

@@ -175,6 +175,22 @@ class SettingsDialog(QDialog):
                     spin_box_step=0.05,
                     parent=size_box,
                 ), ""),
+            ("Main rows angle",
+                *_build_entry_slider_pair(
+                    settings.main_rows_angle_ref,
+                    min=0,
+                    max=45,
+                    spin_box_step=1,
+                    parent=size_box,
+                ), "°"),
+            ("Vowel rows angle",
+                *_build_entry_slider_pair(
+                    settings.vowel_rows_angle_ref,
+                    min=0,
+                    max=75,
+                    spin_box_step=1,
+                    parent=size_box,
+                ), "°"),
         )):
             size_box_layout.addWidget(QLabel(label), size_box_index * 2, 0, 1, 3)
             size_box_layout.addWidget(slider, size_box_index * 2 + 1, 0)

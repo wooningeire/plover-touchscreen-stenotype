@@ -152,3 +152,13 @@ class RotatableKeyContainer(QGraphicsView):
     def resizeEvent(self, event: QResizeEvent) -> None:
         self.scroll_to_horizontal_edge()
         return super().resizeEvent(event)
+    
+
+    @property
+    def angle(self):
+        return self.__angle
+
+    @angle.setter
+    def angle(self, value: float):
+        self.__angle = value
+        self.update_size()

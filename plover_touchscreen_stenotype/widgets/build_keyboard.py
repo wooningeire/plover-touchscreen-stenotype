@@ -148,8 +148,6 @@ _VOWEL_ROW_KEYS_RIGHT = (
     (["-U"], "U"),
 )
 
-MAIN_ROWS_ANGLE = 11.25 # TODO temporary for export in StrokePreview
-
 
 #region Exports
 
@@ -311,11 +309,14 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
     )
 
     # in degrees
-    # MAIN_ROWS_ANGLE = 11.25
-    VOWEL_ROWS_ANGLE = 17.5
+    main_rows_angle = settings.main_rows_angle_ref
+    vowel_rows_angle = settings.vowel_rows_angle_ref
 
 
     ASTERISK_COLUMN_INDEX = 5
+
+    TALLEST_COLUMN_INDEX_LEFT = 4
+    TALLEST_COLUMN_INDEX_RIGHT = 2
 
 
     def build_main_rows_hand_staggered(
@@ -390,11 +391,15 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         keys: tuple[list[str], str, int, str],
         col_widths: tuple[Ref[float]],
         col_offsets: tuple[float],
-        angle: float,
+        angle: Ref[float],
         align_left: bool,
     ) -> QLayout:
         layout = build_main_rows_hand_staggered(key_widgets, keys, col_widths, col_offsets)
-        container = RotatableKeyContainer.of_layout(layout, align_left, angle, keyboard_widget)
+        container = RotatableKeyContainer.of_layout(layout, align_left, angle.value, keyboard_widget)
+
+        @on(angle.change)
+        def update_vowel_angle(value: float):
+            container.angle = angle.value
 
 
         offset_layout = QVBoxLayout()
@@ -408,16 +413,16 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         @watch_many(dpi.change, key_width.change, key_height.change, compound_key_size.change,
                 pinky_stretch.change, index_stretch.change, index_stagger_fac.change,
                 middle_stagger_fac.change, ring_stagger_fac.change, pinky_stagger_fac.change,
-                parent=container)
+                angle.change, parent=container)
         def set_proxy_transform_and_container_size():
             # Removes the additional height caused by the rotation when the layout and key widget corners do not match
             if align_left:
-                widths = col_widths_right[-4:]
+                widths = col_widths_right[-TALLEST_COLUMN_INDEX_LEFT:]
             else:
-                widths = col_widths_left[:2]
+                widths = col_widths_left[:TALLEST_COLUMN_INDEX_RIGHT]
 
             radius = sum(dpi.cm(width.value) for width in widths)
-            offset = radius * -sin(radians(abs(angle)))
+            offset = radius * -sin(radians(abs(angle.value)))
 
             offset_spacer.changeSize(0, round(offset))
 
@@ -435,10 +440,12 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         layout.setSpacing(0)
 
         layout.addLayout(build_main_rows_hand_container(
-                key_widgets, _MAIN_ROWS_KEYS_LEFT, col_widths_left, col_offsets_left, MAIN_ROWS_ANGLE, False))
+                key_widgets, _MAIN_ROWS_KEYS_LEFT, col_widths_left, col_offsets_left,
+                main_rows_angle, False))
         layout.addStretch(1)
         layout.addLayout(build_main_rows_hand_container(
-                key_widgets, _MAIN_ROWS_KEYS_RIGHT, col_widths_right, col_offsets_right, -MAIN_ROWS_ANGLE, True))
+                key_widgets, _MAIN_ROWS_KEYS_RIGHT, col_widths_right, col_offsets_right,
+                computed(lambda: -main_rows_angle.value, main_rows_angle), True))
 
         return layout
 
@@ -533,12 +540,12 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         layout.addSpacerItem(right_spacer := QSpacerItem(0, 0))
 
         @watch_many(dpi.change, key_width.change, pinky_stretch.change, index_stretch.change, vowel_set_offset.change,
-                parent=layout)
+                main_rows_angle.change, *(height.change for height in row_heights), parent=layout)
         def resize_spacing():
-            left_bank_width = dpi.cm(key_width.value) * 4 + dpi.cm(pinky_stretch.value) + dpi.cm(index_stretch.value)
-            right_bank_width = left_bank_width + dpi.cm(key_width.value) * cos(radians(MAIN_ROWS_ANGLE))
+            left_bank_width = (dpi.cm(key_width.value) * 4 + dpi.cm(pinky_stretch.value) + dpi.cm(index_stretch.value)) * cos(radians(main_rows_angle.value))
+            right_bank_width = left_bank_width + dpi.cm(key_width.value) * cos(radians(main_rows_angle.value))
 
-            offset = dpi.cm(key_width.value) + dpi.cm(vowel_set_offset.value)
+            offset = (dpi.cm(key_width.value) + dpi.cm(vowel_set_offset.value)) * cos(radians(main_rows_angle.value))
 
             left_bank_spacing = left_bank_width - offset
             right_bank_spacing = right_bank_width - offset
@@ -555,11 +562,15 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
     def build_vowel_row_layout_staggered(key_widgets: list[KeyWidget]) -> QLayout:
         left_set_layout = build_vowel_set_layout(_VOWEL_ROW_KEYS_LEFT, key_widgets)
-        left_container = RotatableKeyContainer.of_layout(left_set_layout, False, VOWEL_ROWS_ANGLE, keyboard_widget)
+        left_container = RotatableKeyContainer.of_layout(left_set_layout, False, vowel_rows_angle.value, keyboard_widget)
         
         right_set_layout = build_vowel_set_layout(_VOWEL_ROW_KEYS_RIGHT, key_widgets)
-        right_container = RotatableKeyContainer.of_layout(right_set_layout, True, -VOWEL_ROWS_ANGLE, keyboard_widget)
+        right_container = RotatableKeyContainer.of_layout(right_set_layout, True, -vowel_rows_angle.value, keyboard_widget)
 
+        @on(vowel_rows_angle.change)
+        def change_vowel_angle(value: float):
+            left_container.angle = value
+            right_container.angle = -value
 
         layout = build_vowel_row_containing_sets(QWidgetItem(left_container), QWidgetItem(right_container))
 
