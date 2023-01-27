@@ -95,7 +95,8 @@ class StrokePreview(QWidget):
         @watch_many(dpi.change, self.__settings.key_width_ref.change, self.__settings.main_rows_angle_ref.change)
         def resize_display_alignment():
             display_alignment_layout.setColumnMinimumWidth(1,
-                    dpi.cm(self.__settings.key_width) * cos(radians(self.__settings.main_rows_angle)))
+                    # dpi.cm(self.__settings.key_width) * cos(radians(self.__settings.main_rows_angle)))
+                    0)
             # TODO replace MAIN_ROWS_ANGLE import with setting value when this becomes a setting
 
 
