@@ -34,11 +34,17 @@ _TOP_COMPOUND_ROW = -1
 _LOW_COMPOUND_ROW = 1
 
 # [keys], label, rowSpan?, numberLabel?
-_MAIN_ROWS_KEYS_LEFT = (
+_MAIN_ROWS_KEYS_STAGGERED_LEFT = (
     (
         (["#"], "#"),
+        (["#", "^-"], ""),
+        (["^-"], "^"), # ∧
+    ), (
         (["#", "S-"], ""),
-        (["S-"], "S", 1, "1"),
+        (["#", "^-", "S-"], ""),
+        (["^-", "S-"], ""),
+    ), (
+        (["S-"], "S", 3, "1"),
     ), (
         (["T-"], "T", 1, "2"),
         (["T-", "K-"], ""),
@@ -52,15 +58,17 @@ _MAIN_ROWS_KEYS_LEFT = (
         (["H-", "R-"], ""),
         (["R-"], "R"),
     ), (
-        (["H-", "*"], ""),
-        (["H-", "R-", "*"], ""),
-        (["R-", "*"], ""),
+        (["H-", "+-"], ""),
+        (["H-", "R-", "+-"], ""),
+        (["R-", "+-"], ""),
     ), (
-        (["*"], "🞱", 3),
+        (["+-"], "+", 3), # ＋
+    ), (
+        (["+-", ".-"], "++", 3),
     ),
 )
 
-_MAIN_ROWS_KEYS_RIGHT = (
+_MAIN_ROWS_KEYS_STAGGERED_RIGHT = (
     (
         (["*"], "🞱", 3),
     ), (
@@ -200,44 +208,51 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         reduced_key_width,  # -D, -Z
     )
 
-    END_COLUMN_BOOST = 0.4
+    END_COLUMN_WIDTH_BOOST = 0.4
 
-    col_widths_left = (
-        computed(lambda: key_width.value + pinky_stretch.value + END_COLUMN_BOOST,
-                key_width, pinky_stretch),
+    col_widths_staggered_left = (
+        computed(lambda: reduced_key_width.value + END_COLUMN_WIDTH_BOOST,
+                reduced_key_width),
+        compound_key_size,
+        computed(lambda: reduced_key_width.value + pinky_stretch.value,
+                reduced_key_width, pinky_stretch),
         key_width,
         key_width,
         reduced_index_width,  # H-, R-
-        compound_key_size,
-        computed(lambda: reduced_key_width.value + key_width.value / 2,
-                reduced_key_width, key_width),  # *
+        computed(lambda: compound_key_size.value * 5/6,
+                compound_key_size),
+        computed(lambda: (key_width.value * 1.5 - compound_key_size.value / 2) / 2,
+                key_width, compound_key_size),  # +
+        computed(lambda: (key_width.value * 1.5 - compound_key_size.value / 2) / 2,
+                key_width, compound_key_size),  # .
     )
 
-    col_widths_right = (
+    col_widths_staggered_right = (
         computed(lambda: reduced_key_width.value + key_width.value / 2,
                 reduced_key_width, key_width), # *
-        compound_key_size,
+        computed(lambda: compound_key_size.value * 5/6,
+                compound_key_size),
         reduced_index_width,  # -F, -R
         key_width,
         key_width,
         computed(lambda: reduced_key_width.value + pinky_stretch.value,
                 reduced_key_width, pinky_stretch),  # -T, -S
         compound_key_size,
-        computed(lambda: reduced_key_width.value + END_COLUMN_BOOST,
+        computed(lambda: reduced_key_width.value + END_COLUMN_WIDTH_BOOST,
                 reduced_key_width),  # -D, -Z
     )
 
-    VOWEL_KEY_BOOST = 0.25
+    VOWEL_KEY_WIDTH_BOOST = 0.25
 
     vowel_set_widths = (
-        computed(lambda: reduced_key_width.value + VOWEL_KEY_BOOST,
+        computed(lambda: reduced_key_width.value + VOWEL_KEY_WIDTH_BOOST,
                 reduced_key_width),
         compound_key_size,
-        computed(lambda: reduced_key_width.value + VOWEL_KEY_BOOST,
+        computed(lambda: reduced_key_width.value + VOWEL_KEY_WIDTH_BOOST,
                 reduced_key_width),
     )
 
-    INITIAL_ROWS_GAP = 2.25
+    INITIAL_ROWS_GAP_HEIGHT = 2.25
 
     index_stagger_fac = settings.index_stagger_fac_ref
     middle_stagger_fac = settings.middle_stagger_fac_ref
@@ -254,6 +269,8 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
             key_width, pinky_stagger_fac)
 
     col_offsets = (
+        pinky_offset,
+        pinky_offset,
         pinky_offset,  # S-
         ring_offset,  # T-, K-
         middle_offset,  # P-, W-
@@ -289,10 +306,13 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
 
     col_offsets_left = (
+        pinky_offset,
+        pinky_offset,
         pinky_offset,  # S-
         ring_offset,  # T-, K-
         middle_offset,  # P-, W-
         index_offset,  # H-, R-
+        index_offset,
         index_offset,
         index_offset,
     )
@@ -315,8 +335,9 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
     ASTERISK_COLUMN_INDEX = 5
 
+
     TALLEST_COLUMN_INDEX_LEFT = 4
-    TALLEST_COLUMN_INDEX_RIGHT = 2
+    TALLEST_COLUMN_INDEX_RIGHT = 4
 
 
     def build_main_rows_hand_staggered(
@@ -417,9 +438,9 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         def set_proxy_transform_and_container_size():
             # Removes the additional height caused by the rotation when the layout and key widget corners do not match
             if align_left:
-                widths = col_widths_right[-TALLEST_COLUMN_INDEX_LEFT:]
+                widths = col_widths_staggered_right[-TALLEST_COLUMN_INDEX_RIGHT:]
             else:
-                widths = col_widths_left[:TALLEST_COLUMN_INDEX_RIGHT]
+                widths = col_widths_staggered_left[:TALLEST_COLUMN_INDEX_LEFT]
 
             radius = sum(dpi.cm(width.value) for width in widths)
             offset = radius * -sin(radians(abs(angle.value)))
@@ -440,11 +461,11 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         layout.setSpacing(0)
 
         layout.addLayout(build_main_rows_hand_container(
-                key_widgets, _MAIN_ROWS_KEYS_LEFT, col_widths_left, col_offsets_left,
+                key_widgets, _MAIN_ROWS_KEYS_STAGGERED_LEFT, col_widths_staggered_left, col_offsets_left,
                 main_rows_angle, False))
         layout.addStretch(1)
         layout.addLayout(build_main_rows_hand_container(
-                key_widgets, _MAIN_ROWS_KEYS_RIGHT, col_widths_right, col_offsets_right,
+                key_widgets, _MAIN_ROWS_KEYS_STAGGERED_RIGHT, col_widths_staggered_right, col_offsets_right,
                 computed(lambda: -main_rows_angle.value, main_rows_angle), True))
 
         return layout
@@ -542,8 +563,8 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         @watch_many(dpi.change, key_width.change, pinky_stretch.change, index_stretch.change, vowel_set_offset.change,
                 main_rows_angle.change, *(height.change for height in row_heights), parent=layout)
         def resize_spacing():
-            left_bank_width = (dpi.cm(key_width.value) * 4 + dpi.cm(pinky_stretch.value) + dpi.cm(index_stretch.value)) * cos(radians(main_rows_angle.value))
-            right_bank_width = left_bank_width + dpi.cm(key_width.value) * cos(radians(main_rows_angle.value))
+            left_bank_width = (dpi.cm(key_width.value) * 5 + dpi.cm(pinky_stretch.value) + dpi.cm(index_stretch.value)) * cos(radians(main_rows_angle.value))
+            right_bank_width = left_bank_width
 
             offset = (dpi.cm(key_width.value) + dpi.cm(vowel_set_offset.value)) * cos(radians(main_rows_angle.value))
 
@@ -612,7 +633,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         
         @watch(dpi.change)
         def resize_spacer_row():
-            layout.setRowMinimumHeight(1, dpi.cm(INITIAL_ROWS_GAP))
+            layout.setRowMinimumHeight(1, dpi.cm(INITIAL_ROWS_GAP_HEIGHT))
             # Allow negative stretch so the other grid rows can overlap
             QTimer.singleShot(0, lambda: layout.setRowMinimumHeight(1, -16777216))
 

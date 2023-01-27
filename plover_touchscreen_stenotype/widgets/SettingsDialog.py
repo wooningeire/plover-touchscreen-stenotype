@@ -154,7 +154,7 @@ class SettingsDialog(QDialog):
             ("Index finger stretch",
                 *_build_entry_slider_pair(
                     settings.index_stretch_ref,
-                    min=0,
+                    min=-0.25,
                     max=1,
                     spin_box_step=0.05,
                     parent=size_box,
