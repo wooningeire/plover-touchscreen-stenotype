@@ -14,8 +14,9 @@ from PyQt5.QtGui import (
     QTouchEvent,
 )
 
+from threading import Thread
 from collections import Counter
-from typing import cast, TYPE_CHECKING, Generator
+from typing import cast, TYPE_CHECKING, Generator, Iterable
 if TYPE_CHECKING:
     from ..Main import Main
 else:
@@ -25,6 +26,7 @@ else:
 from .KeyWidget import KeyWidget
 from .RotatableKeyContainer import RotatableKeyContainer
 from .build_keyboard import use_build_keyboard
+from .Synthesizer import Synthesizer
 from ..settings import Settings, KeyLayout
 from ..util import UseDpi, KEY_STYLESHEET
 
@@ -63,6 +65,9 @@ class KeyboardWidget(QWidget):
         self.setFocusPolicy(Qt.NoFocus)
 
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+
+        self.__synthesizer = Synthesizer(self)
 
 
     # def __handle_dpi_change(self):
@@ -110,9 +115,11 @@ class KeyboardWidget(QWidget):
 
             if len(self.__current_stroke_keys) > old_stroke_length and self.__current_stroke_keys:
                 self.current_stroke_change.emit(self.__current_stroke_keys)
+            
+                self.__synthesizer.update(self.__current_stroke_keys)
+
             if not had_num_bar and "#" in self.__current_stroke_keys:
                 self.num_bar_pressed_change.emit(True)
-            
 
         elif event.type() == QEvent.TouchEnd:
             # This also filters out empty strokes (Plover accepts them and will insert extra spaces)
@@ -121,12 +128,14 @@ class KeyboardWidget(QWidget):
                 self.__current_stroke_keys.clear()
                 self.__touches_to_key_widgets.clear()
                 self.__key_widget_touch_counter.clear()
+
+                self.__synthesizer.stop()
             
             if had_num_bar:
                 self.num_bar_pressed_change.emit(False)
 
             
-        self.__update_key_widget_styles_and_state(self.__key_widget_touch_counter.keys())
+        self.__update_key_widget_styles_and_state(set(self.__key_widget_touch_counter.keys()))
         
         return True
 
