@@ -14,115 +14,165 @@ from typing import Callable
 import numpy as np
 import pyaudio
 
-from .KeyWidget import KeyWidget
-from ..util import on
 
-
-_VOLUME_FAC = 0.08
+_VOLUME_FAC = 0.055
 _SAMPLE_RATE = 44100  # Hz
-_BASE_FREQUENCY = 1320  # Hz
+_BASE_FREQUENCY = 440  # Hz
 _N_SAMPLES_PER_BUFFER = 1024
 
 _keys_to_ratios = {
-    "*": 3,
-    "-F": 1,
-    "-P": 1.25,
-    "-L": 1.5,
-    "-T": 2,
-    "-D": 2.5,
+    #region Major triads
 
-    "-R": 0.25,
-    "-B": 0.25 * 1.25,
-    "-G": 0.25 * 1.5,
-    "-S": 0.5,
-    "-Z": 0.5 * 1.5,
+    # "*": 3,
+    # "-F": 1,
+    # "-P": 1.25,
+    # "-L": 1.5,
+    # "-T": 2,
+    # "-D": 2.5,
+
+    # "-R": 0.25,
+    # "-B": 0.25 * 1.25,
+    # "-G": 0.25 * 1.5,
+    # "-S": 0.5,
+    # "-Z": 0.5 * 1.25,
 
     
-    "+-": 3,
+    # "+-": 3,
+    # "H-": 1,
+    # "P-": 1.25,
+    # "T-": 1.5,
+    # "#": 2 * 1.25,
+
+    # "R-": 0.25,
+    # "W-": 0.25 * 1.25,
+    # "K-": 0.25 * 1.5,
+    # "S-": 0.5,
+    # "^-": 0.5 * 1.25,
+
+    # "A-": 0.5 * 1,
+    # "O-": 0.5 * 1.25,
+    # "-E": 0.5 * 1.5,
+    # "-U": 0.5 * 16/9,
+
+    #endregion
+
+
+    #region Pentatonic
+
+    "*": 1,
+    "-F": 1,
+    "-P": 1.125,
+    "-L": 1.25,
+    "-T": 1.5,
+    "-D": 5/3,
+
+    "-R": 0.25,
+    "-B": 0.25 * 1.125,
+    "-G": 0.25 * 1.25,
+    "-S": 0.25 * 1.5,
+    "-Z": 0.25 * 5/3,
+
+    
+    "+-": 2,
     "H-": 1,
-    "P-": 1.25,
-    "T-": 1.5,
-    "#": 2,
+    "P-": 1.125,
+    "T-": 1.25,
+    "#": 1.5,
 
     "R-": 0.25,
-    "W-": 0.25 * 1.25,
-    "K-": 0.25 * 1.5,
-    "S-": 0.5,
-    "^-": 0.5 * 1.5,
+    "W-": 0.25 * 1.125,
+    "K-": 0.25 * 1.25,
+    "S-": 0.25 * 1.5,
+    "^-": 0.25 * 5/3,
 
     "A-": 0.5 * 1,
     "O-": 0.5 * 1.25,
     "-E": 0.5 * 1.5,
     "-U": 0.5 * 16/9,
 
-    # "*": 2,
-    # "-F": 1,
-    # "-P": 1.125,
-    # "-L": 1.25,
-    # "-T": 1.5,
-    # "-D": 5/3,
+    #endregion
 
-    # "-R": 0.5,
-    # "-B": 0.5 * 1.125,
-    # "-G": 0.5 * 1.25,
-    # "-S": 0.5 * 1.5,
-    # "-Z": 0.5 * 5/3,
 
+
+    "*": 1 * 4/3,
+    "-F": 1,
+    "-P": 1.125,
+    "-L": 1.25,
+    "-T": 1.5,
+    "-D": 5/3,
+
+    "-R": 0.25,
+    "-B": 0.25 * 1.125,
+    "-G": 0.25 * 1.25,
+    "-S": 0.25 * 1.5,
+    "-Z": 0.25 * 5/3,
 
     
-    # "+-": 2,
-    # "H-": 1,
-    # "P-": 1.125,
-    # "T-": 1.25,
-    # "#": 1.5,
+    "+-": 2 * 4/3,
+    "H-": 1,
+    "P-": 1.125,
+    "T-": 1.25,
+    "#": 1.5,
 
-    # "R-": 0.5,
-    # "W-": 0.5 * 1.125,
-    # "K-": 0.5 * 1.25,
-    # "S-": 0.5 * 1.5,
-    # "^-": 0.5 * 5/3,
+    "R-": 0.25,
+    "W-": 0.25 * 1.125,
+    "K-": 0.25 * 1.25,
+    "S-": 0.25 * 1.5,
+    "^-": 0.25 * 5/3,
 
-    # "A-": 0.5 * 1,
-    # "O-": 0.5 * 1.25,
-    # "-E": 0.5 * 1.5,
-    # "-U": 0.5 * 16/9,
+    "A-": 0.5 * 1,
+    "O-": 0.5 * 1.5,
+    "-E": 0.5 * 1.25,
+    "-U": 0.5 * 16/9,
+
 }
 
 # _noisy_sine = lambda x: np.sin(2 * np.pi * x) * (np.random.random(len(x)) + 0.5)
-_noisy_sine = lambda x: np.sin(2 * np.pi * x) * (1/3 * np.sin(4 * np.pi * x) + 1) + 1/5 * np.sin(5.81 * np.pi * x) + 1/7 * np.sin(10.41 * np.pi * x)
-_sawtooth = lambda x: (2 * x % 2 - 1) * 0.5
-_square = lambda x: np.sign(2 * x % 2 - 1) * 0.4
+# _noisy_sine = (lambda x: np.sin(2 * np.pi * x) * (1/3 * np.sin(4 * np.pi * x) + 1)
+#         + 1/5 * np.sin(1.5 * np.pi * x)
+#         + 1/7 * np.sin(0.5 * np.pi * x)
+#         + 1/7 * np.sin(6.1039 * np.pi * x)
+#         + 1/9 * np.sin(15.9504 * np.pi * x))
+Voice = Callable[[np.ndarray[float]], np.ndarray[float]]
+
+_sine: Voice = lambda x: np.sin(2 * np.pi * x)
+_modified_sine: Voice = lambda x: np.abs(np.sin(2 * np.pi * x - 0.961997179279)) ** 3.5 * 2 - 1 
+        # note: abs causes frequency to double
+        # phase shift = asin(0.5^(1/3.5)) to make f(x) = 0 @ x = 0
+_sawtooth: Voice = lambda x: (2 * x % 2 - 1) * 0.5
+_triangle: Voice = lambda x: (np.arcsin(np.sin(2 * np.pi * x)) * 2 / np.pi) ** 3
+_square: Voice = lambda x: np.sign(2 * x % 2 - 1) * 0.4
 
 _keys_to_voices = {
-    "*": _noisy_sine,
-    "-F": _noisy_sine,
-    "-P": _noisy_sine,
-    "-L": _noisy_sine,
-    "-T": _noisy_sine,
-    "-D": _noisy_sine,
+    "*": _modified_sine,
+    "-F": _modified_sine,
+    "-P": _modified_sine,
+    "-L": _modified_sine,
+    "-T": _modified_sine,
+    "-D": _modified_sine,
 
-    "-R": _noisy_sine,
-    "-B": _noisy_sine,
-    "-G": _noisy_sine,
-    "-S": _noisy_sine,
-    "-Z": _noisy_sine,
+    "-R": _modified_sine,
+    "-B": _modified_sine,
+    "-G": _modified_sine,
+    "-S": _modified_sine,
+    "-Z": _modified_sine,
 
     "-E": _square,
     "-U": _square,
 
     
-    "+-": _sawtooth,
-    "H-": _sawtooth,
-    "P-": _sawtooth,
-    "T-": _sawtooth,
-    "S-": _sawtooth,
-    "#": _sawtooth,
+    "+-": _triangle,
+    "H-": _triangle,
+    "P-": _triangle,
+    "T-": _triangle,
+    "S-": _triangle,
+    "#": _triangle,
 
-    "R-": _sawtooth,
-    "W-": _sawtooth,
-    "K-": _sawtooth,
-    "W-": _sawtooth,
-    "^-": _sawtooth,
+    "R-": _triangle,
+    "W-": _triangle,
+    "K-": _triangle,
+    "W-": _triangle,
+    "^-": _triangle,
 
     "O-": _square,
     "A-": _square,
@@ -162,70 +212,72 @@ class Synthesizer(QObject):
         # )
         # non_blocking_stream.start_stream()
 
-        self.__message__update: Queue[tuple[tuple[float], tuple[Callable[[float], float]]]] = Queue()
+        self.__message__update: Queue[tuple[tuple[float], tuple[Voice]]] = Queue()
         self.__message__stop: Queue[bool] = Queue()
+
+        def generate_samples(sample_index: np.ndarray[float], ratios: tuple[float], voices: tuple[Voice]) -> np.ndarray[float]:
+            return (
+                np.sum(
+                    (
+                        voice(sample_index * _BASE_FREQUENCY * ratio / _SAMPLE_RATE)
+                        / np.sqrt(ratio / 1.5)  # Increase volume of low-pitched voices
+                    )
+                    for ratio, voice in zip(ratios, voices)
+                )
+                * _VOLUME_FAC
+                / len(ratios)**0.25  # Lower volume of individual voices the more voices are playing
+                * (0.75 / (1 + sample_index / (0.25 * _SAMPLE_RATE)) + 0.25)  # Trail off the longer the stroke is held
+            )
+
 
         # https://stackoverflow.com/questions/8299303/generating-sine-wave-sound-in-python
         # Somewhat similar to how audio worklets work
-        def generate_samples():
-            t = 0
+        def stream_synthesizer():
+            n_elapsed_buffers = 0
 
             while True:
                 ratios, voices = self.__message__update.get()  # Blocks until message received
 
                 while True:
                     if len(ratios) > 0:
-                        samples = np.sum(
-                            (
-                                voice(
-                                    (np.arange(_N_SAMPLES_PER_BUFFER) + t * _N_SAMPLES_PER_BUFFER)
-                                    * _BASE_FREQUENCY * ratio / _SAMPLE_RATE,
-                                )
-                                / np.sqrt(len(ratios))
-                                / (np.sqrt(ratio) if ratio < 1 else 1)
-                            ).astype(np.float32)
-                            for ratio, voice in zip(ratios, voices)
-                        )
+                        sample_index = np.arange(_N_SAMPLES_PER_BUFFER) + n_elapsed_buffers * _N_SAMPLES_PER_BUFFER
+                        samples = generate_samples(sample_index, ratios, voices)
                     else:
+                        sample_index = 0
                         samples = np.repeat(0, _N_SAMPLES_PER_BUFFER)
 
-                    output_bytes = (_VOLUME_FAC * samples).tobytes()
+                    output_bytes = samples.astype(np.float32).tobytes()
 
                     self.__stream.write(output_bytes)  # Blocks for as long as audio plays
 
-                    t += 1
+                    n_elapsed_buffers += 1
 
                     if not self.__message__stop.empty():
                         self.__message__stop.get(False)
+                            
+                        while not self.__message__update.empty():
+                            self.__message__update.get(False)
 
                         if len(ratios) > 0:
                             n_fadeout_samples = _N_SAMPLES_PER_BUFFER * 4
+                            sample_index = np.arange(n_fadeout_samples) + n_elapsed_buffers * _N_SAMPLES_PER_BUFFER
 
-                            samples = np.sum(
-                                (
-                                    voice(
-                                        (np.arange(n_fadeout_samples) + t * _N_SAMPLES_PER_BUFFER)
-                                        * _BASE_FREQUENCY * ratio / _SAMPLE_RATE
-                                    )
-                                    * (1 - np.arange(n_fadeout_samples) / n_fadeout_samples)
-                                    / np.sqrt(len(ratios))
-                                    / (np.sqrt(ratio) if ratio < 1 else 1)
-                                ).astype(np.float32)
-                                for ratio, voice in zip(ratios, voices)
-                            )
+                            samples = (generate_samples(sample_index, ratios, voices)
+                                    * (1 - np.arange(n_fadeout_samples) / n_fadeout_samples))  # Fade out
 
-                            output_bytes = (_VOLUME_FAC * samples).tobytes()
+                            output_bytes = samples.astype(np.float32).tobytes()
 
                             self.__stream.write(output_bytes)
                             # something.put(_VOLUME_FAC * samples)
-                            
+
+                        n_elapsed_buffers = 0
                         break
 
                     if not self.__message__update.empty():
                         break
 
 
-        thread = threading.Thread(target=generate_samples)
+        thread = threading.Thread(target=stream_synthesizer)
         thread.start()
 
     def update(self, current_touched_keys: set[str]):
