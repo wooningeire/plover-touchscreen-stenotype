@@ -165,15 +165,28 @@ class KeyboardWidget(QWidget):
 
         if isinstance(touched_widget, KeyWidget):
             return touched_widget
+        
+        # Loop through all the key containers; since `childAt` can only return the topmost child at a point,
+        # a container that obscures another container with its empty space will cause `childAt` to fail to find a
+        # touched key if one is underneath. The container list is also `reversed` so that containers rendered last
+        # (i.e., on top) are processed first
+        for view in reversed(self.findChildren(RotatableKeyContainer)):
+            view: RotatableKeyContainer = view
+            key_widget: KeyWidget = view.key_widget_at_point(point)
 
-        # For some reason, `touched_widget` is a widget that is a child of the QGraphicsView rather than the
+            if key_widget is None: continue
+            return key_widget
+
+        return
+
+        """ # For some reason, `touched_widget` is a widget that is a child of the QGraphicsView rather than the
         # QGraphicsView itself
         elif isinstance(touched_widget.parent(), RotatableKeyContainer):
             view: RotatableKeyContainer = touched_widget.parent()
             key_widget: KeyWidget = view.key_widget_at_point(point)
 
             if key_widget is None: return
-            return key_widget
+            return key_widget """
         
         raise TypeError
         
