@@ -186,6 +186,27 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         reduced_key_height,  # bottom row
     )
 
+    row_heights_pinky = (
+        computed(lambda: key_height.value - compound_key_size.value * 0.75 / 2,
+                reduced_key_height),
+        computed(lambda: compound_key_size.value * 0.75,
+                compound_key_size),
+        computed(lambda: key_height.value - compound_key_size.value * 0.75 / 2,
+                reduced_key_height),
+    )
+
+    row_heights_by_col_staggered_left = (
+        *(row_heights_pinky,) * 3,
+        *(row_heights,) * 2,
+        *(row_heights_pinky,) * 4,
+    )
+
+    row_heights_by_col_staggered_right = (
+        *(row_heights_pinky,) * 3,
+        *(row_heights,) * 2,
+        *(row_heights_pinky,) * 3,
+    )
+
     reduced_index_width = computed(lambda: reduced_key_width.value + index_stretch.value,
             reduced_key_width, index_stretch)
 
@@ -219,7 +240,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         key_width,
         key_width,
         reduced_index_width,  # H-, R-
-        computed(lambda: compound_key_size.value * 5/6,
+        computed(lambda: compound_key_size.value * 0.6,
                 compound_key_size),
         computed(lambda: (key_width.value * 1.5 - compound_key_size.value / 2) / 2,
                 key_width, compound_key_size),  # +
@@ -230,7 +251,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
     col_widths_staggered_right = (
         computed(lambda: reduced_key_width.value + key_width.value / 2,
                 reduced_key_width, key_width), # *
-        computed(lambda: compound_key_size.value * 5/6,
+        computed(lambda: compound_key_size.value * 0.6,
                 compound_key_size),
         reduced_index_width,  # -F, -R
         key_width,
@@ -336,8 +357,8 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
     ASTERISK_COLUMN_INDEX = 5
 
 
-    TALLEST_COLUMN_INDEX_LEFT = 4
-    TALLEST_COLUMN_INDEX_RIGHT = 4
+    TALLEST_COLUMN_INDEX_LEFT = 3
+    TALLEST_COLUMN_INDEX_RIGHT = 3
 
 
     def build_main_rows_hand_staggered(
@@ -345,11 +366,12 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         keys: tuple[list[str], str, int, str],
         col_widths: tuple[Ref[float]],
         col_offsets: tuple[Ref[float]],
+        row_heights_by_col: tuple[Ref[float]],
     ) -> QLayout:
         # Parameter defaults on inner functions are used to create closures
 
         layout = QHBoxLayout()
-        for column, col_width_cm, col_offset_cm in zip(keys, col_widths, col_offsets):
+        for column, col_width_cm, col_offset_cm, heights in zip(keys, col_widths, col_offsets, row_heights_by_col):
             column_layout = QVBoxLayout()
             column_layout.setSizeConstraint(QLayout.SetFixedSize)
             column_layout.addStretch(1)
@@ -358,7 +380,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
             for values, label, *rest in column:
                 row_span: int = rest[0] if len(rest) > 0 else 1
-                row_heights_cm = row_heights[row_pos:row_pos + row_span]
+                row_heights_cm = heights[row_pos:row_pos + row_span]
 
 
                 key_widget = KeyWidget(values, label, keyboard_widget)
@@ -412,10 +434,11 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         keys: tuple[list[str], str, int, str],
         col_widths: tuple[Ref[float]],
         col_offsets: tuple[float],
+        row_heights_by_col: tuple[Ref[float]],
         angle: Ref[float],
         align_left: bool,
     ) -> QLayout:
-        layout = build_main_rows_hand_staggered(key_widgets, keys, col_widths, col_offsets)
+        layout = build_main_rows_hand_staggered(key_widgets, keys, col_widths, col_offsets, row_heights_by_col)
         container = RotatableKeyContainer.of_layout(layout, align_left, angle.value, keyboard_widget)
 
         @on(angle.change)
@@ -462,11 +485,11 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
         layout.addLayout(build_main_rows_hand_container(
                 key_widgets, _MAIN_ROWS_KEYS_STAGGERED_LEFT, col_widths_staggered_left, col_offsets_left,
-                main_rows_angle, False))
+                row_heights_by_col_staggered_left, main_rows_angle, False))
         layout.addStretch(1)
         layout.addLayout(build_main_rows_hand_container(
                 key_widgets, _MAIN_ROWS_KEYS_STAGGERED_RIGHT, col_widths_staggered_right, col_offsets_right,
-                computed(lambda: -main_rows_angle.value, main_rows_angle), True))
+                row_heights_by_col_staggered_right, computed(lambda: -main_rows_angle.value, main_rows_angle), True))
 
         return layout
 
