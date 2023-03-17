@@ -165,13 +165,18 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
     key_height = settings.key_height_ref
     compound_key_size = settings.compound_key_size_ref
 
-    reduced_key_width = computed(lambda: key_width.value - compound_key_size.value / 2,
-            key_width, compound_key_size)
-    reduced_key_height = computed(lambda: key_height.value - compound_key_size.value / 2,
-            key_height, compound_key_size)
 
-    key_height_num_bar = computed(lambda: key_height.value / 2,
-            key_height)
+    """Computes the size of a key that has half of a compound key cutting into it"""
+    reduced_size: Callable[[Ref[float], Ref[float]], Ref[float]] = lambda key_size_ref, compound_size_ref: (
+            computed(lambda: key_size_ref.value - compound_size_ref.value / 2,
+                    key_size_ref, compound_size_ref)
+    )
+
+    reduced_key_width = reduced_size(key_width, compound_key_size)
+    reduced_key_height = reduced_size(key_height, compound_key_size)
+
+    """ key_height_num_bar = computed(lambda: key_height.value / 2,
+            key_height) """
 
     index_stretch = settings.index_stretch_ref
     pinky_stretch = settings.pinky_stretch_ref
@@ -180,37 +185,47 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
     vowel_set_offset = computed(lambda: key_width.value * vowel_set_offset_fac.value,
             key_width, vowel_set_offset_fac)
 
+    """Default row heights for every main rows column"""
     row_heights = (
         reduced_key_height,  # top row
         compound_key_size,
         reduced_key_height,  # bottom row
     )
 
-    row_heights_pinky = (
-        computed(lambda: key_height.value - compound_key_size.value * 0.75 / 2,
-                reduced_key_height),
-        computed(lambda: compound_key_size.value * 0.75,
-                compound_key_size),
-        computed(lambda: key_height.value - compound_key_size.value * 0.75 / 2,
-                reduced_key_height),
+
+    # Row heights for specific columns in staggered mode
+
+    compound_height_small = computed(lambda: compound_key_size.value * 0.75,
+            compound_key_size)
+    reduced_height_small = reduced_size(key_height, compound_height_small)
+
+    row_heights_small = (
+        reduced_height_small,
+        compound_height_small,
+        reduced_height_small,
     )
 
+
     row_heights_by_col_staggered_left = (
-        *(row_heights_pinky,) * 3,
+        *(row_heights_small,) * 3,
         *(row_heights,) * 2,
-        *(row_heights_pinky,) * 4,
+        *(row_heights_small,) * 4,
     )
 
     row_heights_by_col_staggered_right = (
-        *(row_heights_pinky,) * 3,
+        *(row_heights_small,) * 3,
         *(row_heights,) * 2,
-        *(row_heights_pinky,) * 3,
+        *(row_heights_small,) * 3,
     )
 
-    reduced_index_width = computed(lambda: reduced_key_width.value + index_stretch.value,
-            reduced_key_width, index_stretch)
 
-    col_widths = (
+    index_compound_width = computed(lambda: compound_key_size.value * 0.6,
+            compound_key_size)    
+    base_index_width = computed(lambda: key_width.value + index_stretch.value,
+            key_width, index_stretch)
+    reduced_index_width = reduced_size(base_index_width, index_compound_width)
+
+    col_widths_grid = (
         computed(lambda: key_width.value + pinky_stretch.value,
                 key_width, pinky_stretch),
         key_width,
@@ -228,6 +243,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         compound_key_size,
         reduced_key_width,  # -D, -Z
     )
+
 
     END_COLUMN_WIDTH_BOOST = 0.4
 
@@ -289,6 +305,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
     pinky_offset = computed(lambda: key_width.value * pinky_stagger_fac.value,
             key_width, pinky_stagger_fac)
 
+    """
     col_offsets = (
         pinky_offset,
         pinky_offset,
@@ -306,7 +323,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         pinky_offset,
         pinky_offset, # -D, -Z
     )
-
+    """
     """
     col_offsets = (
         0,  # S-
@@ -326,7 +343,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
     """
 
 
-    col_offsets_left = (
+    col_offsets_staggered_left = (
         pinky_offset,
         pinky_offset,
         pinky_offset,  # S-
@@ -338,7 +355,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         index_offset,
     )
 
-    col_offsets_right = (
+    col_offsets_staggered_right = (
         index_offset,
         index_offset,
         index_offset,  # -F, -R
@@ -484,11 +501,11 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         layout.setSpacing(0)
 
         layout.addLayout(build_main_rows_hand_container(
-                key_widgets, _MAIN_ROWS_KEYS_STAGGERED_LEFT, col_widths_staggered_left, col_offsets_left,
+                key_widgets, _MAIN_ROWS_KEYS_STAGGERED_LEFT, col_widths_staggered_left, col_offsets_staggered_left,
                 row_heights_by_col_staggered_left, main_rows_angle, False))
         layout.addStretch(1)
         layout.addLayout(build_main_rows_hand_container(
-                key_widgets, _MAIN_ROWS_KEYS_STAGGERED_RIGHT, col_widths_staggered_right, col_offsets_right,
+                key_widgets, _MAIN_ROWS_KEYS_STAGGERED_RIGHT, col_widths_staggered_right, col_offsets_staggered_right,
                 row_heights_by_col_staggered_right, computed(lambda: -main_rows_angle.value, main_rows_angle), True))
 
         return layout
@@ -516,7 +533,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
             layout.setRowMinimumHeight(i, dpi.cm(size_cm.value))
             layout.setRowStretch(i, 0)
 
-        for i, size_cm in enumerate(col_widths):
+        for i, size_cm in enumerate(col_widths_grid):
             layout.setColumnMinimumWidth(i, dpi.cm(size_cm.value))
             layout.setColumnStretch(i, 0)
 
@@ -527,12 +544,12 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
             QTimer.singleShot(0, lambda: layout.setColumnMinimumWidth(ASTERISK_COLUMN_INDEX, 0))
 
 
-        @on_many(dpi.change, *(height.change for height in row_heights), *(width.change for width in col_widths), parent=layout)
+        @on_many(dpi.change, *(height.change for height in row_heights), *(width.change for width in col_widths_grid), parent=layout)
         def resize_columns():
             for i, size_cm in enumerate(row_heights):
                 layout.setRowMinimumHeight(i, dpi.cm(size_cm.value))
 
-            for i, size_cm in enumerate(col_widths):
+            for i, size_cm in enumerate(col_widths_grid):
                 if i == ASTERISK_COLUMN_INDEX: continue
                 layout.setColumnMinimumWidth(i, dpi.cm(size_cm.value))
 
