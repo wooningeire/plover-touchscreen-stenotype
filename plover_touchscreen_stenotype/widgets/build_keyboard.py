@@ -36,13 +36,13 @@ _LOW_COMPOUND_ROW = 1
 # [keys], label, rowSpan?, numberLabel?
 _MAIN_ROWS_KEYS_STAGGERED_LEFT = (
     (
-        (["#"], "#"),
-        (["#", "^-"], ""),
         (["^-"], "^"), # ∧
+        (["^-", "+-"], ""),
+        (["+-"], "+"),
     ), (
-        (["#", "S-"], ""),
-        (["#", "^-", "S-"], ""),
         (["^-", "S-"], ""),
+        (["^-", "+-", "S-"], ""),
+        (["+-", "S-"], ""),
     ), (
         (["S-"], "S", 3, "1"),
     ), (
@@ -58,13 +58,13 @@ _MAIN_ROWS_KEYS_STAGGERED_LEFT = (
         (["H-", "R-"], ""),
         (["R-"], "R"),
     ), (
-        (["H-", "+-"], ""),
-        (["H-", "R-", "+-"], ""),
-        (["R-", "+-"], ""),
+        (["H-", "&-"], ""),
+        (["H-", "R-", "&-"], ""),
+        (["R-", "&-"], ""),
     ), (
-        (["+-"], "+", 3), # ＋
+        (["&-"], "&&", 3), # ＋
     ), (
-        (["+-", ".-"], "++", 3),
+        (["&-", ".-"], "&&&&", 3),
     ),
 )
 
@@ -145,15 +145,27 @@ _MAIN_ROWS_KEYS_GRID = (
 )
 
 _VOWEL_ROW_KEYS_LEFT = (
-    (["A-"], "A", "5"),
-    (["A-", "O-"], ""),
-    (["O-"], "O", "0"),
+    (["A-"], "A", (0, 0), "5"),
+    (["A-", "O-"], "", (0, 1)),
+    (["O-"], "O", (0, 2), "0"),
+    
+    (["#", "A-"], "", (1, 0)),
+    (["#", "A-", "O-"], "", (1, 1)),
+    (["#", "O-"], "", (1, 2)),
+
+    (["#"], "#", (2, 0, 1, 3)),
 )
 
 _VOWEL_ROW_KEYS_RIGHT = (
-    (["-E"], "E"),
-    (["-E", "-U"], ""),
-    (["-U"], "U"),
+    (["-E"], "E", (0, 0)),
+    (["-E", "-U"], "", (0, 1)),
+    (["-U"], "U", (0, 2)),
+    
+    (["_", "-E"], "", (1, 0)),
+    (["_", "-E", "-U"], "", (1, 1)),
+    (["_", "-U"], "", (1, 2)),
+
+    (["_"], "_", (2, 0, 1, 3)),
 )
 
 
@@ -247,17 +259,28 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
     END_COLUMN_WIDTH_BOOST = 0.4
 
+    end_column_compound_width = computed(lambda: compound_key_size.value * 0.875,
+            compound_key_size)
+    
+    end_column_width = reduced_size(
+        computed(lambda: key_width.value + END_COLUMN_WIDTH_BOOST,
+                key_width),
+        end_column_compound_width,
+    )
+    inner_end_column_width = reduced_size(
+        computed(lambda: key_width.value + pinky_stretch.value,
+                key_width, pinky_stretch),
+        end_column_compound_width,
+    )
+
     col_widths_staggered_left = (
-        computed(lambda: reduced_key_width.value + END_COLUMN_WIDTH_BOOST,
-                reduced_key_width),
-        compound_key_size,
-        computed(lambda: reduced_key_width.value + pinky_stretch.value,
-                reduced_key_width, pinky_stretch),
+        end_column_width,
+        end_column_compound_width,
+        inner_end_column_width,
         key_width,
         key_width,
         reduced_index_width,  # H-, R-
-        computed(lambda: compound_key_size.value * 0.6,
-                compound_key_size),
+        index_compound_width,
         computed(lambda: (key_width.value * 1.5 - compound_key_size.value / 2) / 2,
                 key_width, compound_key_size),  # +
         computed(lambda: (key_width.value * 1.5 - compound_key_size.value / 2) / 2,
@@ -267,16 +290,13 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
     col_widths_staggered_right = (
         computed(lambda: reduced_key_width.value + key_width.value / 2,
                 reduced_key_width, key_width), # *
-        computed(lambda: compound_key_size.value * 0.6,
-                compound_key_size),
+        index_compound_width,
         reduced_index_width,  # -F, -R
         key_width,
         key_width,
-        computed(lambda: reduced_key_width.value + pinky_stretch.value,
-                reduced_key_width, pinky_stretch),  # -T, -S
-        compound_key_size,
-        computed(lambda: reduced_key_width.value + END_COLUMN_WIDTH_BOOST,
-                reduced_key_width),  # -D, -Z
+        inner_end_column_width,  # -T, -S
+        end_column_compound_width,
+        end_column_width,  # -D, -Z
     )
 
     VOWEL_KEY_WIDTH_BOOST = 0.25
@@ -287,6 +307,14 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         compound_key_size,
         computed(lambda: reduced_key_width.value + VOWEL_KEY_WIDTH_BOOST,
                 reduced_key_width),
+    )
+
+    vowel_compound_key_height = index_compound_width
+
+    vowel_set_heights = (
+        reduced_size(key_height, vowel_compound_key_height),
+        vowel_compound_key_height,
+        reduced_size(computed(lambda: key_height.value * 0.75, key_height), vowel_compound_key_height),
     )
 
     INITIAL_ROWS_GAP_HEIGHT = 2.25
@@ -560,32 +588,47 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         return layout
 
 
-    def build_vowel_set_layout(vowel_key_descriptors: tuple[Iterable[str], str, str], key_widgets: list[KeyWidget]):
+    def build_vowel_set_layout(vowel_key_descriptors: tuple[Iterable[str], str, tuple[int], str], key_widgets: list[KeyWidget]):
         # Parameter defaults on inner functions are used to create closures
 
-        set_layout = QHBoxLayout()
+        set_layout = QGridLayout()
         set_layout.setSpacing(0)
         set_layout.setContentsMargins(0, 0, 0, 0)
         set_layout.setSizeConstraint(QLayout.SetFixedSize)
 
-        for (values, label, *rest), width in zip(vowel_key_descriptors, vowel_set_widths):
+        for values, label, grid_position, *rest in vowel_key_descriptors:
             key_widget = KeyWidget(values, label, keyboard_widget)
             key_widgets.append(key_widget)
-        
+
+
+            if len(grid_position) == 4:
+                row_start, col_start, row_span, col_span = grid_position
+            elif len(grid_position) == 2:
+                row_start, col_start, row_span, col_span = (*grid_position, 1, 1)
+            else:
+                raise Exception
+            
+            widths = vowel_set_widths[col_start:col_start + col_span]
+            heights = vowel_set_heights[row_start:row_start + row_span]
+
             if len(rest) > 0:
                 num_bar_label: str = rest[0]
                 keyboard_widget.num_bar_pressed_change.connect(key_widget.num_bar_pressed_handler(label, num_bar_label))
 
 
-            @watch_many(dpi.change, width.change, key_height.change, parent=key_widget)
+            @watch_many(dpi.change, *(width.change for width in widths), *(height.change for height in heights), parent=key_widget)
             def resize(
                 key_widget: KeyWidget=key_widget,
-                width: Ref[float]=width,
+                widths: tuple[Ref[float]]=widths,
+                heights: tuple[Ref[float]]=heights,
             ):
-                key_widget.setFixedSize(dpi.cm(width.value), dpi.cm(key_height.value))
+                key_widget.setFixedSize(
+                    sum(dpi.cm(width_cm.value) for width_cm in widths),
+                    sum(dpi.cm(height_cm.value) for height_cm in heights),
+                )
 
 
-            set_layout.addWidget(key_widget)
+            set_layout.addWidget(key_widget, *grid_position)
 
         return set_layout
 

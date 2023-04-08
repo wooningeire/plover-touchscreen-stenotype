@@ -114,24 +114,24 @@ class Settings(QObject):
         self.stroke_preview_stroke = True
         self.stroke_preview_translation = True
 
-        self.key_width = 2
-        self.key_height = 2.25
-        self.compound_key_size = 0.9
+        self.key_width = 1.9
+        self.key_height = 2.1
+        self.compound_key_size = 1.2
 
-        self.index_stretch = 0.1
-        self.pinky_stretch = 0.6
+        self.index_stretch = -0.1
+        self.pinky_stretch = 0.4
 
-        self.vowel_set_offset_fac = 0.35
+        self.vowel_set_offset_fac = 0.6
 
-        self.index_stagger_fac = 0.4
-        self.middle_stagger_fac = 0.8
-        self.ring_stagger_fac = 0.55
+        self.index_stagger_fac = 0.5
+        self.middle_stagger_fac = 0.85
+        self.ring_stagger_fac = 0.5
         self.pinky_stagger_fac = 0
 
-        self.main_rows_angle = 15
-        self.vowel_rows_angle = 22.5
+        self.main_rows_angle = 19
+        self.vowel_rows_angle = 20.5
 
-        self.window_opacity = 0.9375
+        self.window_opacity = 0.675
 
         @on_many(self.stroke_preview_stroke_ref.change, self.stroke_preview_translation_ref.change)
         def emit_stroke_preview_change():
