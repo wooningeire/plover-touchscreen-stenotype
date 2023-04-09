@@ -24,10 +24,10 @@ from math import cos, radians
 from typing import Iterable
 
 from ..settings import Settings, KeyLayout
-from ..util import UseDpi, watch, watch_many, FONT_FAMILY
+from ..util import UseDpi, Ref, watch, watch_many, FONT_FAMILY
 
 class StrokePreview(QWidget):
-    def __init__(self, engine: Engine, settings: Settings, parent: QWidget=None):
+    def __init__(self, engine: Engine, settings: Settings, right_left_width_diff: Ref[float], parent: QWidget=None):
         super().__init__(parent)
 
         self.__engine = engine
@@ -36,9 +36,9 @@ class StrokePreview(QWidget):
         self.__last_translation: Translation | None = None
         self.__last_stroke_matched = True
 
-        self.__setup_ui()
+        self.__setup_ui(right_left_width_diff)
 
-    def __setup_ui(self):
+    def __setup_ui(self, right_left_width_diff: Ref[float]):
         dpi = UseDpi(self)
 
         #region Labels
@@ -92,10 +92,10 @@ class StrokePreview(QWidget):
         display_alignment_layout.setColumnStretch(0, 1)
         display_alignment_layout.setColumnStretch(1, 0)
 
-        @watch_many(dpi.change, self.__settings.key_width_ref.change, self.__settings.main_rows_angle_ref.change)
+        @watch_many(dpi.change, right_left_width_diff.change)
         def resize_display_alignment():
-            display_alignment_layout.setColumnMinimumWidth(1,
-                    dpi.cm(self.__settings.key_width) * cos(radians(self.__settings.main_rows_angle)))
+            display_alignment_layout.setColumnMinimumWidth(1, right_left_width_diff.value)
+                    # dpi.cm(self.__settings.key_width) * cos(radians(self.__settings.main_rows_angle)))
             # TODO replace MAIN_ROWS_ANGLE import with setting value when this becomes a setting
 
 

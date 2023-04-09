@@ -20,7 +20,7 @@ from PyQt5.QtGui import (
 
 
 from .settings import Settings
-from .util import watch
+from .util import Ref, watch
 from .widgets.KeyboardWidget import KeyboardWidget
 from .widgets.StrokePreview import StrokePreview
 from .widgets.SettingsDialog import SettingsDialog
@@ -72,9 +72,11 @@ class Main(Tool):
         self.__prevent_window_focus()
 
 
-        self.translation_display = translation_display = StrokePreview(self.engine, self.__settings, self)
+        left_right_width_diff = Ref(0)
 
-        stenotype = KeyboardWidget(self.__settings, self)
+        self.stroke_preview = stroke_preview = StrokePreview(self.engine, self.__settings, left_right_width_diff, self)
+
+        stenotype = KeyboardWidget(self.__settings, left_right_width_diff, self)
         stenotype.end_stroke.connect(self.__on_stenotype_input)
         stenotype.current_stroke_change.connect(self.__on_stroke_change)
 
@@ -92,7 +94,7 @@ class Main(Tool):
 
 
         layout = QGridLayout(self)
-        layout.addWidget(translation_display, 0, 0)
+        layout.addWidget(stroke_preview, 0, 0)
         layout.addWidget(toolbar, 0, 0, Qt.AlignBottom | Qt.AlignLeft)
         layout.addWidget(stenotype, 0, 0)
         self.setLayout(layout)
@@ -153,7 +155,7 @@ class Main(Tool):
         # received is the same stroke sent from this method. Multiple strokes may also be sent before the handler is called
         # (can use deque to resolve this)
 
-        self.translation_display.finish_stroke()
+        self.stroke_preview.finish_stroke()
 
     def __on_stroked(self, stroke: Stroke):
         if not self.__last_stroke_from_widget or self.__last_stroke_keys != set(stroke.keys()): return
@@ -169,7 +171,7 @@ class Main(Tool):
 
 
     def __on_stroke_change(self, stroke_keys: set[str]):
-        self.translation_display.display_keys(stroke_keys)
+        self.stroke_preview.display_keys(stroke_keys)
 
 
     """ def resize_from_center(self, width: int, height: int):

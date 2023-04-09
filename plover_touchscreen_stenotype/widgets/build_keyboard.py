@@ -14,7 +14,6 @@ from PyQt5.QtWidgets import (
 from math import sin, cos, radians
 from functools import partial
 from typing import TYPE_CHECKING, Callable, Iterable
-from operator import attrgetter
 if TYPE_CHECKING:
     from .KeyboardWidget import KeyboardWidget
 else:
@@ -24,12 +23,12 @@ from .KeyWidget import KeyWidget
 from .RotatableKeyContainer import RotatableKeyContainer
 from ..settings import Settings, KeyLayout
 from ..util import UseDpi, Ref, computed, on, on_many, watch, watch_many
-from .build_keyboard_config.english_stenotype import build_layout_descriptor
 
 
 #region Exports
 
 def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi: UseDpi):
+    from .build_keyboard_config.english_stenotype import build_layout_descriptor
     layout_descriptor = build_layout_descriptor(settings)
     (
         MAIN_ROWS_STAGGERED_LEFT,
@@ -58,34 +57,34 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         vowel_set_offset,
         
         LOW_ROW,
-    ) = attrgetter(
-        "MAIN_ROWS_STAGGERED_LEFT",
-        "MAIN_ROWS_STAGGERED_RIGHT",
-        "col_widths_staggered_left",
-        "col_widths_staggered_right",
-        "row_heights_staggered_left",
-        "row_heights_staggered_right",
-        "col_offsets_staggered_left",
-        "col_offsets_staggered_right",
-        "TALLEST_COLUMN_INDEX_LEFT",
-        "TALLEST_COLUMN_INDEX_RIGHT",
+    ) = (
+        layout_descriptor.MAIN_ROWS_STAGGERED_LEFT,
+        layout_descriptor.MAIN_ROWS_STAGGERED_RIGHT,
+        layout_descriptor.col_widths_staggered_left,
+        layout_descriptor.col_widths_staggered_right,
+        layout_descriptor.row_heights_staggered_left,
+        layout_descriptor.row_heights_staggered_right,
+        layout_descriptor.col_offsets_staggered_left,
+        layout_descriptor.col_offsets_staggered_right,
+        layout_descriptor.TALLEST_COLUMN_INDEX_LEFT,
+        layout_descriptor.TALLEST_COLUMN_INDEX_RIGHT,
 
-        "N_INDEX_COLS_LEFT",
-        "N_INDEX_COLS_RIGHT",
+        layout_descriptor.N_INDEX_COLS_LEFT,
+        layout_descriptor.N_INDEX_COLS_RIGHT,
 
-        "MAIN_ROWS_GRID",
-        "row_heights_grid",
-        "col_widths_grid",
-        "ASTERISK_COLUMN_INDEX_GRID",
+        layout_descriptor.MAIN_ROWS_GRID,
+        layout_descriptor.row_heights_grid,
+        layout_descriptor.col_widths_grid,
+        layout_descriptor.ASTERISK_COLUMN_INDEX_GRID,
 
-        "VOWEL_ROW_KEYS_LEFT",
-        "VOWEL_ROW_KEYS_RIGHT",
-        "vowel_set_widths",
-        "vowel_set_heights",
-        "vowel_set_offset",
+        layout_descriptor.VOWEL_ROW_KEYS_LEFT,
+        layout_descriptor.VOWEL_ROW_KEYS_RIGHT,
+        layout_descriptor.vowel_set_widths,
+        layout_descriptor.vowel_set_heights,
+        layout_descriptor.vowel_set_offset,
 
-        "LOW_ROW",
-    )(layout_descriptor)
+        layout_descriptor.LOW_ROW,
+    )
 
     
     key_width = settings.key_width_ref
@@ -355,7 +354,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
                 + dpi.cm(index_stretch.value)
             ) * cos(radians(main_rows_angle.value))
             right_bank_width = (
-                sum(dpi.cm(col_width.value) for col_width in col_widths_staggered_left[-N_INDEX_COLS_RIGHT:])
+                sum(dpi.cm(col_width.value) for col_width in col_widths_staggered_right[-N_INDEX_COLS_RIGHT:])
                 + dpi.cm(key_width.value)
                 + dpi.cm(pinky_stretch.value)
                 + dpi.cm(index_stretch.value)
@@ -440,9 +439,20 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         return layout
 
 
+
+    right_left_width_diff = computed(lambda:
+        (sum(dpi.cm(col_width.value) for col_width in col_widths_staggered_right[-N_INDEX_COLS_RIGHT:]) -
+                sum(dpi.cm(col_width.value) for col_width in col_widths_staggered_left[:N_INDEX_COLS_LEFT]))
+                * cos(radians(main_rows_angle.value)),
+        *(width for width in col_widths_staggered_right[-N_INDEX_COLS_RIGHT:]),
+        *(width for width in col_widths_staggered_left[:N_INDEX_COLS_LEFT]),
+        main_rows_angle
+    )
+
+
     return {
         KeyLayout.STAGGERED: partial(build_keyboard_layout, build_main_rows_layout_staggered, build_vowel_row_layout_staggered),
         KeyLayout.GRID: partial(build_keyboard_layout, build_main_rows_layout_grid, build_vowel_row_layout_grid),
-    }
+    }, right_left_width_diff
 
 #endregion

@@ -26,7 +26,7 @@ from .KeyWidget import KeyWidget
 from .RotatableKeyContainer import RotatableKeyContainer
 from .build_keyboard import use_build_keyboard
 from ..settings import Settings, KeyLayout
-from ..util import UseDpi, KEY_STYLESHEET
+from ..util import UseDpi, Ref, watch, KEY_STYLESHEET
 
 
 class KeyboardWidget(QWidget):
@@ -36,7 +36,7 @@ class KeyboardWidget(QWidget):
     num_bar_pressed_change = pyqtSignal(bool)
 
 
-    def __init__(self, settings: Settings, parent: QWidget=None):
+    def __init__(self, settings: Settings, left_right_width_diff: Ref[float], parent: QWidget=None):
         super().__init__(parent)
 
         self.__current_stroke_keys: set[str] = set()
@@ -47,12 +47,18 @@ class KeyboardWidget(QWidget):
 
         self.settings = settings
 
-        self.__setup_ui()
+        self.__setup_ui(left_right_width_diff)
 
-    def __setup_ui(self):
+    def __setup_ui(self, left_right_width_diff: Ref[float]):
         self.__dpi = dpi = UseDpi(self)
-        self.__build_keyboard = build_keyboard = use_build_keyboard(self.settings, self, dpi)
+        build_keyboard, left_right_width_diff_src = use_build_keyboard(self.settings, self, dpi)
+
+        self.__build_keyboard = build_keyboard
         self.setLayout(build_keyboard[self.settings.key_layout](self.__key_widgets))
+
+        @watch(left_right_width_diff_src.change)
+        def update_left_right_width_diff():
+            left_right_width_diff.value = left_right_width_diff_src.value
 
         self.settings.key_layout_ref.change.connect(self.__rebuild_layout)
 
