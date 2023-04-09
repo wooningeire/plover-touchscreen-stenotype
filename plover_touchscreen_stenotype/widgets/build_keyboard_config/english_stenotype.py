@@ -15,7 +15,7 @@ def build_layout_descriptor(settings: Settings) -> LayoutDescriptor:
     MAIN_ROWS_KEYS_STAGGERED_LEFT: KeyColumnsTuple = (
         (
             (["#"], "#"),
-            (["#-", "S-"], ""),
+            (["#", "S-"], ""),
             (["S-"], "S", 3, "1"),
         ), (
             (["T-"], "T", 1, "2"),
@@ -318,8 +318,8 @@ def build_layout_descriptor(settings: Settings) -> LayoutDescriptor:
         TALLEST_COLUMN_INDEX_LEFT=2,
         TALLEST_COLUMN_INDEX_RIGHT=3,
 
-        N_INDEXES_LEFT=4,
-        N_INDEXES_RIGHT=5,
+        N_INDEX_COLS_LEFT=3,
+        N_INDEX_COLS_RIGHT=5,
 
         MAIN_ROWS_GRID=MAIN_ROWS_KEYS_GRID,
         row_heights_grid=row_heights,

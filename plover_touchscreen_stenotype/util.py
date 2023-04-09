@@ -302,8 +302,8 @@ class LayoutDescriptor:
     TALLEST_COLUMN_INDEX_LEFT: float
     TALLEST_COLUMN_INDEX_RIGHT: float
 
-    N_INDEXES_LEFT: float
-    N_INDEXES_RIGHT: float
+    N_INDEX_COLS_LEFT: float
+    N_INDEX_COLS_RIGHT: float
 
     MAIN_ROWS_GRID: KeyGridTuple
     row_heights_grid: SizeTuple

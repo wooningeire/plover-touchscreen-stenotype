@@ -355,8 +355,8 @@ def build_layout_descriptor(settings: Settings) -> LayoutDescriptor:
         TALLEST_COLUMN_INDEX_LEFT=3,
         TALLEST_COLUMN_INDEX_RIGHT=3,
 
-        N_INDEXES_LEFT=5,
-        N_INDEXES_RIGHT=5,
+        N_INDEX_COLS_LEFT=5,
+        N_INDEX_COLS_RIGHT=5,
 
         MAIN_ROWS_GRID=MAIN_ROWS_KEYS_GRID,
         row_heights_grid=row_heights,

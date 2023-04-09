@@ -43,8 +43,8 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         TALLEST_COLUMN_INDEX_LEFT,
         TALLEST_COLUMN_INDEX_RIGHT,
 
-        N_INDEXES_LEFT,
-        N_INDEXES_RIGHT,
+        N_INDEX_COLS_LEFT,
+        N_INDEX_COLS_RIGHT,
 
         MAIN_ROWS_GRID,
         row_heights_grid,
@@ -70,8 +70,8 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         "TALLEST_COLUMN_INDEX_LEFT",
         "TALLEST_COLUMN_INDEX_RIGHT",
 
-        "N_INDEXES_LEFT",
-        "N_INDEXES_RIGHT",
+        "N_INDEX_COLS_LEFT",
+        "N_INDEX_COLS_RIGHT",
 
         "MAIN_ROWS_GRID",
         "row_heights_grid",
@@ -348,8 +348,18 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         @watch_many(dpi.change, key_width.change, pinky_stretch.change, index_stretch.change, vowel_set_offset.change,
                 main_rows_angle.change, *(height.change for height in row_heights_grid), parent=layout)
         def resize_spacing():
-            left_bank_width = (dpi.cm(key_width.value) * N_INDEXES_LEFT + dpi.cm(pinky_stretch.value) + dpi.cm(index_stretch.value)) * cos(radians(main_rows_angle.value))
-            right_bank_width = (dpi.cm(key_width.value) * N_INDEXES_RIGHT + dpi.cm(pinky_stretch.value) + dpi.cm(index_stretch.value)) * cos(radians(main_rows_angle.value))
+            left_bank_width = (
+                sum(dpi.cm(col_width.value) for col_width in col_widths_staggered_left[:N_INDEX_COLS_LEFT])
+                + dpi.cm(key_width.value)
+                + dpi.cm(pinky_stretch.value)
+                + dpi.cm(index_stretch.value)
+            ) * cos(radians(main_rows_angle.value))
+            right_bank_width = (
+                sum(dpi.cm(col_width.value) for col_width in col_widths_staggered_left[-N_INDEX_COLS_RIGHT:])
+                + dpi.cm(key_width.value)
+                + dpi.cm(pinky_stretch.value)
+                + dpi.cm(index_stretch.value)
+            ) * cos(radians(main_rows_angle.value))
 
             offset = (dpi.cm(key_width.value) + dpi.cm(vowel_set_offset.value)) * cos(radians(main_rows_angle.value))
 
