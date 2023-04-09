@@ -1,6 +1,5 @@
 from PyQt5.QtCore import (
     QTimer,
-    Qt,
 )
 from PyQt5.QtWidgets import (
     QLayout,
@@ -8,8 +7,6 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QVBoxLayout,
     QSpacerItem,
-    QWidget,
-    QSizePolicy,
     QWidgetItem,
     QLayoutItem,
 )
@@ -17,6 +14,7 @@ from PyQt5.QtWidgets import (
 from math import sin, cos, radians
 from functools import partial
 from typing import TYPE_CHECKING, Callable, Iterable
+from operator import attrgetter
 if TYPE_CHECKING:
     from .KeyboardWidget import KeyboardWidget
 else:
@@ -25,385 +23,89 @@ else:
 from .KeyWidget import KeyWidget
 from .RotatableKeyContainer import RotatableKeyContainer
 from ..settings import Settings, KeyLayout
-from ..util import UseDpi, Ref, computed, computed_on_signal, on, on_many, watch, watch_many
-
-
-_TOP_ROW = 0
-_LOW_ROW = 2
-_TOP_COMPOUND_ROW = -1
-_LOW_COMPOUND_ROW = 1
-
-# [keys], label, rowSpan?, numberLabel?
-_MAIN_ROWS_KEYS_STAGGERED_LEFT = (
-    (
-        (["^-"], "^"), # ∧
-        (["^-", "+-"], ""),
-        (["+-"], "+"),
-    ), (
-        (["^-", "S-"], ""),
-        (["^-", "+-", "S-"], ""),
-        (["+-", "S-"], ""),
-    ), (
-        (["S-"], "S", 3, "1"),
-    ), (
-        (["T-"], "T", 1, "2"),
-        (["T-", "K-"], ""),
-        (["K-"], "K"),
-    ), (
-        (["P-"], "P", 1, "3"),
-        (["P-", "W-"], ""),
-        (["W-"], "W"),
-    ), (
-        (["H-"], "H", 1, "4"),
-        (["H-", "R-"], ""),
-        (["R-"], "R"),
-    ), (
-        (["H-", "&-"], ""),
-        (["H-", "R-", "&-"], ""),
-        (["R-", "&-"], ""),
-    ), (
-        (["&-"], "&&", 3), # ＋
-    ), (
-        (["&-", ".-"], "&&&&", 3),
-    ),
-)
-
-_MAIN_ROWS_KEYS_STAGGERED_RIGHT = (
-    (
-        (["*"], "🞱", 3),
-    ), (
-        (["*", "-F"], ""),
-        (["*", "-F", "-R"], ""),
-        (["*", "-R"], ""),
-    ), (
-        (["-F"], "F", 1, "6"),
-        (["-F", "-R"], ""),
-        (["-R"], "R"),
-    ), (
-        (["-P"], "P", 1, "7"),
-        (["-P", "-B"], ""),
-        (["-B"], "B"),
-    ), (
-        (["-L"], "L", 1, "8"),
-        (["-L", "-G"], ""),
-        (["-G"], "G"),
-    ), (
-        (["-T"], "T", 1, "9"),
-        (["-T", "-S"], ""),
-        (["-S"], "S"),
-    ), (
-        (["-T", "-D"], ""),
-        (["-T", "-S", "-D", "-Z"], ""),
-        (["-S", "-Z"], ""),
-    ), (
-        (["-D"], "D"),
-        (["-D", "-Z"], ""),
-        (["-Z"], "Z"),
-    ),
-)
-
-# [keys], label, (row, column, rowSpan?, columnSpan?), numberLabel?
-_MAIN_ROWS_KEYS_GRID = (
-    (["#"], "#", (_TOP_ROW, 0)),
-    (["S-"], "S", (_LOW_ROW, 0), "1"),
-    (["T-"], "T", (_TOP_ROW, 1), "2"),
-    (["K-"], "K", (_LOW_ROW, 1)),
-    (["P-"], "P", (_TOP_ROW, 2), "3"),
-    (["W-"], "W", (_LOW_ROW, 2)),
-    (["H-"], "H", (_TOP_ROW, 3), "4"),
-    (["R-"], "R", (_LOW_ROW, 3)),
-    (["H-", "*"], "", (_TOP_ROW, 4)),
-    (["R-", "*"], "", (_LOW_ROW, 4)),
-    (["*"], "🞱", (_TOP_ROW, 5, 3, 1)),
-    (["*", "-F"], "", (_TOP_ROW, 6)),
-    (["*", "-R"], "", (_LOW_ROW, 6)),
-    (["-F"], "F", (_TOP_ROW, 7), "6"),
-    (["-R"], "R", (_LOW_ROW, 7)),
-    (["-P"], "P", (_TOP_ROW, 8), "7"),
-    (["-B"], "B", (_LOW_ROW, 8)),
-    (["-L"], "L", (_TOP_ROW, 9), "8"),
-    (["-G"], "G", (_LOW_ROW, 9)),
-    (["-T"], "T", (_TOP_ROW, 10), "9"),
-    (["-S"], "S", (_LOW_ROW, 10)),
-    (["-T", "-D"], "", (_TOP_ROW, 11)),
-    (["-S", "-Z"], "", (_LOW_ROW, 11)),
-    (["-D"], "D", (_TOP_ROW, 12)),
-    (["-Z"], "Z", (_LOW_ROW, 12)),
-
-    (["#", "S-"], "", (_LOW_COMPOUND_ROW, 0)),
-    (["T-", "K-"], "", (_LOW_COMPOUND_ROW, 1)),
-    (["P-", "W-"], "", (_LOW_COMPOUND_ROW, 2)),
-    (["H-", "R-"], "", (_LOW_COMPOUND_ROW, 3)),
-    (["H-", "R-", "*"], "", (_LOW_COMPOUND_ROW, 4)),
-    (["*", "-R", "-F"], "", (_LOW_COMPOUND_ROW, 6)),
-    (["-F", "-R"], "", (_LOW_COMPOUND_ROW, 7)),
-    (["-P", "-B"], "", (_LOW_COMPOUND_ROW, 8)),
-    (["-L", "-G"], "", (_LOW_COMPOUND_ROW, 9)),
-    (["-T", "-S"], "", (_LOW_COMPOUND_ROW, 10)),
-    (["-T", "-S", "-D", "-Z"], "", (_LOW_COMPOUND_ROW, 11)),
-    (["-D", "-Z"], "", (_LOW_COMPOUND_ROW, 12)),
-)
-
-_VOWEL_ROW_KEYS_LEFT = (
-    (["A-"], "A", (0, 0), "5"),
-    (["A-", "O-"], "", (0, 1)),
-    (["O-"], "O", (0, 2), "0"),
-    
-    (["#", "A-"], "", (1, 0)),
-    (["#", "A-", "O-"], "", (1, 1)),
-    (["#", "O-"], "", (1, 2)),
-
-    (["#"], "#", (2, 0, 1, 3)),
-)
-
-_VOWEL_ROW_KEYS_RIGHT = (
-    (["-E"], "E", (0, 0)),
-    (["-E", "-U"], "", (0, 1)),
-    (["-U"], "U", (0, 2)),
-    
-    (["_", "-E"], "", (1, 0)),
-    (["_", "-E", "-U"], "", (1, 1)),
-    (["_", "-U"], "", (1, 2)),
-
-    (["_"], "_", (2, 0, 1, 3)),
-)
+from ..util import UseDpi, Ref, computed, on, on_many, watch, watch_many
+from .build_keyboard_config.english_stenotype import build_layout_descriptor
 
 
 #region Exports
 
 def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi: UseDpi):
-    # in centimeters
+    layout_descriptor = build_layout_descriptor(settings)
+    (
+        MAIN_ROWS_STAGGERED_LEFT,
+        MAIN_ROWS_STAGGERED_RIGHT,
+        col_widths_staggered_left,
+        col_widths_staggered_right,
+        row_heights_staggered_left,
+        row_heights_staggered_right,
+        col_offsets_staggered_left,
+        col_offsets_staggered_right,
+        TALLEST_COLUMN_INDEX_LEFT,
+        TALLEST_COLUMN_INDEX_RIGHT,
+
+        N_INDEXES_LEFT,
+        N_INDEXES_RIGHT,
+
+        MAIN_ROWS_GRID,
+        row_heights_grid,
+        col_widths_grid,
+        ASTERISK_COLUMN_INDEX_GRID,
+
+        VOWEL_ROW_KEYS_LEFT,
+        VOWEL_ROW_KEYS_RIGHT,
+        vowel_set_widths,
+        vowel_set_heights,
+        vowel_set_offset,
+        
+        LOW_ROW,
+    ) = attrgetter(
+        "MAIN_ROWS_STAGGERED_LEFT",
+        "MAIN_ROWS_STAGGERED_RIGHT",
+        "col_widths_staggered_left",
+        "col_widths_staggered_right",
+        "row_heights_staggered_left",
+        "row_heights_staggered_right",
+        "col_offsets_staggered_left",
+        "col_offsets_staggered_right",
+        "TALLEST_COLUMN_INDEX_LEFT",
+        "TALLEST_COLUMN_INDEX_RIGHT",
+
+        "N_INDEXES_LEFT",
+        "N_INDEXES_RIGHT",
+
+        "MAIN_ROWS_GRID",
+        "row_heights_grid",
+        "col_widths_grid",
+        "ASTERISK_COLUMN_INDEX_GRID",
+
+        "VOWEL_ROW_KEYS_LEFT",
+        "VOWEL_ROW_KEYS_RIGHT",
+        "vowel_set_widths",
+        "vowel_set_heights",
+        "vowel_set_offset",
+
+        "LOW_ROW",
+    )(layout_descriptor)
+
+    
     key_width = settings.key_width_ref
     key_height = settings.key_height_ref
     compound_key_size = settings.compound_key_size_ref
-
-
-    """Computes the size of a key that has half of a compound key cutting into it"""
-    reduced_size: Callable[[Ref[float], Ref[float]], Ref[float]] = lambda key_size_ref, compound_size_ref: (
-            computed(lambda: key_size_ref.value - compound_size_ref.value / 2,
-                    key_size_ref, compound_size_ref)
-    )
-
-    reduced_key_width = reduced_size(key_width, compound_key_size)
-    reduced_key_height = reduced_size(key_height, compound_key_size)
-
-    """ key_height_num_bar = computed(lambda: key_height.value / 2,
-            key_height) """
-
-    index_stretch = settings.index_stretch_ref
-    pinky_stretch = settings.pinky_stretch_ref
-
-    vowel_set_offset_fac = settings.vowel_set_offset_fac_ref
-    vowel_set_offset = computed(lambda: key_width.value * vowel_set_offset_fac.value,
-            key_width, vowel_set_offset_fac)
-
-    """Default row heights for every main rows column"""
-    row_heights = (
-        reduced_key_height,  # top row
-        compound_key_size,
-        reduced_key_height,  # bottom row
-    )
-
-
-    # Row heights for specific columns in staggered mode
-
-    compound_height_small = computed(lambda: compound_key_size.value * 0.75,
-            compound_key_size)
-    reduced_height_small = reduced_size(key_height, compound_height_small)
-
-    row_heights_small = (
-        reduced_height_small,
-        compound_height_small,
-        reduced_height_small,
-    )
-
-
-    row_heights_by_col_staggered_left = (
-        *(row_heights_small,) * 3,
-        *(row_heights,) * 2,
-        *(row_heights_small,) * 4,
-    )
-
-    row_heights_by_col_staggered_right = (
-        *(row_heights_small,) * 3,
-        *(row_heights,) * 2,
-        *(row_heights_small,) * 3,
-    )
-
-
-    index_compound_width = computed(lambda: compound_key_size.value * 0.6,
-            compound_key_size)    
-    base_index_width = computed(lambda: key_width.value + index_stretch.value,
-            key_width, index_stretch)
-    reduced_index_width = reduced_size(base_index_width, index_compound_width)
-
-    col_widths_grid = (
-        computed(lambda: key_width.value + pinky_stretch.value,
-                key_width, pinky_stretch),
-        key_width,
-        key_width,
-        reduced_index_width,  # H-, R-
-        compound_key_size,
-        computed(lambda: reduced_key_width.value * 2 + key_width.value * 2.5,
-                reduced_key_width, key_width),  # *
-        compound_key_size,
-        reduced_index_width,  # -F, -R
-        key_width,
-        key_width,
-        computed(lambda: reduced_key_width.value + pinky_stretch.value,
-                reduced_key_width, pinky_stretch),  # -T, -S
-        compound_key_size,
-        reduced_key_width,  # -D, -Z
-    )
-
-
-    END_COLUMN_WIDTH_BOOST = 0.4
-
-    end_column_compound_width = computed(lambda: compound_key_size.value * 0.875,
-            compound_key_size)
-    
-    end_column_width = reduced_size(
-        computed(lambda: key_width.value + END_COLUMN_WIDTH_BOOST,
-                key_width),
-        end_column_compound_width,
-    )
-    inner_end_column_width = reduced_size(
-        computed(lambda: key_width.value + pinky_stretch.value,
-                key_width, pinky_stretch),
-        end_column_compound_width,
-    )
-
-    col_widths_staggered_left = (
-        end_column_width,
-        end_column_compound_width,
-        inner_end_column_width,
-        key_width,
-        key_width,
-        reduced_index_width,  # H-, R-
-        index_compound_width,
-        computed(lambda: (key_width.value * 1.5 - compound_key_size.value / 2) / 2,
-                key_width, compound_key_size),  # +
-        computed(lambda: (key_width.value * 1.5 - compound_key_size.value / 2) / 2,
-                key_width, compound_key_size),  # .
-    )
-
-    col_widths_staggered_right = (
-        computed(lambda: reduced_key_width.value + key_width.value / 2,
-                reduced_key_width, key_width), # *
-        index_compound_width,
-        reduced_index_width,  # -F, -R
-        key_width,
-        key_width,
-        inner_end_column_width,  # -T, -S
-        end_column_compound_width,
-        end_column_width,  # -D, -Z
-    )
-
-    VOWEL_KEY_WIDTH_BOOST = 0.25
-
-    vowel_set_widths = (
-        computed(lambda: reduced_key_width.value + VOWEL_KEY_WIDTH_BOOST,
-                reduced_key_width),
-        compound_key_size,
-        computed(lambda: reduced_key_width.value + VOWEL_KEY_WIDTH_BOOST,
-                reduced_key_width),
-    )
-
-    vowel_compound_key_height = index_compound_width
-
-    vowel_set_heights = (
-        reduced_size(key_height, vowel_compound_key_height),
-        vowel_compound_key_height,
-        reduced_size(computed(lambda: key_height.value * 0.75, key_height), vowel_compound_key_height),
-    )
-
-    INITIAL_ROWS_GAP_HEIGHT = 2.25
 
     index_stagger_fac = settings.index_stagger_fac_ref
     middle_stagger_fac = settings.middle_stagger_fac_ref
     ring_stagger_fac = settings.ring_stagger_fac_ref
     pinky_stagger_fac = settings.pinky_stagger_fac_ref
 
-    index_offset = computed(lambda: key_width.value * index_stagger_fac.value,
-            key_width, index_stagger_fac)
-    middle_offset = computed(lambda: key_width.value * middle_stagger_fac.value,
-            key_width, middle_stagger_fac)
-    ring_offset = computed(lambda: key_width.value * ring_stagger_fac.value,
-            key_width, ring_stagger_fac)
-    pinky_offset = computed(lambda: key_width.value * pinky_stagger_fac.value,
-            key_width, pinky_stagger_fac)
-
-    """
-    col_offsets = (
-        pinky_offset,
-        pinky_offset,
-        pinky_offset,  # S-
-        ring_offset,  # T-, K-
-        middle_offset,  # P-, W-
-        index_offset,  # H-, R-
-        index_offset,
-        index_offset,
-        index_offset,
-        index_offset,  # -F, -R
-        middle_offset,  # -P, -B
-        ring_offset,  # -L, -G
-        pinky_offset,  # -T, -S
-        pinky_offset,
-        pinky_offset, # -D, -Z
-    )
-    """
-    """
-    col_offsets = (
-        0,  # S-
-        key_width.value * 0.375,  # T-, K-
-        key_width.value * 0.6,  # P-, W-
-        0,  # H-, R-
-        0,
-        0,
-        0,
-        0,  # -F, -R
-        key_width.value * 0.6,  # -P, -B
-        key_width.value * 0.375,  # -L, -G
-        0,  # -T, -S
-        0,
-        0,  # -D, -Z
-    )
-    """
-
-
-    col_offsets_staggered_left = (
-        pinky_offset,
-        pinky_offset,
-        pinky_offset,  # S-
-        ring_offset,  # T-, K-
-        middle_offset,  # P-, W-
-        index_offset,  # H-, R-
-        index_offset,
-        index_offset,
-        index_offset,
-    )
-
-    col_offsets_staggered_right = (
-        index_offset,
-        index_offset,
-        index_offset,  # -F, -R
-        middle_offset,  # -P, -B
-        ring_offset,  # -L, -G
-        pinky_offset,  # -T, -S
-        pinky_offset,
-        pinky_offset, # -D, -Z
-    )
+    index_stretch = settings.index_stretch_ref
+    pinky_stretch = settings.pinky_stretch_ref
 
     # in degrees
     main_rows_angle = settings.main_rows_angle_ref
     vowel_rows_angle = settings.vowel_rows_angle_ref
+    
 
-
-    ASTERISK_COLUMN_INDEX = 5
-
-
-    TALLEST_COLUMN_INDEX_LEFT = 3
-    TALLEST_COLUMN_INDEX_RIGHT = 3
+    INITIAL_ROWS_GAP_HEIGHT = 2.25
 
 
     def build_main_rows_hand_staggered(
@@ -411,12 +113,12 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         keys: tuple[list[str], str, int, str],
         col_widths: tuple[Ref[float]],
         col_offsets: tuple[Ref[float]],
-        row_heights_by_col: tuple[Ref[float]],
+        row_heights: tuple[Ref[float]],
     ) -> QLayout:
         # Parameter defaults on inner functions are used to create closures
 
         layout = QHBoxLayout()
-        for column, col_width_cm, col_offset_cm, heights in zip(keys, col_widths, col_offsets, row_heights_by_col):
+        for column, col_width_cm, col_offset_cm, heights in zip(keys, col_widths, col_offsets, row_heights):
             column_layout = QVBoxLayout()
             column_layout.setSizeConstraint(QLayout.SetFixedSize)
             column_layout.addStretch(1)
@@ -436,7 +138,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
                     keyboard_widget.num_bar_pressed_change.connect(key_widget.num_bar_pressed_handler(label, num_bar_label))
 
 
-                if row_pos <= _LOW_ROW < row_pos + row_span:
+                if row_pos <= LOW_ROW < row_pos + row_span:
                     def height_boost(col_offset_cm: Ref[float]=col_offset_cm):
                         return col_offset_cm.value / 2
                     row_heights_cm = (*row_heights_cm, computed(height_boost, col_offset_cm))
@@ -529,12 +231,12 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         layout.setSpacing(0)
 
         layout.addLayout(build_main_rows_hand_container(
-                key_widgets, _MAIN_ROWS_KEYS_STAGGERED_LEFT, col_widths_staggered_left, col_offsets_staggered_left,
-                row_heights_by_col_staggered_left, main_rows_angle, False))
+                key_widgets, MAIN_ROWS_STAGGERED_LEFT, col_widths_staggered_left, col_offsets_staggered_left,
+                row_heights_staggered_left, main_rows_angle, False))
         layout.addStretch(1)
         layout.addLayout(build_main_rows_hand_container(
-                key_widgets, _MAIN_ROWS_KEYS_STAGGERED_RIGHT, col_widths_staggered_right, col_offsets_staggered_right,
-                row_heights_by_col_staggered_right, computed(lambda: -main_rows_angle.value, main_rows_angle), True))
+                key_widgets, MAIN_ROWS_STAGGERED_RIGHT, col_widths_staggered_right, col_offsets_staggered_right,
+                row_heights_staggered_right, computed(lambda: -main_rows_angle.value, main_rows_angle), True))
 
         return layout
 
@@ -547,7 +249,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
     def build_main_rows_layout_grid(key_widgets: list[KeyWidget]) -> QLayout:
         layout = QGridLayout()
-        for values, label, grid_position, *rest in _MAIN_ROWS_KEYS_GRID:
+        for values, label, grid_position, *rest in MAIN_ROWS_GRID:
             key_widget = KeyWidget(values, label, keyboard_widget)
             key_widgets.append(key_widget)
             
@@ -557,7 +259,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
             layout.addWidget(key_widget, *grid_position)
 
-        for i, size_cm in enumerate(row_heights):
+        for i, size_cm in enumerate(row_heights_grid):
             layout.setRowMinimumHeight(i, dpi.cm(size_cm.value))
             layout.setRowStretch(i, 0)
 
@@ -566,19 +268,19 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
             layout.setColumnStretch(i, 0)
 
 
-        layout.setColumnStretch(ASTERISK_COLUMN_INDEX, 1)
+        layout.setColumnStretch(ASTERISK_COLUMN_INDEX_GRID, 1)
         @watch(dpi.change, parent=layout)
         def resize_asterisk_column():
-            QTimer.singleShot(0, lambda: layout.setColumnMinimumWidth(ASTERISK_COLUMN_INDEX, 0))
+            QTimer.singleShot(0, lambda: layout.setColumnMinimumWidth(ASTERISK_COLUMN_INDEX_GRID, 0))
 
 
-        @on_many(dpi.change, *(height.change for height in row_heights), *(width.change for width in col_widths_grid), parent=layout)
+        @on_many(dpi.change, *(height.change for height in row_heights_grid), *(width.change for width in col_widths_grid), parent=layout)
         def resize_columns():
-            for i, size_cm in enumerate(row_heights):
+            for i, size_cm in enumerate(row_heights_grid):
                 layout.setRowMinimumHeight(i, dpi.cm(size_cm.value))
 
             for i, size_cm in enumerate(col_widths_grid):
-                if i == ASTERISK_COLUMN_INDEX: continue
+                if i == ASTERISK_COLUMN_INDEX_GRID: continue
                 layout.setColumnMinimumWidth(i, dpi.cm(size_cm.value))
 
 
@@ -644,10 +346,10 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         layout.addSpacerItem(right_spacer := QSpacerItem(0, 0))
 
         @watch_many(dpi.change, key_width.change, pinky_stretch.change, index_stretch.change, vowel_set_offset.change,
-                main_rows_angle.change, *(height.change for height in row_heights), parent=layout)
+                main_rows_angle.change, *(height.change for height in row_heights_grid), parent=layout)
         def resize_spacing():
-            left_bank_width = (dpi.cm(key_width.value) * 5 + dpi.cm(pinky_stretch.value) + dpi.cm(index_stretch.value)) * cos(radians(main_rows_angle.value))
-            right_bank_width = left_bank_width
+            left_bank_width = (dpi.cm(key_width.value) * N_INDEXES_LEFT + dpi.cm(pinky_stretch.value) + dpi.cm(index_stretch.value)) * cos(radians(main_rows_angle.value))
+            right_bank_width = (dpi.cm(key_width.value) * N_INDEXES_RIGHT + dpi.cm(pinky_stretch.value) + dpi.cm(index_stretch.value)) * cos(radians(main_rows_angle.value))
 
             offset = (dpi.cm(key_width.value) + dpi.cm(vowel_set_offset.value)) * cos(radians(main_rows_angle.value))
 
@@ -665,10 +367,10 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
 
     def build_vowel_row_layout_staggered(key_widgets: list[KeyWidget]) -> QLayout:
-        left_set_layout = build_vowel_set_layout(_VOWEL_ROW_KEYS_LEFT, key_widgets)
+        left_set_layout = build_vowel_set_layout(VOWEL_ROW_KEYS_LEFT, key_widgets)
         left_container = RotatableKeyContainer.of_layout(left_set_layout, False, vowel_rows_angle.value, keyboard_widget)
         
-        right_set_layout = build_vowel_set_layout(_VOWEL_ROW_KEYS_RIGHT, key_widgets)
+        right_set_layout = build_vowel_set_layout(VOWEL_ROW_KEYS_RIGHT, key_widgets)
         right_container = RotatableKeyContainer.of_layout(right_set_layout, True, -vowel_rows_angle.value, keyboard_widget)
 
         @on(vowel_rows_angle.change)
@@ -691,8 +393,8 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
     def build_vowel_row_layout_grid(key_widgets: list[KeyWidget]) -> QLayout:
         return build_vowel_row_containing_sets(
-            build_vowel_set_layout(_VOWEL_ROW_KEYS_LEFT, key_widgets),
-            build_vowel_set_layout(_VOWEL_ROW_KEYS_RIGHT, key_widgets),
+            build_vowel_set_layout(VOWEL_ROW_KEYS_LEFT, key_widgets),
+            build_vowel_set_layout(VOWEL_ROW_KEYS_RIGHT, key_widgets),
         )
 
 
