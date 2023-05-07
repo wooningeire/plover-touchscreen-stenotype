@@ -4,8 +4,8 @@ On-screen touch stenotype plugin for Plover.
 <!-- This nested embed will appear as a video on GitHub, but elsewhere it will embed the image -->
 [
 Demo recording (if below is playing slowly or not playing)<br /> <!-- <br /> used to resolve a spacing issue in the Plover Plugins Manager markdown renderer -->
-![](https://user-images.githubusercontent.com/22846982/200047983-64c948df-cbca-4590-a6b7-c397ecff4724.gif)
-](https://user-images.githubusercontent.com/22846982/199911422-0c08d1f0-7ce9-4d74-8658-8384142ab3ee.mp4)
+![](https://user-images.githubusercontent.com/22846982/236664546-8afe8d21-2dc6-48b4-8486-fc5be10a7be0.gif)
+](https://user-images.githubusercontent.com/22846982/236663907-51b4064b-2925-4da0-8359-d7419302dd8b.mp4)
 
 
 ## Additional setup / troubleshooting
