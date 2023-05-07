@@ -30,61 +30,33 @@ from ..util import UseDpi, Ref, computed, on, on_many, watch, watch_many
 def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi: UseDpi):
     from .build_keyboard_config.english_stenotype import build_layout_descriptor
     layout_descriptor = build_layout_descriptor(settings)
-    (
-        MAIN_ROWS_STAGGERED_LEFT,
-        MAIN_ROWS_STAGGERED_RIGHT,
-        col_widths_staggered_left,
-        col_widths_staggered_right,
-        row_heights_staggered_left,
-        row_heights_staggered_right,
-        col_offsets_staggered_left,
-        col_offsets_staggered_right,
-        TALLEST_COLUMN_INDEX_LEFT,
-        TALLEST_COLUMN_INDEX_RIGHT,
 
-        N_INDEX_COLS_LEFT,
-        N_INDEX_COLS_RIGHT,
+    MAIN_ROWS_STAGGERED_LEFT = layout_descriptor.MAIN_ROWS_STAGGERED_LEFT
+    MAIN_ROWS_STAGGERED_RIGHT = layout_descriptor.MAIN_ROWS_STAGGERED_RIGHT
+    col_widths_staggered_left = layout_descriptor.col_widths_staggered_left
+    col_widths_staggered_right = layout_descriptor.col_widths_staggered_right
+    row_heights_staggered_left = layout_descriptor.row_heights_staggered_left
+    row_heights_staggered_right = layout_descriptor.row_heights_staggered_right
+    col_offsets_staggered_left = layout_descriptor.col_offsets_staggered_left
+    col_offsets_staggered_right = layout_descriptor.col_offsets_staggered_right
+    TALLEST_COLUMN_INDEX_LEFT = layout_descriptor.TALLEST_COLUMN_INDEX_LEFT
+    TALLEST_COLUMN_INDEX_RIGHT = layout_descriptor.TALLEST_COLUMN_INDEX_RIGHT
 
-        MAIN_ROWS_GRID,
-        row_heights_grid,
-        col_widths_grid,
-        ASTERISK_COLUMN_INDEX_GRID,
+    N_INDEX_COLS_LEFT = layout_descriptor.N_INDEX_COLS_LEFT
+    N_INDEX_COLS_RIGHT = layout_descriptor.N_INDEX_COLS_RIGHT
 
-        VOWEL_ROW_KEYS_LEFT,
-        VOWEL_ROW_KEYS_RIGHT,
-        vowel_set_widths,
-        vowel_set_heights,
-        vowel_set_offset,
-        
-        LOW_ROW,
-    ) = (
-        layout_descriptor.MAIN_ROWS_STAGGERED_LEFT,
-        layout_descriptor.MAIN_ROWS_STAGGERED_RIGHT,
-        layout_descriptor.col_widths_staggered_left,
-        layout_descriptor.col_widths_staggered_right,
-        layout_descriptor.row_heights_staggered_left,
-        layout_descriptor.row_heights_staggered_right,
-        layout_descriptor.col_offsets_staggered_left,
-        layout_descriptor.col_offsets_staggered_right,
-        layout_descriptor.TALLEST_COLUMN_INDEX_LEFT,
-        layout_descriptor.TALLEST_COLUMN_INDEX_RIGHT,
+    MAIN_ROWS_GRID = layout_descriptor.MAIN_ROWS_GRID
+    row_heights_grid = layout_descriptor.row_heights_grid
+    col_widths_grid = layout_descriptor.col_widths_grid
+    ASTERISK_COLUMN_INDEX_GRID = layout_descriptor.ASTERISK_COLUMN_INDEX_GRID
 
-        layout_descriptor.N_INDEX_COLS_LEFT,
-        layout_descriptor.N_INDEX_COLS_RIGHT,
-
-        layout_descriptor.MAIN_ROWS_GRID,
-        layout_descriptor.row_heights_grid,
-        layout_descriptor.col_widths_grid,
-        layout_descriptor.ASTERISK_COLUMN_INDEX_GRID,
-
-        layout_descriptor.VOWEL_ROW_KEYS_LEFT,
-        layout_descriptor.VOWEL_ROW_KEYS_RIGHT,
-        layout_descriptor.vowel_set_widths,
-        layout_descriptor.vowel_set_heights,
-        layout_descriptor.vowel_set_offset,
-
-        layout_descriptor.LOW_ROW,
-    )
+    VOWEL_ROW_KEYS_LEFT = layout_descriptor.VOWEL_ROW_KEYS_LEFT
+    VOWEL_ROW_KEYS_RIGHT = layout_descriptor.VOWEL_ROW_KEYS_RIGHT
+    vowel_set_widths = layout_descriptor.vowel_set_widths
+    vowel_set_heights = layout_descriptor.vowel_set_heights
+    vowel_set_offset = layout_descriptor.vowel_set_offset
+    
+    LOW_ROW = layout_descriptor.LOW_ROW
 
     
     key_width = settings.key_width_ref
