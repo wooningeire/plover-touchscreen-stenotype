@@ -13,9 +13,10 @@ Operating systems may have built-in touchscreen gestures that sometimes prevent 
 
 On Windows 11: This works best after disabling 3- and 4-finger touch gestures in Settings (`Bluetooth & devices` > `Touch`, or navigate to `ms-settings:devices-touch` from the browser).
 
-On Windows 10/11: The default touch keyboard can be stopped from automatically appearing whenever a textbox is touched (sometimes) by disabling “Show the touch keyboard when … there’s no keyboard attached” in the touch keyboard settings (under `Time & language` > `Typing` on Windows 11, `Devices` > `Typing` on Windows 10, or `ms-settings:typing` from the browser).
+On Windows 11 22H2: The default touch keyboard can be stopped from automatically appearing by setting “Show the touch keyboard” to “Never” in the “Touch keyboard” settings (under `Time & language` > `Typing` on Windows 11, or `ms-settings:typing` from the browser).
+* On Windows 10 or older Windows 11: The default keyboard can be stopped from automatically appearing, to varying degrees of success, by disabling “Show the touch keyboard when … there’s no keyboard attached” in the “Touch keyboard” settings (under `Time & language` > `Typing` on Windows 11, `Devices` > `Typing` on Windows 10, or `ms-settings:typing` from the browser).
 
-On Linux+GNOME: There are [GNOME extensions that can disable touch gestures](https://extensions.gnome.org/extension/1140/disable-gestures/), but there is additionally a delay before windows receive touch inputs, which will have to be dealt with as well (check `xinput` and `libinput`?).
+On Linux+GNOME: There are [GNOME extensions that can disable touch gestures](https://extensions.gnome.org/extension/1140/disable-gestures/), but there is additionally a delay before windows receive touch inputs. Unless dealt with (check `xinput` and `libinput`?), this will require users to hold down a stroke for a brief period of time (~200 ms?) before releasing; releasing early will cause each touch to be registered as a stroke individually.
 
 
 ## Notes
