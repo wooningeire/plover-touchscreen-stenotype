@@ -19,8 +19,30 @@ On Windows 11 22H2: The default touch keyboard can be stopped from automatically
 On Linux+GNOME: There are [GNOME extensions that can disable touch gestures](https://extensions.gnome.org/extension/1140/disable-gestures/), but there is additionally a delay before windows receive touch inputs. Unless dealt with (check `xinput` and `libinput`?), this will require users to hold down a stroke for a brief period of time (~200 ms?) before releasing; releasing early will cause each touch to be registered as a stroke individually.
 
 
+## Entrypoints
+
+
+### Tools
+The `Touchscreen stenotype` tool is exposed. After the plugin is installed, Plover may need to be restarted for the plugin GUI button to appear in the toolbar.
+
+The keyboard shortcut <kbd>Ctrl</kbd> + <kbd>S</kbd> opens the settings window (if the stenotype window is focused, which can be achieved by clicking the window's top bar).
+
+
+### Commands
+Some of these commands may be useful when the "Frameless" setting is enabled, since in frameless mode, various UI elements are hidden/inaccessible from the window and the window is not as easily focusable.
+
+Command | Description
+-|-
+<!-- `{plover:touchscreen_stenotype.open}` | Opens the stenotype window. -->
+`{plover:touchscreen_stenotype.close}` | Closes the stenotype window.
+`{plover:touchscreen_stenotype.minimize}` | Minimizes the stenotype window.
+`{plover:touchscreen_stenotype.open_settings}` | Opens the settings dialog.
+
+
+### Machines
+The `(None)` machine allows all hardware machines to be disabled, allowing only the touchscreen stenotype to provide strokes.
+
+
 ## Notes
 
 The key layout is currently based on the default English Stenotype system. This works best on touchscreens that support at least 10 simultaneous touch points. On Windows 10/11, the maximum number of touch points can be found alongside the device specifications in Settings (`System` > `About`, or navigate to `ms-settings:about` from the browser).
-
-After the plugin is installed, Plover may need to be restarted for the plugin GUI button to appear in the toolbar.

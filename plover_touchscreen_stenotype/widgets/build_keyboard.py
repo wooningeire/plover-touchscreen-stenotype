@@ -28,7 +28,7 @@ from ..util import UseDpi, Ref, computed, on, on_many, watch, watch_many
 #region Exports
 
 def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi: UseDpi):
-    from .build_keyboard_config.english_stenotype import build_layout_descriptor
+    from .build_keyboard_config.stenotype_extended_custom import build_layout_descriptor
     layout_descriptor = build_layout_descriptor(settings)
 
     MAIN_ROWS_STAGGERED_LEFT = layout_descriptor.MAIN_ROWS_STAGGERED_LEFT

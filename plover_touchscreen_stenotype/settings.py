@@ -78,6 +78,8 @@ class Settings(QObject):
 
     window_opacity = _PersistentSetting(float)
 
+    frameless = _PersistentSetting(bool)
+
 
     key_layout_ref = key_layout.ref_getter()
 
@@ -102,6 +104,8 @@ class Settings(QObject):
     vowel_rows_angle_ref = vowel_rows_angle.ref_getter()
 
     window_opacity_ref = window_opacity.ref_getter()
+
+    frameless_ref = frameless.ref_getter()
 
 
     stroke_preview_change = pyqtSignal()
@@ -133,6 +137,8 @@ class Settings(QObject):
 
         self.window_opacity = 0.675
 
+        self.frameless = False
+
         @on_many(self.stroke_preview_stroke_ref.change, self.stroke_preview_translation_ref.change)
         def emit_stroke_preview_change():
             self.stroke_preview_change.emit()
@@ -152,8 +158,8 @@ class Settings(QObject):
 
     @property
     def stroke_preview_full(self):
-        return self.stroke_preview_stroke and self.stroke_preview_translation
+        return self.stroke_preview_stroke and self.stroke_preview_translation and not self.frameless
 
     @property
     def stroke_preview_visible(self):
-        return self.stroke_preview_stroke or self.stroke_preview_translation
+        return (self.stroke_preview_stroke or self.stroke_preview_translation) and not self.frameless

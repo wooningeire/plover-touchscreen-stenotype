@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (
     QGraphicsScene,
 )
 from PyQt5.QtGui import (
-    QTouchEvent,
+    QMouseEvent,
     QTransform,
     QResizeEvent,
 )
@@ -25,7 +25,7 @@ else:
     KeyboardWidget = object
 
 from .KeyWidget import KeyWidget
-from ..util import KEY_STYLESHEET
+from ..util import on, KEY_STYLESHEET
 
 class RotatableKeyContainer(QGraphicsView):
     """

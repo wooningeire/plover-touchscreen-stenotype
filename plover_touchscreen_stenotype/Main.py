@@ -6,6 +6,7 @@ from plover.oslayer import PLATFORM
 
 from PyQt5.QtCore import (
     Qt,
+    pyqtSignal,
     QSize,
     QSettings,
 )
@@ -13,18 +14,26 @@ from PyQt5.QtWidgets import (
     QWidget,
     QGridLayout,
     QAction,
+    QPushButton,
+    QLabel,
 )
 from PyQt5.QtGui import (
     QIcon,
+    QKeySequence,
+    QMouseEvent,
+    QFont,
 )
 
 
 from .settings import Settings
-from .util import Ref, watch
+from .util import Ref, on, watch, FONT_FAMILY, UseDpi
 from .widgets.KeyboardWidget import KeyboardWidget
 from .widgets.StrokePreview import StrokePreview
 from .widgets.SettingsDialog import SettingsDialog
+from .widgets.FramelessControls import FramelessControls
 
+
+_window_instance: "Main | None" = None
 
 class Main(Tool):
     #region Overrides
@@ -33,7 +42,15 @@ class Main(Tool):
     ICON = ""
     ROLE = "touchscreen_stenotype"
 
+
+    close_stroked = pyqtSignal()
+    minimize_stroked = pyqtSignal()
+    open_settings_stroked = pyqtSignal()
+
+
     def __init__(self, engine: Engine):
+        global _window_instance
+        
         super().__init__(engine)
 
         self.engine = engine # Override for type hint
@@ -49,12 +66,33 @@ class Main(Tool):
 
         engine.signal_stroked.connect(self.__on_stroked)
 
+        _window_instance = self
+        @on(self.finished)
+        def clear_instance():
+            global _window_instance
+
+            _window_instance = None
+
+        
+        self.close_stroked.connect(lambda: self.close())
+        self.minimize_stroked.connect(lambda: self.setWindowState(Qt.WindowMinimized))
+
 
     def _restore_state(self, settings: QSettings):
         self.__settings.load(settings)
 
     def _save_state(self, settings: QSettings):
         self.__settings.save(settings)
+    
+
+    __drag_position = None
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        if not (event.buttons() & Qt.LeftButton): return
+        self.move(event.globalPos() - self.__drag_position)
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        if not (event.buttons() & Qt.LeftButton): return
+        self.__drag_position = event.globalPos() - self.frameGeometry().topLeft()
 
     #endregion
 
@@ -66,6 +104,10 @@ class Main(Tool):
         # https://stackoverflow.com/questions/71084136/how-to-set-focus-to-the-old-window-on-button-click-in-pyqt5-python
         # self.setWindowFlags(Qt.Dialog | Qt.WindowStaysOnTopHint | Qt.BypassWindowManagerHint | Qt.WindowDoesNotAcceptFocus)
         self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint)
+
+        # Cannot be moved to listener due to Qt5 bug
+        self.setWindowFlag(Qt.FramelessWindowHint, on=self.__settings.frameless)
+        self.setAttribute(Qt.WA_TranslucentBackground, on=self.__settings.frameless)
 
         # For some reason (tested on Windows only), this has to be called before KeyboardWidget is created. Other attributes
         # must also be set before this, otherwise the window will steal focus again
@@ -82,8 +124,12 @@ class Main(Tool):
 
         settings_action = QAction(self)
         settings_action.setText("Settings")
+        settings_action.setShortcut(QKeySequence("Ctrl+S"))
         settings_action.setIcon(QIcon(r":/settings.svg")) # Loads from Plover's application-wide application resources
         settings_action.triggered.connect(self.__launch_settings_dialog)
+        @on(self.open_settings_stroked)
+        def trigger_settings_action():
+            settings_action.trigger()
 
         toolbar = ToolBar(settings_action)
         toolbar.setFocusPolicy(Qt.NoFocus)
@@ -92,10 +138,13 @@ class Main(Tool):
 
         toolbar.setIconSize(QSize(48, 48))
 
+        controls = FramelessControls(self.mousePressEvent, self)
 
         layout = QGridLayout(self)
         layout.addWidget(stroke_preview, 0, 0)
-        layout.addWidget(toolbar, 0, 0, Qt.AlignBottom | Qt.AlignLeft)
+        if not self.__settings.frameless:
+            layout.addWidget(toolbar, 0, 0, Qt.AlignBottom | Qt.AlignLeft)
+        layout.addWidget(controls, 0, 0, Qt.AlignCenter)
         layout.addWidget(stenotype, 0, 0)
         self.setLayout(layout)
 
@@ -103,6 +152,11 @@ class Main(Tool):
         @watch(self.__settings.window_opacity_ref.change)
         def set_window_opacity():
             self.setWindowOpacity(self.__settings.window_opacity)
+
+        # @watch(self.__settings.frameless_ref.change)
+        # def set_frameless():
+        #     self.setAttribute(Qt.WA_TranslucentBackground, on=self.__settings.frameless)
+        #     self.setWindowFlags(Qt.FramelessWindowHint, on=self.__settings.frameless)
 
 
     # https://stackoverflow.com/questions/24582525/how-to-show-clickable-qframe-without-loosing-focus-from-main-window
@@ -194,6 +248,20 @@ class Main(Tool):
         dialog = SettingsDialog(self.__settings, self)
         dialog.open()
 
-# def command_open_window(engine: Engine, arg: str):
+
+# def command_open(engine: Engine, arg: str):
+#     if _window_instance is not None: return
 #     new_window = Main(engine)
 #     new_window.show()
+
+def command_close(engine: Engine, arg: str):
+    if _window_instance is None: return
+    _window_instance.close_stroked.emit()
+
+def command_minimize(engine: Engine, arg: str):
+    if _window_instance is None: return
+    _window_instance.minimize_stroked.emit()
+    
+def command_open_settings(engine: Engine, arg: str):
+    if _window_instance is None: return
+    _window_instance.open_settings_stroked.emit()

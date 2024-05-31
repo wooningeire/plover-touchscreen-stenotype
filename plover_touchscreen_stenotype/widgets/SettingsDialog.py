@@ -117,10 +117,18 @@ class SettingsDialog(QDialog):
             max=1,
             parent=misc_box,
         )
+
+        frameless_checkbox = QCheckBox("Frameless (need to reopen window)", misc_box)
+        frameless_checkbox.setChecked(settings.frameless)
+        @on(frameless_checkbox.toggled)
+        def update_frameless(checked: bool):
+            settings.frameless = checked
         
         misc_box_layout.addWidget(QLabel("Window opacity"), 0, 0, 1, 2)
         misc_box_layout.addWidget(opacity_slider, 1, 0)
         misc_box_layout.addWidget(opacity_entry, 1, 1)
+        
+        misc_box_layout.addWidget(frameless_checkbox, 2, 0, 1, 2)
 
         misc_box.setLayout(misc_box_layout)
 
@@ -170,7 +178,7 @@ class SettingsDialog(QDialog):
                     spin_box_step=0.05,
                     parent=size_box,
                 ), "cm"),
-            ("Vowels offset factor",
+            ("Vowels offset",
                 *_build_entry_slider_pair(
                     settings.vowel_set_offset_fac_ref,
                     min=0,
