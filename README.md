@@ -8,7 +8,11 @@ Demo recording (if below is playing slowly or not playing)<br /> <!-- <br /> use
 ](https://user-images.githubusercontent.com/22846982/236663907-51b4064b-2925-4da0-8359-d7419302dd8b.mp4)
 
 
-## Additional setup / troubleshooting
+## Setup
+This plugin is currently not available from Plover's Plugins Manager. [Instructions are available on the Plover wiki](https://plover.wiki/index.php/Plugins#Find_the_plugin_on_PyPI_or_as_a_git_repo) on how to install this plugin from PyPI or this Git repository.
+
+
+### Additional setup / troubleshooting
 Operating systems may have built-in touchscreen gestures that sometimes prevent the window from receiving touches.
 
 On Windows 11: This works best after disabling 3- and 4-finger touch gestures in Settings (`Bluetooth & devices` > `Touch`, or navigate to `ms-settings:devices-touch` from the browser).
@@ -19,9 +23,8 @@ On Windows 11 22H2: The default touch keyboard can be stopped from automatically
 On Linux+GNOME: There are [GNOME extensions that can disable touch gestures](https://extensions.gnome.org/extension/1140/disable-gestures/), but there is additionally a delay before windows receive touch inputs. Unless dealt with (check `xinput` and `libinput`?), this will require users to hold down a stroke for a brief period of time (~200 ms?) before releasing; releasing early will cause each touch to be registered as a stroke individually.
 
 
-## Setup
-
-This plugin is currently not available from Plover's Plugins Manager. [Instructions are available on the Plover wiki](https://plover.wiki/index.php/Plugins#Find_the_plugin_on_PyPI_or_as_a_git_repo) on how to install this plugin from PyPI or this Git repository.
+### Notes
+The key layout is currently based on the default English Stenotype system. This works best on touchscreens that support at least 10 simultaneous touch points. On Windows 10/11, the maximum number of touch points can be found alongside the device specifications in Settings (`System` > `About`, or navigate to `ms-settings:about` from the browser).
 
 
 ## Entrypoints
@@ -34,8 +37,6 @@ The keyboard shortcut <kbd>Ctrl</kbd> + <kbd>S</kbd> opens the settings window (
 
 
 ### Commands
-Some of these commands may be useful when the "Frameless" setting is enabled, since in frameless mode, various UI elements are hidden/inaccessible from the window and the window is not as easily focusable.
-
 Command | Description
 -|-
 `{plover:touchscreen_stenotype.close}` | Closes the stenotype window.
@@ -43,6 +44,7 @@ Command | Description
 `{plover:touchscreen_stenotype.open_settings}` | Opens the settings dialog.
 <!-- `{plover:touchscreen_stenotype.open}` | Opens the stenotype window. -->
 
+Some of these commands may be useful when the "Frameless" setting is enabled, since in frameless mode, various UI elements are hidden/inaccessible from the window and the window is not as easily focusable.
 
 ### Machines
 The `(None)` machine allows all hardware machines to be disabled, allowing only the touchscreen stenotype to provide strokes.
@@ -55,8 +57,3 @@ The `(None)` machine allows all hardware machines to be disabled, allowing only 
     - **Frameless**: Removes the window border and background to avoid blocking as much of the screen. For changes to take effect, the plugin window has to be relaunched.
 
 For custom layouts or systems, (for now) the plugin source code will need to be edited. Keyboard layout descriptors are in the directory `/plover_touchscreen_stenotype/widgets/build_keyboard_config/` (the default English stenotype and custom English stenotype extended layout descriptors are provided and can be used as templates), and the plugin determines which layout to use by importing a descriptor from that directory into `./plover_touchscreen_stenotype/widgets/build_keyboard.py`.
-
-
-## Notes
-
-The key layout is currently based on the default English Stenotype system. This works best on touchscreens that support at least 10 simultaneous touch points. On Windows 10/11, the maximum number of touch points can be found alongside the device specifications in Settings (`System` > `About`, or navigate to `ms-settings:about` from the browser).
