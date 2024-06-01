@@ -19,6 +19,11 @@ On Windows 11 22H2: The default touch keyboard can be stopped from automatically
 On Linux+GNOME: There are [GNOME extensions that can disable touch gestures](https://extensions.gnome.org/extension/1140/disable-gestures/), but there is additionally a delay before windows receive touch inputs. Unless dealt with (check `xinput` and `libinput`?), this will require users to hold down a stroke for a brief period of time (~200 ms?) before releasing; releasing early will cause each touch to be registered as a stroke individually.
 
 
+## Setup
+
+This plugin is currently not available from Plover's Plugins Manager. [Instructions are available on the Plover wiki](https://plover.wiki/index.php/Plugins#Find_the_plugin_on_PyPI_or_as_a_git_repo) on how to install this plugin from PyPI or this Git repository.
+
+
 ## Entrypoints
 
 
@@ -33,14 +38,23 @@ Some of these commands may be useful when the "Frameless" setting is enabled, si
 
 Command | Description
 -|-
-<!-- `{plover:touchscreen_stenotype.open}` | Opens the stenotype window. -->
 `{plover:touchscreen_stenotype.close}` | Closes the stenotype window.
 `{plover:touchscreen_stenotype.minimize}` | Minimizes the stenotype window.
 `{plover:touchscreen_stenotype.open_settings}` | Opens the settings dialog.
+<!-- `{plover:touchscreen_stenotype.open}` | Opens the stenotype window. -->
 
 
 ### Machines
 The `(None)` machine allows all hardware machines to be disabled, allowing only the touchscreen stenotype to provide strokes.
+
+
+## Settings/customization
+ - **Key and layout geometry**: Controls the spacing and sizing of keys.
+ - **Stroke preview**: Controls whether to show what translation will result from the currently held stroke.
+ - **Window**: Controls the display of the window.
+    - **Frameless**: Removes the window border and background to avoid blocking as much of the screen. For changes to take effect, the plugin window has to be relaunched.
+
+For custom layouts or systems, (for now) the plugin source code will need to be edited. Keyboard layout descriptors are in the directory `/plover_touchscreen_stenotype/widgets/build_keyboard_config/` (the default English stenotype and custom English stenotype extended layout descriptors are provided and can be used as templates), and the plugin determines which layout to use by importing a descriptor from that directory into `./plover_touchscreen_stenotype/widgets/build_keyboard.py`.
 
 
 ## Notes
