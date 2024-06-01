@@ -108,36 +108,59 @@ class SettingsDialog(QDialog):
             settings.stroke_preview_translation = checked
 
 
-        misc_box = QGroupBox("Misc", self)
-        misc_box_layout = QGridLayout()
+        window_box = QGroupBox("Window", self)
+        window_box_layout = QGridLayout()
 
         opacity_entry, opacity_slider = _build_entry_slider_pair(
             settings.window_opacity_ref,
             min=0.25,
             max=1,
-            parent=misc_box,
+            parent=window_box,
         )
 
-        frameless_checkbox = QCheckBox("Frameless (need to reopen window)", misc_box)
+        frameless_checkbox = QCheckBox("Frameless (need to reopen window)", window_box)
         frameless_checkbox.setChecked(settings.frameless)
         @on(frameless_checkbox.toggled)
         def update_frameless(checked: bool):
             settings.frameless = checked
         
-        misc_box_layout.addWidget(QLabel("Window opacity"), 0, 0, 1, 2)
-        misc_box_layout.addWidget(opacity_slider, 1, 0)
-        misc_box_layout.addWidget(opacity_entry, 1, 1)
-        
-        misc_box_layout.addWidget(frameless_checkbox, 2, 0, 1, 2)
+        window_box_layout.addWidget(QLabel("Opacity"), 0, 0, 1, 3)
+        window_box_layout.addWidget(opacity_slider, 1, 0)
+        window_box_layout.addWidget(opacity_entry, 1, 1)
 
-        misc_box.setLayout(misc_box_layout)
+        for window_box_index, (label, box, slider, after_label) in enumerate((
+            ("Width",
+                *_build_entry_slider_pair(
+                    settings.window_width_ref,
+                    min=20,
+                    max=50,
+                    spin_box_step=0.5,
+                    parent=window_box,
+                ), "cm"),
+            ("Height",
+                *_build_entry_slider_pair(
+                    settings.window_height_ref,
+                    min=8,
+                    max=20,
+                    spin_box_step=0.5,
+                    parent=window_box,
+                ), "cm"),
+        )):
+            window_box_layout.addWidget(QLabel(label), window_box_index * 2 + 2, 0, 1, 3)
+            window_box_layout.addWidget(slider, window_box_index * 2 + 3, 0)
+            window_box_layout.addWidget(box, window_box_index * 2 + 3, 1)
+            window_box_layout.addWidget(QLabel(after_label), window_box_index * 2 + 3, 2)
+
+        window_box_layout.addWidget(frameless_checkbox, 6, 0, 1, 3)
+
+        window_box.setLayout(window_box_layout)
 
 
 
         size_box = QGroupBox("Key and layout geometry", self)
         size_box_layout = QGridLayout()
 
-        for size_box_index, (label, box, slider, after_label) in enumerate((
+        for window_box_index, (label, box, slider, after_label) in enumerate((
             ("Base key width",
                 *_build_entry_slider_pair(
                     settings.key_width_ref,
@@ -203,10 +226,10 @@ class SettingsDialog(QDialog):
                     parent=size_box,
                 ), "°"),
         )):
-            size_box_layout.addWidget(QLabel(label), size_box_index * 2, 0, 1, 3)
-            size_box_layout.addWidget(slider, size_box_index * 2 + 1, 0)
-            size_box_layout.addWidget(box, size_box_index * 2 + 1, 1)
-            size_box_layout.addWidget(QLabel(after_label), size_box_index * 2 + 1, 2)
+            size_box_layout.addWidget(QLabel(label), window_box_index * 2, 0, 1, 3)
+            size_box_layout.addWidget(slider, window_box_index * 2 + 1, 0)
+            size_box_layout.addWidget(box, window_box_index * 2 + 1, 1)
+            size_box_layout.addWidget(QLabel(after_label), window_box_index * 2 + 1, 2)
 
 
         compound_key_box, compound_key_slider = compound_input_pair
@@ -218,9 +241,9 @@ class SettingsDialog(QDialog):
             compound_key_slider.max = new_max
             
 
-        size_box_index += 1
+        window_box_index += 1
 
-        size_box_layout.addWidget(QLabel("Column stagger factors"), size_box_index * 2, 0, 1, 3)
+        size_box_layout.addWidget(QLabel("Column stagger factors"), window_box_index * 2, 0, 1, 3)
 
         stagger_layout = QGridLayout()
         stagger_layout.setContentsMargins(0, 0, 0, 0)
@@ -243,7 +266,7 @@ class SettingsDialog(QDialog):
             stagger_layout.addWidget(slider, 0, stagger_index, Qt.AlignHCenter)
             stagger_layout.addWidget(entry, 1, stagger_index, Qt.AlignHCenter)
 
-        size_box_layout.addLayout(stagger_layout, size_box_index * 2 + 1, 0, 1, 3)
+        size_box_layout.addLayout(stagger_layout, window_box_index * 2 + 1, 0, 1, 3)
         
         # size_box_layout.setRowStretch(2 * (size_box_index + 1), 1)
         size_box.setLayout(size_box_layout)
@@ -262,7 +285,7 @@ class SettingsDialog(QDialog):
         layout = QGridLayout()
         layout.addWidget(key_layout_box, 0, 0)
         layout.addWidget(stroke_preview_box, 1, 0)
-        layout.addWidget(misc_box, 2, 0)
+        layout.addWidget(window_box, 2, 0)
         layout.addWidget(size_box, 0, 1, 4, 1)
         layout.setRowStretch(3, 1)
         layout.addWidget(label_resizing, 4, 0, 1, 2)

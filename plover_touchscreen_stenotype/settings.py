@@ -8,7 +8,7 @@ from enum import Enum, auto
 from weakref import WeakKeyDictionary
 from typing import TypeVar, Generic, Any
 
-from .util import RefAttr, on_many
+from .util import Ref, RefAttr, on_many
 
 
 T = TypeVar("T")
@@ -77,7 +77,10 @@ class Settings(QObject):
     vowel_rows_angle = _PersistentSetting(float)
 
     window_opacity = _PersistentSetting(float)
-
+    # Window size is not preserved through the Settings object; Setting object only allows window size to be edited
+    # through the settings dialog.
+    window_width = RefAttr(float)
+    window_height = RefAttr(float)
     frameless = _PersistentSetting(bool)
 
 
@@ -104,7 +107,8 @@ class Settings(QObject):
     vowel_rows_angle_ref = vowel_rows_angle.ref_getter()
 
     window_opacity_ref = window_opacity.ref_getter()
-
+    window_width_ref = window_width.ref_getter()
+    window_height_ref = window_height.ref_getter()
     frameless_ref = frameless.ref_getter()
 
 
@@ -132,11 +136,12 @@ class Settings(QObject):
         self.ring_stagger_fac = 0.5
         self.pinky_stagger_fac = 0
 
-        self.main_rows_angle = 19
+        self.main_rows_angle = 22.5
         self.vowel_rows_angle = 20.5
 
         self.window_opacity = 0.675
-
+        self.window_width_ref = Ref(30)
+        self.window_height_ref = Ref(12.5)
         self.frameless = False
 
         @on_many(self.stroke_preview_stroke_ref.change, self.stroke_preview_translation_ref.change)
@@ -158,8 +163,8 @@ class Settings(QObject):
 
     @property
     def stroke_preview_full(self):
-        return self.stroke_preview_stroke and self.stroke_preview_translation and not self.frameless
+        return self.stroke_preview_stroke and self.stroke_preview_translation
 
     @property
     def stroke_preview_visible(self):
-        return (self.stroke_preview_stroke or self.stroke_preview_translation) and not self.frameless
+        return (self.stroke_preview_stroke or self.stroke_preview_translation)

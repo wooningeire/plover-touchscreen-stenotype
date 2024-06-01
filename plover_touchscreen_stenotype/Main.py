@@ -9,24 +9,22 @@ from PyQt5.QtCore import (
     pyqtSignal,
     QSize,
     QSettings,
+    QPoint,
 )
 from PyQt5.QtWidgets import (
     QWidget,
     QGridLayout,
     QAction,
-    QPushButton,
-    QLabel,
 )
 from PyQt5.QtGui import (
     QIcon,
     QKeySequence,
     QMouseEvent,
-    QFont,
 )
 
 
 from .settings import Settings
-from .util import Ref, on, watch, FONT_FAMILY, UseDpi
+from .util import Ref, on, on_many, watch, UseDpi
 from .widgets.KeyboardWidget import KeyboardWidget
 from .widgets.StrokePreview import StrokePreview
 from .widgets.SettingsDialog import SettingsDialog
@@ -47,6 +45,8 @@ class Main(Tool):
     minimize_stroked = pyqtSignal()
     open_settings_stroked = pyqtSignal()
 
+
+    __dpi: UseDpi
 
     def __init__(self, engine: Engine):
         global _window_instance
@@ -85,18 +85,21 @@ class Main(Tool):
         self.__settings.save(settings)
     
 
-    __drag_position = None
-    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+    # https://github.com/Kaoffie/plover_svg_layout_display/blob/master/plover_svg_layout_display/layout_ui.py#L91
+    __drag_start_position: "QPoint | None" = None
+    def mouseMoveEvent(self, event: QMouseEvent):
         if not (event.buttons() & Qt.LeftButton): return
-        self.move(event.globalPos() - self.__drag_position)
+        self.move(event.globalPos() - self.__drag_start_position)
 
-    def mousePressEvent(self, event: QMouseEvent) -> None:
+    def mousePressEvent(self, event: QMouseEvent):
         if not (event.buttons() & Qt.LeftButton): return
-        self.__drag_position = event.globalPos() - self.frameGeometry().topLeft()
+        self.__drag_start_position = event.globalPos() - self.frameGeometry().topLeft()
 
     #endregion
 
     def __setup_ui(self):
+        self.__dpi = dpi = UseDpi(self)
+
         self.setAttribute(Qt.WA_AcceptTouchEvents)
         # self.setAttribute(Qt.WA_ShowWithoutActivating)
         # self.setFocusPolicy(Qt.NoFocus)
@@ -132,18 +135,20 @@ class Main(Tool):
             settings_action.trigger()
 
         toolbar = ToolBar(settings_action)
+
         toolbar.setFocusPolicy(Qt.NoFocus)
         for button in toolbar.findChildren(QWidget):
             button.setFocusPolicy(Qt.NoFocus)
 
-        toolbar.setIconSize(QSize(48, 48))
+        @watch(dpi.change)
+        def resize_toolbar_button_size():
+            toolbar.setIconSize(QSize(dpi.dp(32), dpi.dp(32)))
+        toolbar.setOrientation(Qt.Vertical)
 
-        controls = FramelessControls(self.mousePressEvent, self)
+        controls = FramelessControls(self.mousePressEvent, toolbar, self)
 
         layout = QGridLayout(self)
         layout.addWidget(stroke_preview, 0, 0)
-        if not self.__settings.frameless:
-            layout.addWidget(toolbar, 0, 0, Qt.AlignBottom | Qt.AlignLeft)
         layout.addWidget(controls, 0, 0, Qt.AlignCenter)
         layout.addWidget(stenotype, 0, 0)
         self.setLayout(layout)
@@ -157,6 +162,11 @@ class Main(Tool):
         # def set_frameless():
         #     self.setAttribute(Qt.WA_TranslucentBackground, on=self.__settings.frameless)
         #     self.setWindowFlags(Qt.FramelessWindowHint, on=self.__settings.frameless)
+
+
+        @on_many(self.__settings.window_width_ref.change, self.__settings.window_height_ref.change)
+        def set_window_size():
+            self.resize(dpi.cm(self.__settings.window_width), dpi.cm(self.__settings.window_height))
 
 
     # https://stackoverflow.com/questions/24582525/how-to-show-clickable-qframe-without-loosing-focus-from-main-window
@@ -245,6 +255,10 @@ class Main(Tool):
 
 
     def __launch_settings_dialog(self):
+        # Lazily update the window size stored on the Settings object since they are only used for the settings dialog
+        self.__settings.window_width = self.__dpi.px_to_cm(self.width())
+        self.__settings.window_height = self.__dpi.px_to_cm(self.height())
+
         dialog = SettingsDialog(self.__settings, self)
         dialog.open()
 
