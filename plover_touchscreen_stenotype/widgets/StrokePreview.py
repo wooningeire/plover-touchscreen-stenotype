@@ -10,7 +10,6 @@ from PyQt5.QtCore import (
 from PyQt5.QtWidgets import (
     QWidget,
     QLabel,
-    QGridLayout,
     QVBoxLayout,
     QSpacerItem,
     QSizePolicy,
@@ -23,6 +22,7 @@ from PyQt5.QtGui import (
 from math import cos, radians
 from typing import Iterable
 
+from .DisplayAlignmentLayout import DisplayAlignmentLayout
 from ..settings import Settings, KeyLayout
 from ..lib.reactivity import Ref, watch, watch_many
 from ..lib.UseDpi import UseDpi
@@ -90,17 +90,7 @@ class StrokePreview(QWidget):
 
 
         #region Display alignment
-        display_alignment_layout = QGridLayout()
-        display_alignment_layout.setColumnStretch(0, 1)
-        display_alignment_layout.setColumnStretch(1, 0)
-
-        @watch_many(dpi.change, right_left_width_diff.change)
-        def resize_display_alignment():
-            display_alignment_layout.setColumnMinimumWidth(1, right_left_width_diff.value)
-                    # dpi.cm(self.__settings.key_width) * cos(radians(self.__settings.main_rows_angle)))
-            # TODO replace MAIN_ROWS_ANGLE import with setting value when this becomes a setting
-
-
+        display_alignment_layout = DisplayAlignmentLayout(right_left_width_diff)
         display_alignment_layout.addLayout(labels_layout, 0, 0)
 
         @watch_many(dpi.change, self.__settings.key_layout_ref.change)
@@ -113,10 +103,7 @@ class StrokePreview(QWidget):
                 top_spacer.changeSize(0, -8)
 
             labels_layout.invalidate()  # Must be called for layout to move
-        
-        display_alignment_layout.addItem(QSpacerItem(0, 0), 0, 1)
-        display_alignment_layout.setSpacing(0)
-        display_alignment_layout.setContentsMargins(0, 0, 0, 0)
+
         self.setLayout(display_alignment_layout)
         #endregion
 

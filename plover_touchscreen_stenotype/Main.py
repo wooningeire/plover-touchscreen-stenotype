@@ -146,7 +146,7 @@ class Main(Tool):
             toolbar.setIconSize(QSize(dpi.dp(32), dpi.dp(32)))
         toolbar.setOrientation(Qt.Vertical)
 
-        controls = CenterControls(self.mousePressEvent, toolbar, self)
+        controls = CenterControls(self.mousePressEvent, toolbar, left_right_width_diff, self)
 
         layout = QGridLayout(self)
         layout.addWidget(stroke_preview, 0, 0)
