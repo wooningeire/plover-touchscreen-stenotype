@@ -4,68 +4,9 @@ from PyQt5.QtCore import (
     pyqtSignal,
     pyqtBoundSignal,
 )
-from PyQt5.QtWidgets import (
-    QWidget,
-)
-from PyQt5.QtGui import (
-    QScreen,
-)
 
 from functools import partial
-from dataclasses import dataclass
 from typing import TypeVar, Generic, Any, Callable, Iterable, cast
-
-
-class UseDpi(QObject):
-    """Composable that handles DPI-responsivity."""
-
-    change = pyqtSignal()
-    change_logical = pyqtSignal()
-
-    def __init__(self, widget: QWidget):
-        super().__init__(widget)
-
-        self.__widget = widget
-        self.__current_screen = widget.screen()
-
-        self.__current_screen.physicalDotsPerInchChanged.connect(self.__on_screen_physcial_dpi_change)
-        self.__current_screen.logicalDotsPerInchChanged.connect(self.__on_screen_logical_dpi_change)
-        # `widget.window().windowHandle()` may initially be None on Linux
-        QTimer.singleShot(0,
-            lambda: widget.window().windowHandle().screenChanged.connect(self.__on_screen_change)
-        )
-
-    def cm(self, cm: float) -> int:
-        """Converts cm to px using the current physical DPI."""
-        return round(cm * self.__widget.screen().physicalDotsPerInch() / 2.54)
-
-    def dp(self, dp: float) -> int:
-        """Converts dp to px using the current physical DPI. (Defines dp as the length of a pixel on a 96 dpi screen.)"""
-        return round(dp * self.__widget.screen().physicalDotsPerInch() / 96)
-
-    def pt(self, pt: float) -> int:
-        """Converts pt to px using the current logical DPI."""
-        return round(pt * self.__widget.screen().logicalDotsPerInch() / 72)
-    
-    def px_to_cm(self, px: int) -> float:
-        return px * 2.54 / self.__widget.screen().physicalDotsPerInch()
-
-    def __on_screen_change(self, screen: QScreen):
-        self.__current_screen.physicalDotsPerInchChanged.disconnect(self.__on_screen_physcial_dpi_change)
-        self.__current_screen.logicalDotsPerInchChanged.disconnect(self.__on_screen_logical_dpi_change)
-
-        self.__current_screen = screen
-        screen.physicalDotsPerInchChanged.connect(self.__on_screen_physcial_dpi_change)
-        screen.logicalDotsPerInchChanged.connect(self.__on_screen_logical_dpi_change)
-
-        self.change.emit()
-        self.change_logical.emit()
-
-    def __on_screen_physcial_dpi_change(self, dpi: float):
-        self.change.emit()
-
-    def __on_screen_logical_dpi_change(self, dpi: float):
-        self.change_logical.emit()
 
 
 T = TypeVar("T")
@@ -259,64 +200,3 @@ def watch_many(*signals: pyqtBoundSignal, parent: "QObject | None"=None):
         return _connect_many(signals, handler, parent=parent)
 
     return run_and_connect
-
-
-FONT_FAMILY = "Atkinson Hyperlegible, Segoe UI, Ubuntu"
-
-KEY_STYLESHEET = """
-KeyWidget[matched="true"] {
-    background: #6f9f86;
-    color: #fff;
-    border: 1px solid;
-    border-color: #2a6361 #2a6361 #1f5153 #2a6361;
-}
-
-KeyWidget[touched="true"] {
-    background: #41796a;
-}
-"""
-
-
-KeyColumnsTuple = tuple[
-    tuple[
-        tuple[list[str], str, "int | None", "str | None"]
-    ]
-]
-KeyGridTuple = tuple[
-    tuple[
-        list[str],
-        str,
-        "tuple[int, int] | tuple[int, int, int, int]",
-        "str | None",
-    ]
-]
-SizeTuple = tuple[Ref[float]]
-
-@dataclass
-class LayoutDescriptor:
-    MAIN_ROWS_STAGGERED_LEFT: KeyColumnsTuple
-    MAIN_ROWS_STAGGERED_RIGHT: KeyColumnsTuple
-    col_widths_staggered_left: SizeTuple
-    col_widths_staggered_right: SizeTuple
-    col_offsets_staggered_left: SizeTuple
-    col_offsets_staggered_right: SizeTuple
-    row_heights_staggered_left: SizeTuple
-    row_heights_staggered_right: SizeTuple
-    TALLEST_COLUMN_INDEX_LEFT: float
-    TALLEST_COLUMN_INDEX_RIGHT: float
-
-    N_INDEX_COLS_LEFT: float
-    N_INDEX_COLS_RIGHT: float
-
-    MAIN_ROWS_GRID: KeyGridTuple
-    row_heights_grid: SizeTuple
-    col_widths_grid: SizeTuple
-    ASTERISK_COLUMN_INDEX_GRID: float
-
-    VOWEL_ROW_KEYS_LEFT: KeyGridTuple
-    VOWEL_ROW_KEYS_RIGHT: KeyGridTuple
-    vowel_set_widths: SizeTuple
-    vowel_set_heights: SizeTuple
-    vowel_set_offset: Ref[float]
-
-    LOW_ROW: float

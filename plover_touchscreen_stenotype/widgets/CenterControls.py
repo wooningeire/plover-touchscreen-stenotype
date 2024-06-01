@@ -16,9 +16,11 @@ from PyQt5.QtGui import (
 
 from typing import Callable
 
-from ..util import UseDpi, on, watch, FONT_FAMILY
+from ..lib.reactivity import watch
+from ..lib.UseDpi import UseDpi
+from ..lib.constants import FONT_FAMILY
 
-class FramelessControls(QWidget):
+class CenterControls(QWidget):
     def __init__(self, on_mouse_press: Callable[[QMouseEvent], None], toolbar: ToolBar, parent: QWidget=None):
         super().__init__(parent)
 

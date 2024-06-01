@@ -29,7 +29,8 @@ else:
 
 from .FloatInput import FloatSlider, FloatEntry
 from ..settings import Settings, KeyLayout
-from ..util import Ref, on, watch_many, FONT_FAMILY
+from ..lib.reactivity import Ref, on, watch_many
+from ..lib.constants import FONT_FAMILY
 
 
 class SettingsDialog(QDialog):

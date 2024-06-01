@@ -14,7 +14,7 @@ from PyQt5.QtGui import (
 from functools import wraps
 from typing import Callable, Any
 
-from ..util import on
+from ..lib.reactivity import on
 
 
 def block_signals(fn: Callable[[Any], None]):

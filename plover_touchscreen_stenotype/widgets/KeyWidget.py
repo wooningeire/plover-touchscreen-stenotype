@@ -13,7 +13,7 @@ from PyQt5.QtGui import (
 )
 
 
-from plover_touchscreen_stenotype.util import FONT_FAMILY
+from ..lib.constants import FONT_FAMILY
 
 
 class KeyWidget(QToolButton):

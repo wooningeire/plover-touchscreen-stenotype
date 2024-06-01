@@ -24,11 +24,12 @@ from PyQt5.QtGui import (
 
 
 from .settings import Settings
-from .util import Ref, on, on_many, watch, UseDpi
+from .lib.reactivity import Ref, on, on_many, watch
+from .lib.UseDpi import UseDpi
 from .widgets.KeyboardWidget import KeyboardWidget
 from .widgets.StrokePreview import StrokePreview
 from .widgets.SettingsDialog import SettingsDialog
-from .widgets.FramelessControls import FramelessControls
+from .widgets.CenterControls import CenterControls
 
 
 _window_instance: "Main | None" = None
@@ -145,7 +146,7 @@ class Main(Tool):
             toolbar.setIconSize(QSize(dpi.dp(32), dpi.dp(32)))
         toolbar.setOrientation(Qt.Vertical)
 
-        controls = FramelessControls(self.mousePressEvent, toolbar, self)
+        controls = CenterControls(self.mousePressEvent, toolbar, self)
 
         layout = QGridLayout(self)
         layout.addWidget(stroke_preview, 0, 0)

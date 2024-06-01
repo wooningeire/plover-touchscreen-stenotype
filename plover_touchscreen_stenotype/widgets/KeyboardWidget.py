@@ -26,7 +26,9 @@ from .KeyWidget import KeyWidget
 from .RotatableKeyContainer import RotatableKeyContainer
 from .build_keyboard import use_build_keyboard
 from ..settings import Settings, KeyLayout
-from ..util import UseDpi, Ref, watch, KEY_STYLESHEET
+from ..lib.reactivity import Ref, watch
+from ..lib.UseDpi import UseDpi
+from ..lib.constants import KEY_STYLESHEET
 
 
 class KeyboardWidget(QWidget):

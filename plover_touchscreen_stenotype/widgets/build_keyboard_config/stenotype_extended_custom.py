@@ -2,7 +2,8 @@ from math import sin, cos, radians
 from typing import Callable
 
 from ...settings import Settings
-from ...util import Ref, computed, LayoutDescriptor, KeyColumnsTuple, KeyGridTuple
+from ...lib.reactivity import Ref, computed
+from ...lib.types import LayoutDescriptor, KeyColumnsTuple, KeyGridTuple
 
 def build_layout_descriptor(settings: Settings) -> LayoutDescriptor:
     #region Key layouts

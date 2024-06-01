@@ -25,7 +25,7 @@ else:
     KeyboardWidget = object
 
 from .KeyWidget import KeyWidget
-from ..util import on, KEY_STYLESHEET
+from ..lib.constants import KEY_STYLESHEET
 
 class RotatableKeyContainer(QGraphicsView):
     """

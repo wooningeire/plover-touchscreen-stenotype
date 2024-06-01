@@ -24,7 +24,9 @@ from math import cos, radians
 from typing import Iterable
 
 from ..settings import Settings, KeyLayout
-from ..util import UseDpi, Ref, watch, watch_many, FONT_FAMILY
+from ..lib.reactivity import Ref, watch, watch_many
+from ..lib.UseDpi import UseDpi
+from ..lib.constants import FONT_FAMILY
 
 class StrokePreview(QWidget):
     def __init__(self, engine: Engine, settings: Settings, right_left_width_diff: Ref[float], parent: QWidget=None):

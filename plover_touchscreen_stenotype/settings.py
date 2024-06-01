@@ -8,7 +8,7 @@ from enum import Enum, auto
 from weakref import WeakKeyDictionary
 from typing import TypeVar, Generic, Any
 
-from .util import Ref, RefAttr, on_many
+from .lib.reactivity import Ref, RefAttr, on_many
 
 
 T = TypeVar("T")
