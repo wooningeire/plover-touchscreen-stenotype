@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from .reactivity import Ref
+from ..reactivity import Ref
 
 KeyColumnsTuple = tuple[
     tuple[

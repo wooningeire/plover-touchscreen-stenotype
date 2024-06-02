@@ -15,21 +15,21 @@ from math import sin, cos, radians
 from functools import partial
 from typing import TYPE_CHECKING, Callable, Iterable
 if TYPE_CHECKING:
-    from .KeyboardWidget import KeyboardWidget
+    from ...widgets.KeyboardWidget import KeyboardWidget
 else:
     KeyboardWidget = object
 
-from .KeyWidget import KeyWidget
-from .RotatableKeyContainer import RotatableKeyContainer
-from ..settings import Settings
-from ..lib.reactivity import Ref, computed, on, on_many, watch, watch_many
-from ..lib.UseDpi import UseDpi
+from ...widgets.KeyWidget import KeyWidget
+from ...widgets.RotatableKeyContainer import RotatableKeyContainer
+from ...settings import Settings
+from ..reactivity import Ref, computed, on, on_many, watch, watch_many
+from ..UseDpi import UseDpi
 
 
 #region Exports
 
 def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi: UseDpi):
-    from .build_keyboard_config.english_stenotype import build_layout_descriptor
+    from .descriptors.english_stenotype import build_layout_descriptor
     layout_descriptor = build_layout_descriptor(settings, keyboard_widget)
 
     MAIN_ROWS_STAGGERED_LEFT = layout_descriptor.MAIN_ROWS_STAGGERED_LEFT

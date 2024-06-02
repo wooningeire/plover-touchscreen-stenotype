@@ -22,7 +22,7 @@ else:
 
 from .KeyWidget import KeyWidget
 from .RotatableKeyContainer import RotatableKeyContainer
-from .build_keyboard import use_build_keyboard
+from ..lib.keyboard_layout.use_build_keyboard import use_build_keyboard
 from ..settings import Settings
 from ..lib.reactivity import Ref, RefAttr, watch
 from ..lib.UseDpi import UseDpi
@@ -32,7 +32,6 @@ from ..lib.constants import KEY_STYLESHEET
 class KeyboardWidget(QWidget):
     end_stroke = pyqtSignal(set)  # set[str]
     current_stroke_change = pyqtSignal(set)  # set[str]
-    after_touch_event = pyqtSignal()
 
     
     num_bar_pressed = RefAttr(bool)
@@ -104,8 +103,6 @@ class KeyboardWidget(QWidget):
 
         if not isinstance(event, QTouchEvent):
             return super().event(event)
-
-        self.after_touch_event.emit()
 
         # Variables for detecting changes post-update
         had_num_bar = "#" in self.__current_stroke_keys
