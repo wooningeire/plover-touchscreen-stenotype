@@ -2,13 +2,11 @@ from PyQt5.QtCore import (
     Qt,
     QEvent,
     pyqtSignal,
-    QTimer,
     QPoint,
 )
 from PyQt5.QtWidgets import (
     QWidget,
     QSizePolicy,
-    QGraphicsView,
 )
 from PyQt5.QtGui import (
     QTouchEvent,
@@ -167,7 +165,7 @@ class KeyboardWidget(QWidget):
                 yield key_widget
 
 
-    def __key_widget_at(self, point: QPoint):
+    def __key_widget_at(self, point: QPoint) -> "KeyWidget | None":
         touched_widget = self.childAt(point)
         if touched_widget is None: return
 
