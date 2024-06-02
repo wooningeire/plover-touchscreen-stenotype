@@ -13,13 +13,14 @@ from PyQt5.QtGui import (
 )
 
 
+from ..lib.reactivity import Ref, watch
 from ..lib.constants import FONT_FAMILY
 
 
 class KeyWidget(QToolButton):
     #region Overrides
 
-    def __init__(self, values: list[str], label: str, parent: QWidget=None):
+    def __init__(self, values: list[str], label_maybe_ref: "str | Ref[str]", parent: QWidget=None):
         # super().__init__(label, parent)
         super().__init__(parent)
 
@@ -28,7 +29,7 @@ class KeyWidget(QToolButton):
         self.__touched = False
         self.__matched = False
 
-        self.__setup_ui(label)
+        self.__setup_ui(label_maybe_ref)
 
     def event(self, event: QEvent):
         # Prevents automatic button highlighting
@@ -39,11 +40,17 @@ class KeyWidget(QToolButton):
 
     #endregion
 
-    def __setup_ui(self, label):
-        self.setText(label)
+    def __setup_ui(self, label_maybe_ref: "str | Ref[str]"):
+        self.setFont(QFont(FONT_FAMILY, 16))
 
-        if label:
-            self.setFont(QFont(FONT_FAMILY, 16))
+        if isinstance(label_maybe_ref, str):
+            label: str = label_maybe_ref
+            self.setText(label)
+        else:
+            label_ref: Ref[str] = label_maybe_ref
+            @watch(label_ref.change)
+            def set_label():
+                self.setText(label_ref.value)
 
 
         # self.setMinimumSize(0, 0)
@@ -51,10 +58,6 @@ class KeyWidget(QToolButton):
 
         # self.setAttribute(Qt.WA_AcceptTouchEvents)
         self.setFocusPolicy(Qt.NoFocus)
-
-
-    def num_bar_pressed_handler(self, label: str, num_bar_label: str):
-        return lambda num_bar_pressed: self.setText(num_bar_label if num_bar_pressed else label)
 
 
     @pyqtProperty(bool)

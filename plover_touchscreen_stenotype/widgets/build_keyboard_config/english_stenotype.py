@@ -1,12 +1,20 @@
 from math import sin, cos, radians
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 
 from ...settings import Settings
 from ...lib.reactivity import Ref, computed
 from ...lib.types import LayoutDescriptor, KeyColumnsTuple, KeyGridTuple
+if TYPE_CHECKING:
+    from ..KeyboardWidget import KeyboardWidget
+else:
+    KeyboardWidget = object
+
+
         
-def build_layout_descriptor(settings: Settings) -> LayoutDescriptor:
+def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget) -> LayoutDescriptor:
     #region Key layouts
+    def _num_bar_affected_label(default_label: str, number_label: str):
+        return computed(lambda: number_label if keyboard_widget.num_bar_pressed else default_label, keyboard_widget.num_bar_pressed_ref)
 
     LOW_ROW = 2
 
@@ -15,17 +23,17 @@ def build_layout_descriptor(settings: Settings) -> LayoutDescriptor:
         (
             (["#"], "#"),
             (["#", "S-"], ""),
-            (["S-"], "S", 3, "1"),
+            (["S-"], _num_bar_affected_label("S", "1"), 3),
         ), (
-            (["T-"], "T", 1, "2"),
+            (["T-"], _num_bar_affected_label("T", "2")),
             (["T-", "K-"], ""),
             (["K-"], "K"),
         ), (
-            (["P-"], "P", 1, "3"),
+            (["P-"], _num_bar_affected_label("P", "3")),
             (["P-", "W-"], ""),
             (["W-"], "W"),
         ), (
-            (["H-"], "H", 1, "4"),
+            (["H-"], _num_bar_affected_label("H", "4")),
             (["H-", "R-"], ""),
             (["R-"], "R"),
         ), (
@@ -45,19 +53,19 @@ def build_layout_descriptor(settings: Settings) -> LayoutDescriptor:
             (["*", "-F", "-R"], ""),
             (["*", "-R"], ""),
         ), (
-            (["-F"], "F", 1, "6"),
+            (["-F"], _num_bar_affected_label("F", "6")),
             (["-F", "-R"], ""),
             (["-R"], "R"),
         ), (
-            (["-P"], "P", 1, "7"),
+            (["-P"], _num_bar_affected_label("P", "7")),
             (["-P", "-B"], ""),
             (["-B"], "B"),
         ), (
-            (["-L"], "L", 1, "8"),
+            (["-L"], _num_bar_affected_label("L", "8")),
             (["-L", "-G"], ""),
             (["-G"], "G"),
         ), (
-            (["-T"], "T", 1, "9"),
+            (["-T"], _num_bar_affected_label("T", "9")),
             (["-T", "-S"], ""),
             (["-S"], "S"),
         ), (
@@ -72,9 +80,9 @@ def build_layout_descriptor(settings: Settings) -> LayoutDescriptor:
     )
 
     VOWEL_ROW_KEYS_LEFT: KeyGridTuple = (
-        (["A-"], "A", (0, 0), "5"),
+        (["A-"], _num_bar_affected_label("A", "5"), (0, 0)),
         (["A-", "O-"], "", (0, 1)),
-        (["O-"], "O", (0, 2), "0"),
+        (["O-"], _num_bar_affected_label("O", "0"), (0, 2)),
     )
 
     VOWEL_ROW_KEYS_RIGHT: KeyGridTuple = (

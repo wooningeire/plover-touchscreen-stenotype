@@ -24,7 +24,7 @@ from .KeyWidget import KeyWidget
 from .RotatableKeyContainer import RotatableKeyContainer
 from .build_keyboard import use_build_keyboard
 from ..settings import Settings
-from ..lib.reactivity import Ref, watch
+from ..lib.reactivity import Ref, RefAttr, watch
 from ..lib.UseDpi import UseDpi
 from ..lib.constants import KEY_STYLESHEET
 
@@ -33,10 +33,11 @@ class KeyboardWidget(QWidget):
     end_stroke = pyqtSignal(set)  # set[str]
     current_stroke_change = pyqtSignal(set)  # set[str]
     after_touch_event = pyqtSignal()
-    num_bar_pressed_change = pyqtSignal(bool)
 
+    
+    num_bar_pressed = RefAttr(bool)
+    num_bar_pressed_ref = num_bar_pressed.ref_getter()
 
-    __key_widgets: list[KeyWidget]
 
     def __init__(self, settings: Settings, left_right_width_diff: Ref[float], parent: QWidget=None):
         super().__init__(parent)
@@ -45,6 +46,9 @@ class KeyboardWidget(QWidget):
 
         self.__touches_to_key_widgets: dict[int, KeyWidget] = {} # keys of dict are from QTouchPoint::id
         self.__key_widget_touch_counter: Counter[KeyWidget] = Counter()
+        self.__key_widgets: list[KeyWidget] = []
+
+        self.num_bar_pressed = False
 
         self.settings = settings
 
@@ -87,7 +91,6 @@ class KeyboardWidget(QWidget):
         # Detach listeners on the old key widgets to avoid leaking memory
         # TODO removing all listeners may become overzealous in the future
         self.__dpi.change.disconnect()
-        self.num_bar_pressed_change.disconnect()
 
         # https://stackoverflow.com/questions/10416582/replacing-layout-on-a-qwidget-with-another-layout
         QWidget().setLayout(self.layout()) # Unparent and destroy the current layout so it can be replaced
@@ -119,7 +122,7 @@ class KeyboardWidget(QWidget):
             if len(self.__current_stroke_keys) > old_stroke_length and self.__current_stroke_keys:
                 self.current_stroke_change.emit(self.__current_stroke_keys)
             if not had_num_bar and "#" in self.__current_stroke_keys:
-                self.num_bar_pressed_change.emit(True)
+                self.num_bar_pressed = True
             
 
         elif event.type() == QEvent.TouchEnd:
@@ -131,7 +134,7 @@ class KeyboardWidget(QWidget):
                 self.__key_widget_touch_counter.clear()
             
             if had_num_bar:
-                self.num_bar_pressed_change.emit(False)
+                self.num_bar_pressed = False
 
             
         self.__update_key_widget_styles_and_state(self.__key_widget_touch_counter.keys())

@@ -1,11 +1,15 @@
 from math import sin, cos, radians
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 
 from ...settings import Settings
 from ...lib.reactivity import Ref, computed
 from ...lib.types import LayoutDescriptor, KeyColumnsTuple, KeyGridTuple
+if TYPE_CHECKING:
+    from ..KeyboardWidget import KeyboardWidget
+else:
+    KeyboardWidget = object
 
-def build_layout_descriptor(settings: Settings) -> LayoutDescriptor:
+def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget) -> LayoutDescriptor:
     #region Key layouts
 
     LOW_ROW = 2
@@ -21,28 +25,23 @@ def build_layout_descriptor(settings: Settings) -> LayoutDescriptor:
             (["^-", "+-", "S-"], ""),
             (["+-", "S-"], ""),
         ), (
-            (["S-"], "S", 3, "1"),
+            (["S-"], "S", 3),
         ), (
-            (["T-"], "T", 1, "2"),
+            (["T-"], "T"),
             (["T-", "K-"], ""),
             (["K-"], "K"),
         ), (
-            (["P-"], "P", 1, "3"),
+            (["P-"], "P"),
             (["P-", "W-"], ""),
             (["W-"], "W"),
         ), (
-            (["H-"], "H", 1, "4"),
+            (["H-"], "H"),
             (["H-", "R-"], ""),
             (["R-"], "R"),
         ), (
             (["H-", "&-"], ""),
             (["H-", "R-", "&-"], ""),
             (["R-", "&-"], ""),
-        # ), (
-        #     (["&-"], "&&", 3), # ＋
-        # ), (
-        #     (["&-", ".-"], "&&&&", 3),
-        # ),
         ), (
             (["&-"], "&&", 3), # ＋
         ),
@@ -56,19 +55,19 @@ def build_layout_descriptor(settings: Settings) -> LayoutDescriptor:
             (["*", "-F", "-R"], ""),
             (["*", "-R"], ""),
         ), (
-            (["-F"], "F", 1, "6"),
+            (["-F"], "F"),
             (["-F", "-R"], ""),
             (["-R"], "R"),
         ), (
-            (["-P"], "P", 1, "7"),
+            (["-P"], "P"),
             (["-P", "-B"], ""),
             (["-B"], "B"),
         ), (
-            (["-L"], "L", 1, "8"),
+            (["-L"], "L"),
             (["-L", "-G"], ""),
             (["-G"], "G"),
         ), (
-            (["-T"], "T", 1, "9"),
+            (["-T"], "T"),
             (["-T", "-S"], ""),
             (["-S"], "S"),
         ), (
@@ -83,9 +82,9 @@ def build_layout_descriptor(settings: Settings) -> LayoutDescriptor:
     )
 
     VOWEL_ROW_KEYS_LEFT: KeyGridTuple = (
-        (["A-"], "A", (0, 0), "5"),
+        (["A-"], "A", (0, 0)),
         (["A-", "O-"], "", (0, 1)),
-        (["O-"], "O", (0, 2), "0"),
+        (["O-"], "O", (0, 2)),
         
         (["#", "A-"], "", (1, 0)),
         (["#", "A-", "O-"], "", (1, 1)),

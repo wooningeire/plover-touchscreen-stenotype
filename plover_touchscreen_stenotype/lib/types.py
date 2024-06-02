@@ -4,15 +4,14 @@ from .reactivity import Ref
 
 KeyColumnsTuple = tuple[
     tuple[
-        tuple[list[str], str, "int | None", "str | None"]
+        tuple[list[str], "str | Ref[str]", "int | None"]
     ]
 ]
 KeyGridTuple = tuple[
     tuple[
         list[str],
-        str,
+        "str | Ref[str]",
         "tuple[int, int] | tuple[int, int, int, int]",
-        "str | None",
     ]
 ]
 SizeTuple = tuple[Ref[float]]

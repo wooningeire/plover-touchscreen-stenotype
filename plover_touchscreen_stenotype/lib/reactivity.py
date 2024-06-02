@@ -15,33 +15,38 @@ class RefAttr(Generic[T]):
 
     def __init__(self, expected_type: type[T]):
         # self.signal = pyqtSignal(expected_type)
-        pass
-
+        self.ref_name = ""
+        
     def __set_name__(self, owner_class: type, attr_name: str):
-        self.__ref_name = f"{attr_name}_ref"
+        pass
+        # self.__ref_name = f"{attr_name}_ref"
         # self.__signal_name = f"{attr_name}_change"
 
     def __get__(self, instance: Any, owner_class: type) -> T:
         if instance is None:
             return self
-        return cast(Ref[T], getattr(instance, self.__ref_name)).value
+        return cast(Ref[T], getattr(instance, self.ref_name)).value
 
     def __set__(self, instance: Any, value: T):
-        if not hasattr(instance, self.__ref_name):
-            setattr(instance, self.__ref_name, Ref(value))
+        if not hasattr(instance, self.ref_name):
+            setattr(instance, self.ref_name, Ref(value))
         else:
-            cast(Ref[T], getattr(instance, self.__ref_name)).value = value
+            cast(Ref[T], getattr(instance, self.ref_name)).value = value
 
         # setattr(instance, self.__private_attr_name, value)
         # cast(pyqtBoundSignal, getattr(instance, self.__signal_name)).emit(value)
 
     def ref_getter(self) -> "_RefGetter[T]":
-        return _RefGetter()
+        return _RefGetter(self)
 
 
 class _RefGetter(Generic[T]):
+    def __init__(self, ref_attr: RefAttr[T]):
+        self.__ref_attr = ref_attr
+
     def __set_name__(self, owner_class: type, attr_name: str):
         self.__private_attr_name = f"__{owner_class.__name__}_{attr_name}"
+        self.__ref_attr.ref_name = attr_name
 
     def __get__(self, instance: Any, owner_class: type) -> "Ref[T]":
         if instance is None:

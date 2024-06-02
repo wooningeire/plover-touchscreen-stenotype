@@ -30,7 +30,7 @@ from ..lib.UseDpi import UseDpi
 
 def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi: UseDpi):
     from .build_keyboard_config.english_stenotype import build_layout_descriptor
-    layout_descriptor = build_layout_descriptor(settings)
+    layout_descriptor = build_layout_descriptor(settings, keyboard_widget)
 
     MAIN_ROWS_STAGGERED_LEFT = layout_descriptor.MAIN_ROWS_STAGGERED_LEFT
     MAIN_ROWS_STAGGERED_RIGHT = layout_descriptor.MAIN_ROWS_STAGGERED_RIGHT
@@ -99,11 +99,6 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
 
                 key_widget = KeyWidget(values, label, keyboard_widget)
                 key_widgets.append(key_widget)
-
-                if len(rest) > 1:
-                    num_bar_label: str = rest[1]
-                    keyboard_widget.num_bar_pressed_change.connect(key_widget.num_bar_pressed_handler(label, num_bar_label))
-
 
                 if row_pos <= LOW_ROW < row_pos + row_span:
                     def height_boost(col_offset_cm: Ref[float]=col_offset_cm):
@@ -222,7 +217,7 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
         set_layout.setContentsMargins(0, 0, 0, 0)
         set_layout.setSizeConstraint(QLayout.SetFixedSize)
 
-        for values, label, grid_position, *rest in vowel_key_descriptors:
+        for values, label, grid_position in vowel_key_descriptors:
             key_widget = KeyWidget(values, label, keyboard_widget)
             key_widgets.append(key_widget)
 
@@ -236,10 +231,6 @@ def use_build_keyboard(settings: Settings, keyboard_widget: KeyboardWidget, dpi:
             
             widths = vowel_set_widths[col_start:col_start + col_span]
             heights = vowel_set_heights[row_start:row_start + row_span]
-
-            if len(rest) > 0:
-                num_bar_label: str = rest[0]
-                keyboard_widget.num_bar_pressed_change.connect(key_widget.num_bar_pressed_handler(label, num_bar_label))
 
 
             @watch_many(dpi.change, *(width.change for width in widths), *(height.change for height in heights), parent=key_widget)
