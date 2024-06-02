@@ -33,11 +33,6 @@ class LayoutDescriptor:
     N_INDEX_COLS_LEFT: float
     N_INDEX_COLS_RIGHT: float
 
-    MAIN_ROWS_GRID: KeyGridTuple
-    row_heights_grid: SizeTuple
-    col_widths_grid: SizeTuple
-    ASTERISK_COLUMN_INDEX_GRID: float
-
     VOWEL_ROW_KEYS_LEFT: KeyGridTuple
     VOWEL_ROW_KEYS_RIGHT: KeyGridTuple
     vowel_set_widths: SizeTuple

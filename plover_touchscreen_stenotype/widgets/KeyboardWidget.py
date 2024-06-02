@@ -23,7 +23,7 @@ else:
 from .KeyWidget import KeyWidget
 from .RotatableKeyContainer import RotatableKeyContainer
 from .build_keyboard import use_build_keyboard
-from ..settings import Settings, KeyLayout
+from ..settings import Settings
 from ..lib.reactivity import Ref, watch
 from ..lib.UseDpi import UseDpi
 from ..lib.constants import KEY_STYLESHEET
@@ -36,11 +36,12 @@ class KeyboardWidget(QWidget):
     num_bar_pressed_change = pyqtSignal(bool)
 
 
+    __key_widgets: list[KeyWidget]
+
     def __init__(self, settings: Settings, left_right_width_diff: Ref[float], parent: QWidget=None):
         super().__init__(parent)
 
         self.__current_stroke_keys: set[str] = set()
-        self.__key_widgets: list[KeyWidget] = []
 
         self.__touches_to_key_widgets: dict[int, KeyWidget] = {} # keys of dict are from QTouchPoint::id
         self.__key_widget_touch_counter: Counter[KeyWidget] = Counter()
@@ -54,13 +55,13 @@ class KeyboardWidget(QWidget):
         build_keyboard, left_right_width_diff_src = use_build_keyboard(self.settings, self, dpi)
 
         self.__build_keyboard = build_keyboard
-        self.setLayout(build_keyboard[self.settings.key_layout](self.__key_widgets))
+        layout, key_widgets = build_keyboard()
+        self.setLayout(layout)
+        self.__key_widgets = key_widgets
 
         @watch(left_right_width_diff_src.change)
         def update_left_right_width_diff():
             left_right_width_diff.value = left_right_width_diff_src.value
-
-        self.settings.key_layout_ref.change.connect(self.__rebuild_layout)
 
 
         self.setStyleSheet(KEY_STYLESHEET)
@@ -82,8 +83,7 @@ class KeyboardWidget(QWidget):
     #     # cast(Main, self.window()).resize_from_center(0, 0)
 
 
-    def __rebuild_layout(self, value: KeyLayout):
-        self.__key_widgets = []
+    def __rebuild_layout(self):
         # Detach listeners on the old key widgets to avoid leaking memory
         # TODO removing all listeners may become overzealous in the future
         self.__dpi.change.disconnect()
@@ -91,7 +91,9 @@ class KeyboardWidget(QWidget):
 
         # https://stackoverflow.com/questions/10416582/replacing-layout-on-a-qwidget-with-another-layout
         QWidget().setLayout(self.layout()) # Unparent and destroy the current layout so it can be replaced
-        self.setLayout(self.__build_keyboard[value](self.__key_widgets))
+        layout, key_widgets = self.__build_keyboard()
+        self.setLayout(layout)
+        self.__key_widgets = key_widgets
         
 
     def event(self, event: QEvent) -> bool:

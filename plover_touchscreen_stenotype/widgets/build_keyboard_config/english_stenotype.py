@@ -8,9 +8,7 @@ from ...lib.types import LayoutDescriptor, KeyColumnsTuple, KeyGridTuple
 def build_layout_descriptor(settings: Settings) -> LayoutDescriptor:
     #region Key layouts
 
-    TOP_ROW = 0
     LOW_ROW = 2
-    LOW_COMPOUND_ROW = 1
 
     # [keys], label, rowSpan?, numberLabel?
     MAIN_ROWS_KEYS_STAGGERED_LEFT: KeyColumnsTuple = (
@@ -71,48 +69,6 @@ def build_layout_descriptor(settings: Settings) -> LayoutDescriptor:
             (["-D", "-Z"], ""),
             (["-Z"], "Z"),
         ),
-    )
-
-    # [keys], label, (row, column, rowSpan?, columnSpan?), numberLabel?
-    MAIN_ROWS_KEYS_GRID: KeyGridTuple = (
-        (["#"], "#", (TOP_ROW, 0)),
-        (["S-"], "S", (LOW_ROW, 0), "1"),
-        (["T-"], "T", (TOP_ROW, 1), "2"),
-        (["K-"], "K", (LOW_ROW, 1)),
-        (["P-"], "P", (TOP_ROW, 2), "3"),
-        (["W-"], "W", (LOW_ROW, 2)),
-        (["H-"], "H", (TOP_ROW, 3), "4"),
-        (["R-"], "R", (LOW_ROW, 3)),
-        (["H-", "*"], "", (TOP_ROW, 4)),
-        (["R-", "*"], "", (LOW_ROW, 4)),
-        (["*"], "🞱", (TOP_ROW, 5, 3, 1)),
-        (["*", "-F"], "", (TOP_ROW, 6)),
-        (["*", "-R"], "", (LOW_ROW, 6)),
-        (["-F"], "F", (TOP_ROW, 7), "6"),
-        (["-R"], "R", (LOW_ROW, 7)),
-        (["-P"], "P", (TOP_ROW, 8), "7"),
-        (["-B"], "B", (LOW_ROW, 8)),
-        (["-L"], "L", (TOP_ROW, 9), "8"),
-        (["-G"], "G", (LOW_ROW, 9)),
-        (["-T"], "T", (TOP_ROW, 10), "9"),
-        (["-S"], "S", (LOW_ROW, 10)),
-        (["-T", "-D"], "", (TOP_ROW, 11)),
-        (["-S", "-Z"], "", (LOW_ROW, 11)),
-        (["-D"], "D", (TOP_ROW, 12)),
-        (["-Z"], "Z", (LOW_ROW, 12)),
-
-        (["#", "S-"], "", (LOW_COMPOUND_ROW, 0)),
-        (["T-", "K-"], "", (LOW_COMPOUND_ROW, 1)),
-        (["P-", "W-"], "", (LOW_COMPOUND_ROW, 2)),
-        (["H-", "R-"], "", (LOW_COMPOUND_ROW, 3)),
-        (["H-", "R-", "*"], "", (LOW_COMPOUND_ROW, 4)),
-        (["*", "-R", "-F"], "", (LOW_COMPOUND_ROW, 6)),
-        (["-F", "-R"], "", (LOW_COMPOUND_ROW, 7)),
-        (["-P", "-B"], "", (LOW_COMPOUND_ROW, 8)),
-        (["-L", "-G"], "", (LOW_COMPOUND_ROW, 9)),
-        (["-T", "-S"], "", (LOW_COMPOUND_ROW, 10)),
-        (["-T", "-S", "-D", "-Z"], "", (LOW_COMPOUND_ROW, 11)),
-        (["-D", "-Z"], "", (LOW_COMPOUND_ROW, 12)),
     )
 
     VOWEL_ROW_KEYS_LEFT: KeyGridTuple = (
@@ -195,25 +151,6 @@ def build_layout_descriptor(settings: Settings) -> LayoutDescriptor:
     base_index_width = computed(lambda: key_width.value + index_stretch.value,
             key_width, index_stretch)
     reduced_index_width = reduced_size(base_index_width, index_compound_width)
-
-    col_widths_grid = (
-        computed(lambda: key_width.value + pinky_stretch.value,
-                key_width, pinky_stretch),
-        key_width,
-        key_width,
-        reduced_index_width,  # H-, R-
-        compound_key_size,
-        computed(lambda: reduced_key_width.value * 2 + key_width.value * 2.5,
-                reduced_key_width, key_width),  # *
-        compound_key_size,
-        reduced_index_width,  # -F, -R
-        key_width,
-        key_width,
-        computed(lambda: reduced_key_width.value + pinky_stretch.value,
-                reduced_key_width, pinky_stretch),  # -T, -S
-        compound_key_size,
-        reduced_key_width,  # -D, -Z
-    )
 
 
     END_COLUMN_WIDTH_BOOST = 0.4
@@ -321,11 +258,6 @@ def build_layout_descriptor(settings: Settings) -> LayoutDescriptor:
 
         N_INDEX_COLS_LEFT=3,
         N_INDEX_COLS_RIGHT=5,
-
-        MAIN_ROWS_GRID=MAIN_ROWS_KEYS_GRID,
-        row_heights_grid=row_heights,
-        col_widths_grid=col_widths_grid,
-        ASTERISK_COLUMN_INDEX_GRID=5,
 
         VOWEL_ROW_KEYS_LEFT=VOWEL_ROW_KEYS_LEFT,
         VOWEL_ROW_KEYS_RIGHT=VOWEL_ROW_KEYS_RIGHT,

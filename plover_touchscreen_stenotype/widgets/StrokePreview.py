@@ -23,7 +23,7 @@ from math import cos, radians
 from typing import Iterable
 
 from .DisplayAlignmentLayout import DisplayAlignmentLayout
-from ..settings import Settings, KeyLayout
+from ..settings import Settings
 from ..lib.reactivity import Ref, watch, watch_many
 from ..lib.UseDpi import UseDpi
 from ..lib.constants import FONT_FAMILY
@@ -93,16 +93,10 @@ class StrokePreview(QWidget):
         display_alignment_layout = DisplayAlignmentLayout(right_left_width_diff)
         display_alignment_layout.addLayout(labels_layout, 0, 0)
 
-        @watch_many(dpi.change, self.__settings.key_layout_ref.change)
-        def reposition_labels():
-            if self.__settings.key_layout == KeyLayout.GRID:
-                labels_layout.setAlignment(Qt.AlignBottom)
-                top_spacer.changeSize(0, 0)
-            else:
-                labels_layout.setAlignment(Qt.AlignTop)
-                top_spacer.changeSize(0, -8)
+        labels_layout.setAlignment(Qt.AlignTop)
+        top_spacer.changeSize(0, -8)
 
-            labels_layout.invalidate()  # Must be called for layout to move
+        # labels_layout.invalidate()  # Must be called for layout to move
 
         self.setLayout(display_alignment_layout)
         #endregion

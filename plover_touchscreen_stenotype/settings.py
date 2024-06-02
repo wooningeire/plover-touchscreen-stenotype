@@ -54,7 +54,7 @@ class KeyLayout(Enum):
 
 
 class Settings(QObject):
-    key_layout = _PersistentSetting(KeyLayout, type(None))
+    # key_layout = _PersistentSetting(KeyLayout, type(None))
 
     stroke_preview_stroke = _PersistentSetting(bool)
     stroke_preview_translation = _PersistentSetting(bool)
@@ -84,7 +84,7 @@ class Settings(QObject):
     frameless = _PersistentSetting(bool)
 
 
-    key_layout_ref = key_layout.ref_getter()
+    # key_layout_ref = key_layout.ref_getter()
 
     stroke_preview_stroke_ref = stroke_preview_stroke.ref_getter()
     stroke_preview_translation_ref = stroke_preview_translation.ref_getter()
@@ -117,7 +117,7 @@ class Settings(QObject):
     def __init__(self):
         super().__init__()
 
-        self.key_layout = KeyLayout.STAGGERED
+        # self.key_layout = KeyLayout.STAGGERED
 
         self.stroke_preview_stroke = True
         self.stroke_preview_translation = True

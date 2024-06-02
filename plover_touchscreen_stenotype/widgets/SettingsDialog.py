@@ -28,7 +28,7 @@ else:
     Main = object
 
 from .FloatInput import FloatSlider, FloatEntry
-from ..settings import Settings, KeyLayout
+from ..settings import Settings
 from ..lib.reactivity import Ref, on, watch_many
 from ..lib.constants import FONT_FAMILY
 
@@ -60,10 +60,8 @@ class SettingsDialog(QDialog):
         key_layout_group = QButtonGroup(key_layout_box)
 
         key_layout_radios = {
-            KeyLayout.STAGGERED: QRadioButton("Staggered", key_layout_box),
-            KeyLayout.GRID: QRadioButton("Grid", key_layout_box),
         }
-        key_layout_radios[settings.key_layout].setChecked(True)
+        # key_layout_radios[settings.key_layout].setChecked(True)
 
         self.__key_layout_radios = {
             id(button): value
@@ -81,7 +79,7 @@ class SettingsDialog(QDialog):
         @on(key_layout_group.buttonToggled)
         def update_keyboard_layout(button: QRadioButton, checked: bool):
             if not checked: return
-            settings.key_layout = self.__key_layout_radios[id(button)]
+            # settings.key_layout = self.__key_layout_radios[id(button)]
 
 
         stroke_preview_box = QGroupBox("Stroke preview", self)
