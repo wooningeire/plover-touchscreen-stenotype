@@ -12,7 +12,9 @@ from PyQt5.QtGui import (
     QFont,
 )
 
+from plover.steno import Stroke
 
+from ..lib.UseDpi import UseDpi
 from ..lib.reactivity import Ref, watch
 from ..lib.constants import FONT_FAMILY
 
@@ -20,28 +22,21 @@ from ..lib.constants import FONT_FAMILY
 class KeyWidget(QToolButton):
     #region Overrides
 
-    def __init__(self, values: list[str], label_maybe_ref: "str | Ref[str]", parent: QWidget=None):
+    def __init__(self, substroke: Stroke, label_maybe_ref: "str | Ref[str]", parent: "QWidget | None"=None):
         # super().__init__(label, parent)
         super().__init__(parent)
 
-        self.values = values
+        self.substroke = substroke
 
         self.__touched = False
         self.__matched = False
 
-        self.__setup_ui(label_maybe_ref)
 
-    def event(self, event: QEvent):
-        # Prevents automatic button highlighting
-        if event.type() == QEvent.HoverEnter:
-            self.setAttribute(Qt.WA_UnderMouse, False)
+        dpi = UseDpi(self)
 
-        return super().event(event)
-
-    #endregion
-
-    def __setup_ui(self, label_maybe_ref: "str | Ref[str]"):
-        self.setFont(QFont(FONT_FAMILY, 16))
+        @watch(dpi.change)
+        def set_font():
+            self.setFont(QFont(FONT_FAMILY, dpi.dp(8)))
 
         if isinstance(label_maybe_ref, str):
             label: str = label_maybe_ref
@@ -58,6 +53,16 @@ class KeyWidget(QToolButton):
 
         # self.setAttribute(Qt.WA_AcceptTouchEvents)
         self.setFocusPolicy(Qt.NoFocus)
+        
+
+    def event(self, event: QEvent):
+        # Prevents automatic button highlighting
+        if event.type() == QEvent.HoverEnter:
+            self.setAttribute(Qt.WA_UnderMouse, False)
+
+        return super().event(event)
+
+    #endregion
 
 
     @pyqtProperty(bool)

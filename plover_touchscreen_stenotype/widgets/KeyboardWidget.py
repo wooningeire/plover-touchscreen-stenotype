@@ -113,7 +113,7 @@ class KeyboardWidget(QWidget):
             self.__current_stroke_keys.update(
                 key
                 for key_widget in self.__find_updated_key_widgets(event.touchPoints())
-                for key in key_widget.values
+                for key in key_widget.substroke
             )
 
             if len(self.__current_stroke_keys) > old_stroke_length and self.__current_stroke_keys:
@@ -210,7 +210,7 @@ class KeyboardWidget(QWidget):
                 key_widget.matched = True
 
             elif ((not stroke_has_ended and key_widget.matched) # optimization assumes keys will not be removed mid-stroke
-                    or all(key in self.__current_stroke_keys for key in key_widget.values)):
+                    or all(key in self.__current_stroke_keys for key in key_widget.substroke)):
                 key_widget.touched = False
                 key_widget.matched = True
 

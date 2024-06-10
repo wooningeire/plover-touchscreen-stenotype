@@ -25,7 +25,7 @@ else:
     KeyboardWidget = object
 
 from .KeyWidget import KeyWidget
-from ..lib.constants import KEY_STYLESHEET
+from ..lib.constants import GRAPHICS_VIEW_STYLE, KEY_STYLESHEET
 
 class RotatableKeyContainer(QGraphicsView):
     """
@@ -74,7 +74,7 @@ class RotatableKeyContainer(QGraphicsView):
         QTimer.singleShot(0, self.__rescroll)
 
         # Clear default styling
-        self.setStyleSheet("background: #00000000; border: none;")
+        self.setStyleSheet(GRAPHICS_VIEW_STYLE)
 
     """ def event(self, event: QEvent):
         if not isinstance(event, QTouchEvent):

@@ -20,13 +20,17 @@ from PyQt5.QtGui import (
     QIcon,
     QKeySequence,
     QMouseEvent,
+    QFont,
 )
 
+from plover.steno import Stroke
 
 from .settings import Settings
 from .lib.reactivity import Ref, on, on_many, watch
 from .lib.UseDpi import UseDpi
+from .lib.constants import FONT_FAMILY
 from .widgets.KeyboardWidget import KeyboardWidget
+from .widgets.JoysticksWidget import JoysticksWidget
 from .widgets.StrokePreview import StrokePreview
 from .widgets.SettingsDialog import SettingsDialog
 from .widgets.CenterControls import CenterControls
@@ -57,7 +61,7 @@ class Main(Tool):
         self.engine = engine # Override for type hint
         self.__last_stroke_from_widget = False
         """Whether the last emitted stroke originated from this Tool"""
-        self.__last_stroke_keys: set[str] | None = None
+        self.__last_stroke_keys: "Stroke | None" = None
         self.__last_stroke_engine_enabled = False
 
         self.__settings = Settings()
@@ -118,13 +122,19 @@ class Main(Tool):
         self.__prevent_window_focus()
 
 
-        left_right_width_diff = Ref(0)
+        left_right_width_diff = Ref(0.)
 
         self.stroke_preview = stroke_preview = StrokePreview(self.engine, self.__settings, left_right_width_diff, self)
 
-        stenotype = KeyboardWidget(self.__settings, left_right_width_diff, self)
-        stenotype.end_stroke.connect(self.__on_stenotype_input)
-        stenotype.current_stroke_change.connect(self.__on_stroke_change)
+        if False:
+            stenotype = KeyboardWidget(self.__settings, left_right_width_diff, self)
+            stenotype.end_stroke.connect(self.__on_stenotype_input)
+            stenotype.current_stroke_change.connect(self.__on_stroke_change)
+        else:
+            joysticks = JoysticksWidget(self.__settings, left_right_width_diff, self)
+            joysticks.end_stroke.connect(self.__on_stenotype_input)
+            joysticks.current_stroke_change.connect(self.__on_stroke_change)
+
 
         settings_action = QAction(self)
         settings_action.setText("Settings")
@@ -135,7 +145,22 @@ class Main(Tool):
         def trigger_settings_action():
             settings_action.trigger()
 
-        toolbar = ToolBar(settings_action)
+        minimize_action = QAction(self)
+        minimize_action.setIconText("−")
+        minimize_action.triggered.connect(lambda: self.setWindowState(Qt.WindowMinimized))
+        @watch(dpi.change)
+        def set_minimize_action_icon_size():
+            minimize_action.setFont(QFont(FONT_FAMILY, dpi.dp(8)))
+
+        close_action = QAction(self)
+        close_action.setIconText("×")
+        close_action.triggered.connect(lambda: self.setWindowState(Qt.WindowMinimized))
+        @watch(dpi.change)
+        def set_close_action_icon_size():
+            close_action.setFont(QFont(FONT_FAMILY, dpi.dp(8)))
+        
+
+        toolbar = ToolBar(settings_action, minimize_action, close_action)
 
         toolbar.setFocusPolicy(Qt.NoFocus)
         for button in toolbar.findChildren(QWidget):
@@ -151,7 +176,10 @@ class Main(Tool):
         layout = QGridLayout(self)
         layout.addWidget(stroke_preview, 0, 0)
         layout.addWidget(controls, 0, 0, Qt.AlignCenter)
-        layout.addWidget(stenotype, 0, 0)
+        if False:
+            layout.addWidget(stenotype, 0, 0)
+        else:
+            layout.addWidget(joysticks, 0, 0)
         self.setLayout(layout)
 
 
@@ -204,15 +232,15 @@ class Main(Tool):
         #     # self.setAttribute(Qt.WA_X11DoNotAcceptFocus)
 
 
-    def __on_stenotype_input(self, stroke_keys: set[str]):
+    def __on_stenotype_input(self, stroke: Stroke):
         # Temporarily enable steno output (if not already waiting for a `stroked` hook dispatch)
         if not self.__last_stroke_from_widget:
             self.__last_stroke_engine_enabled = self.engine.output
             self.engine.output = True
 
         self.__last_stroke_from_widget = True
-        self.__last_stroke_keys = stroke_keys
-        self.engine._machine._notify(list(stroke_keys))
+        self.__last_stroke_keys = stroke
+        self.engine._machine._notify(stroke.keys())
 
         # Wait until `stroked` hook is dispatched to reset `self.engine.output`, since it must be True for Suggestions to be shown
 
@@ -235,8 +263,8 @@ class Main(Tool):
         self.__last_stroke_keys = None
 
 
-    def __on_stroke_change(self, stroke_keys: set[str]):
-        self.stroke_preview.display_keys(stroke_keys)
+    def __on_stroke_change(self, stroke: Stroke):
+        self.stroke_preview.display_keys(stroke)
 
 
     """ def resize_from_center(self, width: int, height: int):

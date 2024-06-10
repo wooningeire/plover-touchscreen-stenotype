@@ -18,3 +18,5 @@ KeyWidget[touched="true"] {
     background: #41796a;
 }
 """
+
+GRAPHICS_VIEW_STYLE = "background: #00000000; border: none;"

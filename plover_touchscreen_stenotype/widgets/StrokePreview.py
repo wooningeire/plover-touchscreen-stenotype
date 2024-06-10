@@ -115,7 +115,7 @@ class StrokePreview(QWidget):
         #endregion
 
 
-    def display_keys(self, stroke_keys: Iterable[str]):
+    def display_keys(self, stroke: Stroke):
         if not self.__settings.stroke_preview_visible:
             # The coming translation will not be computed
             # When the stroke preview is reenabled, this will cause the placeholder to be shown again instead of an old
@@ -123,7 +123,7 @@ class StrokePreview(QWidget):
             self.__last_translation = None
             return
 
-        translation, stroke_matched = _coming_translation(self.__engine, stroke_keys)
+        translation, stroke_matched = _coming_translation(self.__engine, stroke.keys())
         self.__display_translation(translation, stroke_matched)
 
 
