@@ -30,6 +30,7 @@ class KeyWidget(QToolButton):
 
         self.__touched = False
         self.__matched = False
+        self.__matched_soft = False
 
 
         dpi = UseDpi(self)
@@ -80,3 +81,11 @@ class KeyWidget(QToolButton):
     @matched.setter
     def matched(self, matched: bool):
         self.__matched = matched
+
+    @pyqtProperty(bool)
+    def matched_soft(self):
+        return self.__matched_soft
+    
+    @matched_soft.setter
+    def matched_soft(self, matched_soft: bool):
+        self.__matched_soft = matched_soft

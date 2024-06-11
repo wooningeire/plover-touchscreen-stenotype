@@ -24,10 +24,12 @@ class UseDpi(QObject):
 
         self.__current_screen.physicalDotsPerInchChanged.connect(self.__on_screen_physcial_dpi_change)
         self.__current_screen.logicalDotsPerInchChanged.connect(self.__on_screen_logical_dpi_change)
+        def connect_window_change_event():
+            window_handle = widget.window().windowHandle()
+            if window_handle is None: return
+            window_handle.screenChanged.connect(self.__on_screen_change)
         # `widget.window().windowHandle()` may initially be None on Linux
-        QTimer.singleShot(0,
-            lambda: widget.window().windowHandle().screenChanged.connect(self.__on_screen_change)
-        )
+        QTimer.singleShot(0, connect_window_change_event)
 
     def cm(self, cm: float) -> int:
         """Converts cm to px using the current physical DPI."""

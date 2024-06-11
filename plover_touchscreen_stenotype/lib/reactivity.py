@@ -78,23 +78,26 @@ class Ref(QObject, Generic[T]):
         # so values can be set from lambdas
         self.value = value
 
+    def emit(self):
+        self.change.emit(self.__value)
+
 
 def _create_computed(handler: Callable[[], T]):
     ref = Ref(handler())
 
     def recompute_value():
-        # Blocking signals prevents a computed ref from recalculating multiple times due to simulataneous changes
-        if ref.signalsBlocked(): return
+        # # Blocking signals prevents a computed ref from recalculating multiple times due to simulataneous changes
+        # if ref.signalsBlocked(): return
 
         ref.value = handler()
 
-        ref.blockSignals(True)
-        QTimer.singleShot(0, lambda: ref.blockSignals(False))
+        # ref.blockSignals(True)
+        # QTimer.singleShot(0, lambda: ref.blockSignals(False))
 
     return ref, recompute_value
 
 
-def computed(handler: Callable[[], T], *dependency_refs: Ref[T]):
+def computed(handler: Callable[[], T], *dependency_refs: Ref[Any]):
     ref, recompute = _create_computed(handler)
     for dependency in dependency_refs:
         dependency.change.connect(recompute)
@@ -129,27 +132,28 @@ def _connect(signal: pyqtBoundSignal, handler: Callable[..., None], parent: "QOb
 
 
 def _connect_many(signals: Iterable[pyqtBoundSignal], handler: Callable[..., None], parent: "QObject | None"=None):
-    # Blocking prevents handler from firing multiple times due to simulataneous changes
-    # Handler is contained in QTimer.singleShot callback so that all watched signals will have been run
-    # TODO ^ not guaranteed? (eg, if one watcher is invoked because of another)
-    waiting = False
+    # # Blocking prevents handler from firing multiple times due to simulataneous changes
+    # # Handler is contained in QTimer.singleShot callback so that all watched signals will have been run
+    # # TODO ^ not guaranteed? (eg, if one watcher is invoked because of another)
+    # waiting = False
 
-    def call_later(*args: Any):
-        nonlocal waiting
+    # def call_later(*args: Any):
+    #     nonlocal waiting
 
-        if waiting: return
+    #     if waiting: return
 
-        waiting = True
-        QTimer.singleShot(0, call_and_unblock)
+    #     waiting = True
+    #     QTimer.singleShot(0, call_and_unblock)
 
-    def call_and_unblock():
-        nonlocal waiting
+    # def call_and_unblock():
+    #     nonlocal waiting
 
-        handler()
-        waiting = False
+    #     handler()
+    #     waiting = False
 
 
-    connections = tuple(signal.connect(call_later) for signal in signals)
+    # connections = tuple(signal.connect(call_later) for signal in signals)
+    connections = tuple(signal.connect(handler) for signal in signals)
 
     if parent is not None:
         @on(parent.destroyed)

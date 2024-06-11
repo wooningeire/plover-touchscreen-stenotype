@@ -25,9 +25,7 @@ class CenterControls(QWidget):
     def __init__(self, on_mouse_press: Callable[[QMouseEvent], None], toolbar: ToolBar, right_left_width_diff: Ref[float], parent: QWidget=None):
         super().__init__(parent)
 
-        self.__setup_ui(on_mouse_press, toolbar, right_left_width_diff)
 
-    def __setup_ui(self, on_mouse_press: Callable[[QMouseEvent], None], toolbar: ToolBar, right_left_width_diff: Ref[float]):
         dpi = UseDpi(self)
 
 

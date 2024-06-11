@@ -25,10 +25,12 @@ from PyQt5.QtGui import (
 
 from plover.steno import Stroke
 
+
 from .settings import Settings
 from .lib.reactivity import Ref, on, on_many, watch
 from .lib.UseDpi import UseDpi
 from .lib.constants import FONT_FAMILY
+from .lib.util import immediate
 from .widgets.KeyboardWidget import KeyboardWidget
 from .widgets.JoysticksWidget import JoysticksWidget
 from .widgets.StrokePreview import StrokePreview
@@ -51,8 +53,6 @@ class Main(Tool):
     open_settings_stroked = pyqtSignal()
 
 
-    __dpi: UseDpi
-
     def __init__(self, engine: Engine):
         global _window_instance
         
@@ -67,42 +67,8 @@ class Main(Tool):
         self.__settings = Settings()
         self.restore_state()
         self.finished.connect(self.save_state)
-        self.__setup_ui()
-
-        engine.signal_stroked.connect(self.__on_stroked)
-
-        _window_instance = self
-        @on(self.finished)
-        def clear_instance():
-            global _window_instance
-
-            _window_instance = None
-
-        
-        self.close_stroked.connect(lambda: self.close())
-        self.minimize_stroked.connect(lambda: self.setWindowState(Qt.WindowMinimized))
 
 
-    def _restore_state(self, settings: QSettings):
-        self.__settings.load(settings)
-
-    def _save_state(self, settings: QSettings):
-        self.__settings.save(settings)
-    
-
-    # https://github.com/Kaoffie/plover_svg_layout_display/blob/master/plover_svg_layout_display/layout_ui.py#L91
-    __drag_start_position: "QPoint | None" = None
-    def mouseMoveEvent(self, event: QMouseEvent):
-        if not (event.buttons() & Qt.LeftButton): return
-        self.move(event.globalPos() - self.__drag_start_position)
-
-    def mousePressEvent(self, event: QMouseEvent):
-        if not (event.buttons() & Qt.LeftButton): return
-        self.__drag_start_position = event.globalPos() - self.frameGeometry().topLeft()
-
-    #endregion
-
-    def __setup_ui(self):
         self.__dpi = dpi = UseDpi(self)
 
         self.setAttribute(Qt.WA_AcceptTouchEvents)
@@ -119,7 +85,39 @@ class Main(Tool):
 
         # For some reason (tested on Windows only), this has to be called before KeyboardWidget is created. Other attributes
         # must also be set before this, otherwise the window will steal focus again
-        self.__prevent_window_focus()
+        # https://stackoverflow.com/questions/24582525/how-to-show-clickable-qframe-without-loosing-focus-from-main-window
+        # https://stackoverflow.com/questions/68276479/how-to-use-setwindowlongptr-hwnd-gwl-exstyle-ws-ex-noactivate
+
+        # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptrw
+        @immediate
+        def prevent_window_focus():
+            """
+            Prevents the stenotype window from taking focus from other programs when the keys are touched. This is a
+            cross-platform polyfill for the window flag `Qt.WindowDoesNotAcceptFocus` (which is nonfunctional on
+            Windows).
+
+            See https://bugreports.qt.io/browse/QTBUG-36230, https://forum.qt.io/topic/82493/the-windowdoesnotacceptfocus-flag-is-making-me-thirsty/7 for bug information.
+            """
+
+            # On Windows: does not work by itself, but prevents focus from being taken from other Plover windows
+            self.setWindowFlag(Qt.WindowDoesNotAcceptFocus)
+
+            if PLATFORM == "win":
+                import ctypes
+                from ctypes.wintypes import HWND
+                import win32con
+
+                window_handle = HWND(int(self.winId()))
+
+                user32 = ctypes.windll.user32
+                user32.SetWindowLongPtrW(
+                    window_handle,
+                    win32con.GWL_EXSTYLE,
+                    user32.GetWindowLongPtrW(window_handle, win32con.GWL_EXSTYLE) | win32con.WS_EX_NOACTIVATE | win32con.WS_EX_APPWINDOW,
+                )
+
+            # elif PLATFORM == "linux":
+            #     # self.setAttribute(Qt.WA_X11DoNotAcceptFocus)
 
 
         left_right_width_diff = Ref(0.)
@@ -196,40 +194,40 @@ class Main(Tool):
         @on_many(self.__settings.window_width_ref.change, self.__settings.window_height_ref.change)
         def set_window_size():
             self.resize(dpi.cm(self.__settings.window_width), dpi.cm(self.__settings.window_height))
+        
+
+        engine.signal_stroked.connect(self.__on_stroked)
+
+        _window_instance = self
+        @on(self.finished)
+        def clear_instance():
+            global _window_instance
+
+            _window_instance = None
+
+        
+        self.close_stroked.connect(lambda: self.close())
+        self.minimize_stroked.connect(lambda: self.setWindowState(Qt.WindowMinimized))
 
 
-    # https://stackoverflow.com/questions/24582525/how-to-show-clickable-qframe-without-loosing-focus-from-main-window
-    # https://stackoverflow.com/questions/68276479/how-to-use-setwindowlongptr-hwnd-gwl-exstyle-ws-ex-noactivate
+    def _restore_state(self, settings: QSettings):
+        self.__settings.load(settings)
 
-    # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptrw
-    def __prevent_window_focus(self):
-        """
-        Prevents the stenotype window from taking focus from other programs when the keys are touched. This is a
-        cross-platform polyfill for the window flag `Qt.WindowDoesNotAcceptFocus` (which is nonfunctional on
-        Windows).
+    def _save_state(self, settings: QSettings):
+        self.__settings.save(settings)
+    
 
-        See https://bugreports.qt.io/browse/QTBUG-36230, https://forum.qt.io/topic/82493/the-windowdoesnotacceptfocus-flag-is-making-me-thirsty/7 for bug information.
-        """
+    # https://github.com/Kaoffie/plover_svg_layout_display/blob/master/plover_svg_layout_display/layout_ui.py#L91
+    __drag_start_position: "QPoint | None" = None
+    def mouseMoveEvent(self, event: QMouseEvent):
+        if not (event.buttons() & Qt.LeftButton): return
+        self.move(event.globalPos() - self.__drag_start_position)
 
-        # On Windows: does not work by itself, but prevents focus from being taken from other Plover windows
-        self.setWindowFlag(Qt.WindowDoesNotAcceptFocus)
+    def mousePressEvent(self, event: QMouseEvent):
+        if not (event.buttons() & Qt.LeftButton): return
+        self.__drag_start_position = event.globalPos() - self.frameGeometry().topLeft()
 
-        if PLATFORM == "win":
-            import ctypes
-            from ctypes.wintypes import HWND
-            import win32con
-
-            window_handle = HWND(int(self.winId()))
-
-            user32 = ctypes.windll.user32
-            user32.SetWindowLongPtrW(
-                window_handle,
-                win32con.GWL_EXSTYLE,
-                user32.GetWindowLongPtrW(window_handle, win32con.GWL_EXSTYLE) | win32con.WS_EX_NOACTIVATE | win32con.WS_EX_APPWINDOW,
-            )
-
-        # elif PLATFORM == "linux":
-        #     # self.setAttribute(Qt.WA_X11DoNotAcceptFocus)
+    #endregion
 
 
     def __on_stenotype_input(self, stroke: Stroke):
