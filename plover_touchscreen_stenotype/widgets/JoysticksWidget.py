@@ -78,6 +78,8 @@ class JoysticksWidget(QWidget):
         selected_joysticks: "dict[int, _VerticalJoystickWidget | _GridJoystickWidget]" = {}
         selected_key_widgets: Ref[set[KeyWidget]] = Ref(set())
 
+        all_selected_joysticks = set()
+
 
         dpi = UseDpi(self)
 
@@ -262,6 +264,7 @@ class JoysticksWidget(QWidget):
             nonlocal selected_joysticks
             nonlocal n_expected_touches
             nonlocal state
+            nonlocal all_selected_joysticks
 
             touch_points = event.touchPoints()
 
@@ -278,7 +281,11 @@ class JoysticksWidget(QWidget):
 
                         new_press = True
                         new_triggered_joysticks[touch.id()] = joystick
-                        joystick.on_touch_begin(touch)
+                        if joystick not in all_selected_joysticks:
+                            all_selected_joysticks.add(joystick)
+                            joystick.on_initial_touch(touch)
+                        else:
+                            joystick.on_touch_begin(touch)
 
                         if state == JoysticksState.AWAITING_TAPS:
                             tapped_joysticks.value.add(joystick)
@@ -309,9 +316,10 @@ class JoysticksWidget(QWidget):
                 state = JoysticksState.GATHERING_TOUCHES
                 n_expected_touches = 0
 
-                selected_key_widgets.value |= tapped_key_widgets.value
+                selected_key_widgets.value = set()
                 tapped_joysticks.value = set()
                 tapped_key_widgets.value = set()
+                all_selected_joysticks = set()
             
 
             if (
@@ -322,7 +330,7 @@ class JoysticksWidget(QWidget):
             ):
                 self.end_stroke.emit(current_stroke.value)
 
-                selected_key_widgets.value = tapped_key_widgets.value
+                selected_key_widgets.value |= tapped_key_widgets.value
                 tapped_joysticks.value = set()
                 tapped_key_widgets.value = set()
 
@@ -416,6 +424,17 @@ class _VerticalJoystickWidget(QWidget):
         widget_transform = self.__proxy.deviceTransform(self.__view.viewportTransform()).translate(widget_rect.width() / 2, widget_rect.height() / 2)
         widget_touch_pos = widget_transform.inverted()[0].map(touch.pos())
         return widget_touch_pos.x()**2 + widget_touch_pos.y()**2 < self.__dpi.cm(TRIGGER_DISTANCE)**2
+    
+    
+    def on_initial_touch(self, touch: QTouchEvent.TouchPoint):
+        view_transform = self.__view.viewportTransform()
+        touch_pos = view_transform.inverted()[0].map(touch.pos())
+        self.__center = touch_pos.y()
+        self.__displacement = 0
+
+        self.set_center(touch_pos.x(), self.__center)
+
+        self.on_touch_begin(touch)
     
     def on_touch_begin(self, touch: QTouchEvent.TouchPoint):
         self.on_touch_update(touch)
@@ -552,6 +571,15 @@ class _GridJoystickWidget(QWidget):
         widget_transform = self.__proxy.deviceTransform(self.__view.viewportTransform()).translate(widget_rect.width() / 2, widget_rect.height() / 2)
         widget_touch_pos = widget_transform.inverted()[0].map(touch.pos())
         return widget_touch_pos.x()**2 + widget_touch_pos.y()**2 < self.__dpi.cm(TRIGGER_DISTANCE)**2
+    
+    def on_initial_touch(self, touch: QTouchEvent.TouchPoint):
+        view_transform = self.__view.viewportTransform()
+        touch_pos = view_transform.inverted()[0].map(touch.pos())
+        self.__center = touch_pos
+
+        self.__update_proxy_center()
+
+        self.on_touch_begin(touch)
     
     def on_touch_begin(self, touch: QTouchEvent.TouchPoint):
         self.on_touch_update(touch)
