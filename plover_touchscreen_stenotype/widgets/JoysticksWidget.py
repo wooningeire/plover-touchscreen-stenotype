@@ -43,7 +43,7 @@ else:
 
 
 MAX_DISPLACEMENT = 0.75
-NEUTRAL_THRESHOLD_PROPORTION = 2/4
+NEUTRAL_THRESHOLD_PROPORTION = 1/3
 TRIGGER_DISTANCE = 1.5
 
 class JoysticksState(Enum):
@@ -60,15 +60,15 @@ class JoysticksWidget(QWidget):
 
         key_widgets: list[KeyWidget] = []
 
-        tapped_joysticks: "Ref[set[_VerticalJoystickWidget | _GridJoystickWidget]]" = Ref(set())
-        tapped_key_widgets: Ref[set[KeyWidget]] = Ref(set())
+        tapped_joysticks: Ref[dict[_VerticalJoystickWidget | _GridJoystickWidget, KeyWidget]] = Ref({})
+        tapped_key_widgets = computed(lambda: set(key_widget for key_widget in tapped_joysticks.value.values()), tapped_joysticks)
 
         def compute_current_stroke():
             current_stroke = empty_stroke()
-            for key_widget in tapped_key_widgets.value:
+            for key_widget in tapped_joysticks.value.values():
                 current_stroke += key_widget.substroke
             return current_stroke
-        current_stroke = computed(compute_current_stroke, tapped_key_widgets)
+        current_stroke = computed(compute_current_stroke, tapped_joysticks)
         
         @on(current_stroke.change)
         def emit_stroke_change():
@@ -78,7 +78,7 @@ class JoysticksWidget(QWidget):
         selected_joysticks: "dict[int, _VerticalJoystickWidget | _GridJoystickWidget]" = {}
         selected_key_widgets: Ref[set[KeyWidget]] = Ref(set())
 
-        all_selected_joysticks = set()
+        all_selected_joysticks: "set[_VerticalJoystickWidget | _GridJoystickWidget]" = set()
 
 
         dpi = UseDpi(self)
@@ -86,8 +86,11 @@ class JoysticksWidget(QWidget):
         scene = QGraphicsScene(self)
         view = QGraphicsView(scene)
         view.setStyleSheet(GRAPHICS_VIEW_STYLE)
-        view.setSceneRect(QRectF(view.rect()))
-        view.centerOn(0, 0)
+        
+        rect = QRectF(view.rect())
+        rect.moveCenter(QPointF(0, 0))
+
+        view.setSceneRect(rect)
 
         self.__joysticks = (
             _GridJoystickWidget(view,
@@ -102,18 +105,24 @@ class JoysticksWidget(QWidget):
                     ("^S", ""),
                     ("S", "S"),
                 ),
-                center=QPointF(dpi.cm(-10), -dpi.cm(2 * settings.pinky_stagger_fac)),
+                center=QPointF(dpi.cm(-11.25), -dpi.cm(2 * settings.pinky_stagger_fac)),
             ),
-            _VerticalJoystickWidget(view, (
-                ("T", "T"),
-                ("TK", ""),
-                ("K", "K"),
-            )).set_center(dpi.cm(-7.5), -dpi.cm(2 * settings.ring_stagger_fac)),
-            _VerticalJoystickWidget(view, (
-                ("P", "P"),
-                ("PW", ""),
-                ("W", "W"),
-            )).set_center(dpi.cm(-5), -dpi.cm(2 * settings.middle_stagger_fac)),
+            _VerticalJoystickWidget(view,
+                (
+                    ("T", "T"),
+                    ("TK", ""),
+                    ("K", "K"),
+                ),
+                center=QPointF(dpi.cm(-7.5), -dpi.cm(2 * settings.ring_stagger_fac)),
+            ),
+            _VerticalJoystickWidget(view,
+                (
+                    ("P", "P"),
+                    ("PW", ""),
+                    ("W", "W"),
+                ),
+                center=QPointF(dpi.cm(-5), -dpi.cm(2 * settings.middle_stagger_fac)),
+            ),
             _GridJoystickWidget(view,
                 (
                     ("&HR", ""),
@@ -142,16 +151,22 @@ class JoysticksWidget(QWidget):
                 ),
                 center=QPointF(dpi.cm(2.5), -dpi.cm(2 * settings.index_stagger_fac)),
             ),
-            _VerticalJoystickWidget(view, (
-                ("-P", "P"),
-                ("-PB", ""),
-                ("-B", "B"),
-            )).set_center(dpi.cm(5), -dpi.cm(2 * settings.middle_stagger_fac)),
-            _VerticalJoystickWidget(view, (
-                ("-L", "L"),
-                ("-LG", ""),
-                ("-G", "G"),
-            )).set_center(dpi.cm(7.5), -dpi.cm(2 * settings.ring_stagger_fac)),
+            _VerticalJoystickWidget(view,
+                (
+                    ("-P", "P"),
+                    ("-PB", ""),
+                    ("-B", "B"),
+                ),
+                center=QPointF(dpi.cm(5), -dpi.cm(2 * settings.middle_stagger_fac)),
+            ),
+            _VerticalJoystickWidget(view,
+                (
+                    ("-L", "L"),
+                    ("-LG", ""),
+                    ("-G", "G"),
+                ),
+                center=QPointF(dpi.cm(7.5), -dpi.cm(2 * settings.ring_stagger_fac)),
+            ),
             _GridJoystickWidget(view,
                 (
                     ("-TSDZ", ""),
@@ -164,7 +179,7 @@ class JoysticksWidget(QWidget):
                     ("-TD", ""),
                     ("-D", "D"),
                 ),
-                center=QPointF(dpi.cm(10), -dpi.cm(2 * settings.pinky_stagger_fac)),
+                center=QPointF(dpi.cm(11.25), -dpi.cm(2 * settings.pinky_stagger_fac)),
             ),
             _GridJoystickWidget(view,
                 (
@@ -260,7 +275,7 @@ class JoysticksWidget(QWidget):
         def handle_touch_event(event: QTouchEvent):
             nonlocal current_stroke
             nonlocal selected_key_widgets
-            nonlocal tapped_key_widgets
+            nonlocal tapped_joysticks
             nonlocal selected_joysticks
             nonlocal n_expected_touches
             nonlocal state
@@ -288,11 +303,8 @@ class JoysticksWidget(QWidget):
                             joystick.on_touch_begin(touch)
 
                         if state == JoysticksState.AWAITING_TAPS:
-                            tapped_joysticks.value.add(joystick)
+                            tapped_joysticks.value[joystick] = joystick.selected_key_widget
                             tapped_joysticks.emit()
-
-                            tapped_key_widgets.value.add(joystick.selected_key_widget)
-                            tapped_key_widgets.emit()
 
                         break
 
@@ -317,9 +329,11 @@ class JoysticksWidget(QWidget):
                 n_expected_touches = 0
 
                 selected_key_widgets.value = set()
-                tapped_joysticks.value = set()
-                tapped_key_widgets.value = set()
+                tapped_joysticks.value = {}
                 all_selected_joysticks = set()
+
+                for joystick in self.__joysticks:
+                    joystick.restore_position()
             
 
             if (
@@ -330,9 +344,7 @@ class JoysticksWidget(QWidget):
             ):
                 self.end_stroke.emit(current_stroke.value)
 
-                selected_key_widgets.value |= tapped_key_widgets.value
-                tapped_joysticks.value = set()
-                tapped_key_widgets.value = set()
+                tapped_joysticks.value = {}
 
             update_key_widget_styles_and_state()
         self.__handle_touch_event = handle_touch_event
@@ -350,19 +362,22 @@ class JoysticksWidget(QWidget):
 
 class _VerticalJoystickWidget(QWidget):
     selected_key_change = pyqtSignal(KeyWidget)
-    tapped_key_change = pyqtSignal(KeyWidget)
-    direction_change = pyqtSignal()
 
-    def __init__(self, view: QGraphicsView, key_descriptors: tuple[tuple[str, str], ...]):
+    def __init__(self, view: QGraphicsView, key_descriptors: tuple[tuple[str, str], ...], *, center: QPointF, angle: float=0, aspect_ratio: float=2):
         super().__init__()
 
         self.__displacement = 0
-        self.__center = 0
+
+        base_center = center
+        self.__center = center.y()
+        def restore_position():
+            self.__center = base_center.y()
+            self.__update_proxy_center(base_center.x())
+        self.restore_position = restore_position
 
         self.__view = view
         self.__key_widgets: list[KeyWidget] = [KeyWidget(Stroke.from_steno(steno), label) for steno, label in key_descriptors]
         self.__selected_key_widget: "KeyWidget | None" = None
-        self.__tapped = False
 
         self.__dpi = dpi = UseDpi(self)
 
@@ -396,12 +411,15 @@ class _VerticalJoystickWidget(QWidget):
 
         self.__proxy = view.scene().addWidget(self)
 
-
-    def set_center(self, x: float, y: float):
         widget_rect = self.__proxy.boundingRect()
-        self.__proxy.setPos(x - widget_rect.width() / 2, y - widget_rect.height() / 2)
-        self.__center = y
-        return self
+
+
+        def update_proxy_center(x: float):
+            self.__proxy.setPos(x - widget_rect.width() / 2, self.__center - widget_rect.height() / 2)
+        self.__update_proxy_center = update_proxy_center
+        update_proxy_center(base_center.x())
+
+        self.__proxy.setRotation(angle)
     
     @property
     def pos(self):
@@ -410,14 +428,6 @@ class _VerticalJoystickWidget(QWidget):
     @property
     def selected_key_widget(self):
         return self.__selected_key_widget
-    
-    @property
-    def tapped(self):
-        return self.__tapped
-    
-    def tap(self):
-        self.__tapped = True
-        self.tapped_key_change.emit(self.__selected_key_widget)
     
     def triggered_by_touch(self, touch: QTouchEvent.TouchPoint):
         widget_rect = self.__proxy.boundingRect()
@@ -432,7 +442,7 @@ class _VerticalJoystickWidget(QWidget):
         self.__center = touch_pos.y()
         self.__displacement = 0
 
-        self.set_center(touch_pos.x(), self.__center)
+        self.__update_proxy_center(touch_pos.x())
 
         self.on_touch_begin(touch)
     
@@ -482,21 +492,22 @@ class _VerticalJoystickWidget(QWidget):
 
 class _GridJoystickWidget(QWidget):
     selected_key_change = pyqtSignal(KeyWidget)
-    tapped_key_change = pyqtSignal(KeyWidget)
-    direction_change = pyqtSignal()
 
     def __init__(self, view: QGraphicsView, key_descriptors: tuple[tuple[str, str], ...], *, center: QPointF, angle: float=0, aspect_ratio: float=2):
         super().__init__()
 
-        self.__displacement_x = 0
-        self.__displacement_y = 0
+        self.__displacement = QPointF(0, 0)
         base_center = center
         self.__center = center
+        def restore_position():
+            self.__center = base_center
+            self.__update_proxy_center()
+        self.restore_position = restore_position
+
 
         self.__view = view
         self.__key_widgets: list[KeyWidget] = [KeyWidget(Stroke.from_steno(steno), label) for steno, label in key_descriptors]
         self.__selected_key_widget: "KeyWidget | None" = None
-        self.__tapped = False
 
         self.__dpi = dpi = UseDpi(self)
 
@@ -551,20 +562,8 @@ class _GridJoystickWidget(QWidget):
         self.__proxy.setRotation(angle)
     
     @property
-    def pos(self):
-        return self.__proxy.pos()
-    
-    @property
     def selected_key_widget(self):
         return self.__selected_key_widget
-    
-    @property
-    def tapped(self):
-        return self.__tapped
-    
-    def tap(self):
-        self.__tapped = True
-        self.tapped_key_change.emit(self.__selected_key_widget)
     
     def triggered_by_touch(self, touch: QTouchEvent.TouchPoint):
         widget_rect = self.__proxy.boundingRect()
@@ -587,21 +586,18 @@ class _GridJoystickWidget(QWidget):
     def on_touch_update(self, touch: QTouchEvent.TouchPoint):
         movement = touch.pos() - touch.lastPos()
 
-        new_displacement_x = self.__displacement_x + movement.x()
-        new_displacement_y = self.__displacement_y + movement.y()
+        new_displacement = self.__displacement + movement
 
-        new_displacement_angle = math.atan2(new_displacement_y, new_displacement_x)
-        new_displacement_hypot = math.hypot(new_displacement_x, new_displacement_y)
+        new_displacement_angle = math.atan2(new_displacement.y(), new_displacement.x())
+        new_displacement_hypot = math.hypot(new_displacement.x(), new_displacement.y())
 
         max_displacement = self.__dpi.cm(MAX_DISPLACEMENT)
 
         if new_displacement_hypot > max_displacement:
             self.__center += (new_displacement_hypot - max_displacement) * QPointF(math.cos(new_displacement_angle), math.sin(new_displacement_angle))
-            self.__displacement_x = max_displacement * math.cos(new_displacement_angle)
-            self.__displacement_y = max_displacement * math.sin(new_displacement_angle)
+            self.__displacement = max_displacement * QPointF(math.cos(new_displacement_angle), math.sin(new_displacement_angle))
         else:
-            self.__displacement_x = new_displacement_x
-            self.__displacement_y = new_displacement_y
+            self.__displacement = new_displacement
 
         self.__update_proxy_center()
 
