@@ -39,8 +39,13 @@ def child(parent: QWidget, widget: W, layout: L=None) -> "Callable[[Callable[[W,
 
         parent_layout = parent.layout()
         if parent_layout is None: return
-        parent_layout.addWidget(widget, *layout_args, Qt.AlignCenter)
+        parent_layout.addWidget(widget, *layout_args)
     return handler
 
 def tick(fn: Callable):
     QTimer.singleShot(0, fn)
+
+def not_none(value: "T | None") -> T:
+    if value is None:
+        raise Exception("value is None")
+    return value

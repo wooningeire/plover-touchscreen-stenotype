@@ -5,6 +5,7 @@ KEY_STYLESHEET = """
 KeyWidget {
     background: #fdfdfd;
     border: 1px solid;
+    border-color: #d0d0d0 #d0d0d0 #bababa #d0d0d0;
 }
 
 KeyWidget[matched_soft="true"] {

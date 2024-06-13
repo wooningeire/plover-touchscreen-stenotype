@@ -70,8 +70,10 @@ class Ref(QObject, Generic[T]):
 
     @value.setter
     def value(self, value: T):
+        old_value = self.__value
         self.__value = value
-        self.change.emit(value)
+        if value is not old_value:
+            self.change.emit(value)
 
     def set(self, value: T):
         """Alias for `value` setter"""
@@ -80,6 +82,12 @@ class Ref(QObject, Generic[T]):
 
     def emit(self):
         self.change.emit(self.__value)
+
+    @staticmethod
+    def unwrap(maybe_ref: "Ref[T] | T") -> T:
+        if isinstance(maybe_ref, Ref):
+            return maybe_ref.value
+        return maybe_ref
 
 
 def _create_computed(handler: Callable[[], T]):
@@ -105,9 +113,10 @@ def computed(handler: Callable[[], T], *dependency_refs: Ref[Any]):
     return ref
 
 
-def computed_on_signal(handler: Callable[[], T], dependency_signal: pyqtBoundSignal):
+def computed_on_signals(handler: Callable[[], T], *dependency_signals: pyqtBoundSignal):
     ref, recompute = _create_computed(handler)
-    _connect(dependency_signal, recompute, parent=ref)
+    for dependency in dependency_signals:
+        _connect(dependency, recompute, parent=ref)
 
     return ref
 
