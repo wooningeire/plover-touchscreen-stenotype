@@ -30,7 +30,8 @@ from typing import TYPE_CHECKING
 
 from .KeyWidget import KeyWidget
 from ..settings import Settings
-from ..lib.Joystick import Joystick, MAX_DISPLACEMENT, NEUTRAL_THRESHOLD_PROPORTION, TRIGGER_DISTANCE
+from ..lib.Joystick import Joystick, JoystickLayout, JoystickSemicircleSide, MAX_DISPLACEMENT, NEUTRAL_THRESHOLD_PROPORTION, TRIGGER_DISTANCE
+from ..lib.UseJoystickControl import UseJoystickControl
 from ..lib.reactivity import Ref, computed, on, on_many, watch, watch_many
 from ..lib.UseDpi import UseDpi
 from ..lib.constants import GRAPHICS_VIEW_STYLE, KEY_STYLESHEET, KEY_CONTAINER_STYLE
@@ -93,6 +94,8 @@ class JoysticksWidget(QWidget):
                     ("S", "S"),
                 ),
                 center=QPointF(dpi.cm(-10), -dpi.cm(2 * settings.pinky_stagger_fac)),
+                layout=JoystickLayout.SEMICIRCLE,
+                semicircle_flat_side=JoystickSemicircleSide.RIGHT,
             ),
             Joystick(
                 (
@@ -101,6 +104,7 @@ class JoysticksWidget(QWidget):
                     ("K", "K"),
                 ),
                 center=QPointF(dpi.cm(-7.5), -dpi.cm(2 * settings.ring_stagger_fac)),
+                layout=JoystickLayout.VERTICAL,
             ),
             Joystick(
                 (
@@ -109,6 +113,7 @@ class JoysticksWidget(QWidget):
                     ("W", "W"),
                 ),
                 center=QPointF(dpi.cm(-5), -dpi.cm(2 * settings.middle_stagger_fac)),
+                layout=JoystickLayout.VERTICAL,
             ),
             Joystick(
                 (
@@ -123,6 +128,8 @@ class JoysticksWidget(QWidget):
                     ("&", "&&"),
                 ),
                 center=QPointF(dpi.cm(-2.5), -dpi.cm(2 * settings.index_stagger_fac)),
+                layout=JoystickLayout.SEMICIRCLE,
+                semicircle_flat_side=JoystickSemicircleSide.LEFT,
             ),
             Joystick(
                 (
@@ -137,6 +144,8 @@ class JoysticksWidget(QWidget):
                     ("-F", "F"),
                 ),
                 center=QPointF(dpi.cm(2.5), -dpi.cm(2 * settings.index_stagger_fac)),
+                layout=JoystickLayout.SEMICIRCLE,
+                semicircle_flat_side=JoystickSemicircleSide.RIGHT,
             ),
             Joystick(
                 (
@@ -145,6 +154,7 @@ class JoysticksWidget(QWidget):
                     ("-B", "B"),
                 ),
                 center=QPointF(dpi.cm(5), -dpi.cm(2 * settings.middle_stagger_fac)),
+                layout=JoystickLayout.VERTICAL,
             ),
             Joystick(
                 (
@@ -153,6 +163,7 @@ class JoysticksWidget(QWidget):
                     ("-G", "G"),
                 ),
                 center=QPointF(dpi.cm(7.5), -dpi.cm(2 * settings.ring_stagger_fac)),
+                layout=JoystickLayout.VERTICAL,
             ),
             Joystick(
                 (
@@ -167,6 +178,8 @@ class JoysticksWidget(QWidget):
                     ("-D", "D"),
                 ),
                 center=QPointF(dpi.cm(10), -dpi.cm(2 * settings.pinky_stagger_fac)),
+                layout=JoystickLayout.SEMICIRCLE,
+                semicircle_flat_side=JoystickSemicircleSide.LEFT,
             ),
             Joystick(
                 (
@@ -181,7 +194,8 @@ class JoysticksWidget(QWidget):
                     ("O", "O"),
                 ),
                 center=QPointF(dpi.cm(-2), dpi.cm(2)),
-                angle=settings.vowel_rows_angle_ref,
+                layout=JoystickLayout.SEMICIRCLE,
+                semicircle_flat_side=JoystickSemicircleSide.UP,
             ),
             Joystick(
                 (
@@ -196,7 +210,8 @@ class JoysticksWidget(QWidget):
                     ("U", "U"),
                 ),
                 center=QPointF(dpi.cm(2), dpi.cm(2)),
-                angle=computed(lambda: -settings.vowel_rows_angle, settings.vowel_rows_angle_ref),
+                layout=JoystickLayout.SEMICIRCLE,
+                semicircle_flat_side=JoystickSemicircleSide.UP,
             ),
         )
 
@@ -244,14 +259,18 @@ class JoysticksWidget(QWidget):
 
                 left_bank = not_none(scene.createItemGroup(joystick_widgets[joystick].proxy for joystick in joysticks[0:4]))
                 right_bank = not_none(scene.createItemGroup(joystick_widgets[joystick].proxy for joystick in joysticks[4:8]))
+                left_vowels = not_none(scene.createItemGroup((joystick_widgets[joysticks[8]].proxy,)))
+                right_vowels = not_none(scene.createItemGroup((joystick_widgets[joysticks[9]].proxy,)))
 
                 @watch(settings.main_rows_angle_ref.change)
-                def set_left_bank_angle():
+                def set_bank_angle():
                     left_bank.setRotation(settings.main_rows_angle)
-
-                @watch(settings.main_rows_angle_ref.change)
-                def set_right_bank_angle():
                     right_bank.setRotation(-settings.main_rows_angle)
+
+                @watch(settings.vowel_rows_angle_ref.change)
+                def set_bank_angle():
+                    left_vowels.setRotation(settings.vowel_rows_angle)
+                    right_vowels.setRotation(-settings.vowel_rows_angle)
 
                 return ()
             
@@ -351,7 +370,7 @@ class JoysticksWidget(QWidget):
                             joystick_widget.on_touch_begin(touch)
 
                         if state == JoysticksState.AWAITING_TAPS:
-                            tapped_joysticks.value[joystick] = joystick_widget.key_widgets[joystick.selected_key_index.value]
+                            tapped_joysticks.value[joystick] = joystick_widget.key_widgets[not_none(joystick.selected_key_index.value)]
                             tapped_joysticks.emit()
 
                         break
@@ -431,10 +450,11 @@ class _JoystickTriggerWidget(QToolButton):
 
 class _VerticalJoystickWidget(QWidget):
     def __init__(self, view: QGraphicsView, joystick: Joystick, *, dpi: UseDpi):
+        """`dpi` is passed as an argument because DPI detection is unreliable in QGraphicsScene widgets"""
+
         super().__init__()
 
         key_widgets: tuple[KeyWidget, ...] = ()
-        self.__key_widgets = key_widgets
 
         self.setStyleSheet(KEY_STYLESHEET)
 
@@ -462,75 +482,17 @@ class _VerticalJoystickWidget(QWidget):
 
             return ()
 
+        self.__key_widgets = key_widgets
         self.__proxy = proxy = not_none(not_none(view.scene()).addWidget(self))
-        widget_rect = proxy.boundingRect()
 
-        @watch(joystick.center.change)
-        def update_proxy_center():
-            proxy.setPos(joystick.center.value - QPointF(widget_rect.width(), widget_rect.height()) / 2)
+        joystick_control = UseJoystickControl(joystick, view, self, proxy, dpi=dpi)
 
-        proxy.setTransformOriginPoint(widget_rect.width() / 2, widget_rect.height() / 2)
+        self.widget_touch_pos = joystick_control.widget_touch_pos
 
-        @watch(joystick.angle.change)
-        def update_proxy_angle():
-            proxy.setRotation(joystick.angle.value)
-
-        def widget_touch_pos(touch: QTouchEvent.TouchPoint):
-            widget_transform = proxy.deviceTransform(view.viewportTransform()).translate(widget_rect.width() / 2, widget_rect.height() / 2)
-            return widget_transform.inverted()[0].map(touch.pos())
-        self.widget_touch_pos = widget_touch_pos
-    
-    
-        def on_initial_touch(touch: QTouchEvent.TouchPoint):
-            widget_transform = proxy.deviceTransform(view.viewportTransform()).translate(-proxy.x(), -proxy.y())
-            touch_pos = widget_transform.inverted()[0].map(touch.pos())
-            joystick.center.value = QPointF(joystick.center.value.x(), touch_pos.y())
-            joystick.displacement.value = QPointF(0, 0)
-
-            update_proxy_center()
-
-            on_touch_begin(touch)
-        self.on_initial_touch = on_initial_touch
-
-        
-        def on_touch_begin(touch: QTouchEvent.TouchPoint):
-            on_touch_update(touch)
-        self.on_touch_begin = on_touch_begin
-
-
-        def on_touch_update(touch: QTouchEvent.TouchPoint):
-            widget_transform = proxy.deviceTransform(view.viewportTransform()).translate(widget_rect.width() / 2, widget_rect.height() / 2)
-            movement = widget_transform.inverted()[0].map(touch.pos()) - widget_transform.inverted()[0].map(touch.lastPos())
-
-            max_displacement = dpi.cm(MAX_DISPLACEMENT)
-
-            new_displacement = joystick.displacement.value + movement
-            if new_displacement.y() > max_displacement:
-                joystick.center.value = joystick.center.value + QPointF(movement.x(), new_displacement.y() - max_displacement)
-                joystick.displacement.value = QPointF(0, max_displacement)
-            elif new_displacement.y() < -max_displacement:
-                joystick.center.value = joystick.center.value + QPointF(movement.x(), max_displacement + new_displacement.y())
-                joystick.displacement.value = QPointF(0, -max_displacement)
-            else:
-                joystick.center.value = joystick.center.value + QPointF(movement.x(), 0)
-                joystick.displacement.value = QPointF(0, new_displacement.y())
-
-
-            joystick.selected_key_index.value = new_selected_key_widget()
-        self.on_touch_update = on_touch_update
-
-        def new_selected_key_widget():
-            if abs(joystick.displacement.value.y()) < dpi.cm(MAX_DISPLACEMENT * NEUTRAL_THRESHOLD_PROPORTION):
-                return 1
-
-            if joystick.displacement.value.y() > 0:
-                return 2
-            
-            return 0
-
-        def on_touch_end():
-            joystick.selected_key_index.value = None
-        self.on_touch_end = on_touch_end
+        self.on_initial_touch = joystick_control.on_initial_touch
+        self.on_touch_begin = joystick_control.on_touch_begin
+        self.on_touch_update = joystick_control.on_touch_update
+        self.on_touch_end = joystick_control.on_touch_end
 
     @property
     def key_widgets(self):
@@ -548,7 +510,6 @@ class _GridJoystickWidget(QWidget):
 
 
         key_widgets: tuple[KeyWidget, ...] = ()
-        self.__key_widgets = key_widgets
 
         
         self.setStyleSheet(KEY_STYLESHEET)
@@ -584,71 +545,18 @@ class _GridJoystickWidget(QWidget):
 
             return ()
 
+        self.__key_widgets = key_widgets
         self.__proxy = proxy = not_none(not_none(view.scene()).addWidget(self))
-        widget_rect = proxy.boundingRect()
 
+        joystick_control = UseJoystickControl(joystick, view, self, proxy, dpi=dpi)
 
-        @watch(joystick.center.change)
-        def update_proxy_center():
-            proxy.setPos(joystick.center.value - QPointF(widget_rect.width(), widget_rect.height()) / 2)
-
-        proxy.setTransformOriginPoint(widget_rect.width() / 2, widget_rect.height() / 2)
-
-        @watch(joystick.angle.change)
-        def update_proxy_angle():
-            proxy.setRotation(joystick.angle.value)
     
-
-        def widget_touch_pos(touch: QTouchEvent.TouchPoint):
-            widget_transform = proxy.deviceTransform(view.viewportTransform()).translate(widget_rect.width() / 2, widget_rect.height() / 2)
-            return widget_transform.inverted()[0].map(touch.pos())
-        self.widget_touch_pos = widget_touch_pos
+        self.widget_touch_pos = joystick_control.widget_touch_pos
         
-        def on_initial_touch(touch: QTouchEvent.TouchPoint):
-            widget_transform = proxy.deviceTransform(view.viewportTransform()).translate(-proxy.x(), -proxy.y())
-            touch_pos = widget_transform.inverted()[0].map(touch.pos())
-            joystick.center.value = touch_pos
-
-            update_proxy_center()
-
-            on_touch_begin(touch)
-        self.on_initial_touch = on_initial_touch
-        
-        def on_touch_begin(touch: QTouchEvent.TouchPoint):
-            on_touch_update(touch)
-        self.on_touch_begin = on_touch_begin
-
-        def on_touch_update(touch: QTouchEvent.TouchPoint):
-            widget_transform = proxy.deviceTransform(view.viewportTransform()).translate(widget_rect.width() / 2, widget_rect.height() / 2)
-            movement = widget_transform.inverted()[0].map(touch.pos()) - widget_transform.inverted()[0].map(touch.lastPos())
-
-            new_displacement = joystick.displacement.value + movement
-
-            new_displacement_angle = math.atan2(new_displacement.y(), new_displacement.x())
-            new_displacement_hypot = math.hypot(new_displacement.x(), new_displacement.y())
-
-            max_displacement = dpi.cm(MAX_DISPLACEMENT)
-
-            if new_displacement_hypot > max_displacement:
-                joystick.center.value = joystick.center.value + (new_displacement_hypot - max_displacement) * QPointF(math.cos(new_displacement_angle), math.sin(new_displacement_angle))
-                joystick.displacement.value = max_displacement * QPointF(math.cos(new_displacement_angle), math.sin(new_displacement_angle))
-            else:
-                joystick.displacement.value = new_displacement
-
-            shifted_new_displacement_angle = math.atan2(new_displacement.y() - joystick.angle_center_offset.y() * max_displacement, new_displacement.x() - joystick.angle_center_offset.x() * max_displacement)
-            joystick.selected_key_index.value = new_selected_key_widget(shifted_new_displacement_angle, new_displacement_hypot)
-        self.on_touch_update = on_touch_update
-
-        def new_selected_key_widget(angle: float, hypot: float):
-            if hypot < dpi.cm(MAX_DISPLACEMENT * NEUTRAL_THRESHOLD_PROPORTION):
-                return 0
-            
-            angle = (angle + math.tau / 16) % math.tau
-            return math.floor(angle / (math.tau / 8)) + 1
-
-        def on_touch_end():
-            joystick.selected_key_index.value = None
-        self.on_touch_end = on_touch_end
+        self.on_initial_touch = joystick_control.on_initial_touch
+        self.on_touch_begin = joystick_control.on_touch_begin
+        self.on_touch_update = joystick_control.on_touch_update
+        self.on_touch_end = joystick_control.on_touch_end
 
 
     @property
