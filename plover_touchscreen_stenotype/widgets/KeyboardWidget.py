@@ -24,7 +24,7 @@ from PyQt5.QtGui import (
 from plover.steno import Stroke
 
 from collections import Counter
-from typing import cast, TYPE_CHECKING, Generator
+from typing import cast, TYPE_CHECKING, Generator, Iterable
 if TYPE_CHECKING:
     from ..Main import Main
 else:
@@ -56,16 +56,124 @@ class KeyboardWidget(QWidget):
 
         super().__init__(parent)
 
-        self.__current_stroke: Stroke = empty_stroke()
+        current_stroke: Stroke = empty_stroke()
 
-        self.__touches_to_key_widgets: dict[int, KeyWidget] = {} # keys of dict are from QTouchPoint::id
-        self.__key_widget_touch_counter: Counter[KeyWidget] = Counter()
-        self.__key_widgets: list[KeyWidget] = []
+        touches_to_key_widgets: dict[int, KeyWidget] = {} # keys of dict are from QTouchPoint::id
+        key_widget_touch_counter: Counter[KeyWidget] = Counter()
+        key_widgets: list[KeyWidget] = []
 
         self.num_bar_pressed = False
 
         self.settings = settings
 
+        
+        #region Touch handling
+
+        def handle_touch_event(event: QTouchEvent):
+            nonlocal current_stroke
+
+            # Variables for detecting changes post-update
+            had_num_bar = "#" in current_stroke.keys()
+
+            if event.type() in (QEvent.TouchBegin, QEvent.TouchUpdate):
+                old_stroke_length = len(current_stroke)
+
+                for key_widget in updated_key_widgets(event.touchPoints()):
+                    current_stroke += key_widget.substroke
+
+                if len(current_stroke) > old_stroke_length and current_stroke:
+                    self.current_stroke_change.emit(current_stroke)
+                if not had_num_bar and "#" in current_stroke:
+                    self.num_bar_pressed = True
+                
+
+            elif event.type() == QEvent.TouchEnd:
+                # This also filters out empty strokes (Plover accepts them and will insert extra spaces)
+                if current_stroke and all(touch.state() == Qt.TouchPointReleased for touch in event.touchPoints()):
+                    self.end_stroke.emit(current_stroke)
+                    current_stroke = empty_stroke()
+                    touches_to_key_widgets.clear()
+                    key_widget_touch_counter.clear()
+                
+                if had_num_bar:
+                    self.num_bar_pressed = False
+
+                
+            update_key_widget_styles_and_state(key_widget_touch_counter.keys())
+        self.__handle_touch_event = handle_touch_event
+
+
+        def updated_key_widgets(touch_points: list[QTouchEvent.TouchPoint]) -> Generator[KeyWidget, None, None]:
+            for touch in touch_points:
+                if touch.state() == Qt.TouchPointStationary: continue
+
+                if touch.id() in touches_to_key_widgets:
+                    old_key_widget = touches_to_key_widgets[touch.id()]
+                    key_widget_touch_counter[old_key_widget] -= 1
+
+                    del touches_to_key_widgets[touch.id()]
+
+                    if key_widget_touch_counter[old_key_widget] == 0:
+                        del key_widget_touch_counter[old_key_widget]
+
+                if touch.state() == Qt.TouchPointReleased: continue
+
+
+                key_widget = key_widget_at(touch.pos().toPoint())
+                if key_widget is None: continue
+
+
+                touches_to_key_widgets[touch.id()] = key_widget
+                key_widget_touch_counter[key_widget] += 1
+
+                
+                if not key_widget.matched:
+                    yield key_widget
+
+
+        containers: list[tuple[QWidget, QGraphicsItem]] = []
+        graphics_view: QGraphicsView
+        def key_widget_at(point: QPoint) -> "KeyWidget | None":
+            for widget, proxy in containers:
+                proxy_transform = proxy.deviceTransform(graphics_view.viewportTransform())
+                widget_coords = proxy_transform.inverted()[0].map(point)
+
+                key_widget = widget.childAt(widget_coords)
+                if key_widget is not None:
+                    return key_widget
+
+            return None
+
+
+        def update_key_widget_styles_and_state(touched_key_widgets: Iterable[KeyWidget]):
+            stroke_has_ended = len(key_widget_touch_counter) == 0
+
+            for key_widget in key_widgets:
+                old_touched, old_matched = key_widget.touched, key_widget.matched
+
+                if key_widget in touched_key_widgets:
+                    key_widget.touched = True
+                    key_widget.matched = True
+
+                elif ((not stroke_has_ended and key_widget.matched) # optimization assumes keys will not be removed mid-stroke
+                        or key_widget.substroke in current_stroke):
+                    key_widget.touched = False
+                    key_widget.matched = True
+
+                else:
+                    key_widget.touched = False
+                    key_widget.matched = False
+
+
+                if (old_touched, old_matched) != (key_widget.touched, key_widget.matched):
+                    # Reload stylesheet for dynamic properties: https://stackoverflow.com/questions/1595476/are-qts-stylesheets-really-handling-dynamic-properties
+                    # self.style().unpolish(key_widget)
+                    not_none(self.style()).polish(key_widget)
+
+        #endregion
+
+
+        #region Layout
 
         self.__dpi = dpi = UseDpi(self)
         layout_descriptor = build_layout_descriptor(self.settings, self)
@@ -128,6 +236,7 @@ class KeyboardWidget(QWidget):
 
                         @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, dpi=dpi))
                         def render_widget(key_widget: KeyWidget, _: None):
+                            key_widgets.append(key_widget)
                             current_key = key
 
                             @watch_many(current_key.height.change, dpi.change)
@@ -136,9 +245,12 @@ class KeyboardWidget(QWidget):
                             bounding_rect_change_signals.append(current_key.height.change)
 
                             return ()
+                        
+                    widget.setStyleSheet(KEY_STYLESHEET)
 
                     proxy = not_none(scene.addWidget(widget))
                     items.append(proxy)
+                    containers.append((widget, proxy))
                 
                     return ()
 
@@ -155,6 +267,7 @@ class KeyboardWidget(QWidget):
 
                         @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, dpi=dpi))
                         def render_widget(key_widget: KeyWidget, _: None):
+                            key_widgets.append(key_widget)
                             current_key = key
 
                             @watch_many(current_key.width.change, dpi.change)
@@ -163,9 +276,12 @@ class KeyboardWidget(QWidget):
                             bounding_rect_change_signals.append(current_key.width.change)
 
                             return ()
+                        
+                    widget.setStyleSheet(KEY_STYLESHEET)
 
                     proxy = not_none(scene.addWidget(widget))
                     items.append(proxy)
+                    containers.append((widget, proxy))
                 
                     return ()
                     
@@ -188,10 +304,14 @@ class KeyboardWidget(QWidget):
                     for key in group.elements:
                         @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, dpi=dpi))
                         def render_widget(key_widget: KeyWidget, _: None):
+                            key_widgets.append(key_widget)
                             return key.grid_location
+                        
+                    widget.setStyleSheet(KEY_STYLESHEET)
 
                     proxy = not_none(scene.addWidget(widget))
                     items.append(proxy)
+                    containers.append((widget, proxy))
                 
                     return ()
                 
@@ -200,6 +320,9 @@ class KeyboardWidget(QWidget):
 
             return item_group
         
+        #endregion
+
+        #region Render
 
         @render(self, QGridLayout())
         def render_widget(widget: QWidget, _: QGridLayout):
@@ -207,6 +330,8 @@ class KeyboardWidget(QWidget):
 
             @child(self, QGraphicsView(scene))
             def render_widget(view: QGraphicsView, _: None):
+                nonlocal graphics_view
+
                 view.setStyleSheet(GRAPHICS_VIEW_STYLE)
                 
                 item_group = build_group_elements(scene, layout_descriptor)
@@ -216,6 +341,8 @@ class KeyboardWidget(QWidget):
                 # rect.moveCenter(QPointF(0, 0))
 
                 view.setSceneRect(rect)
+
+                graphics_view = view
 
                 return ()
             
@@ -227,7 +354,7 @@ class KeyboardWidget(QWidget):
         # self.__build_keyboard = build_keyboard
         # layout, key_widgets = build_keyboard()
         # self.setLayout(layout)
-        # self.__key_widgets = key_widgets
+        # key_widgets = key_widgets
 
         # @watch(left_right_width_diff_src.change)
         # def update_left_right_width_diff():
@@ -241,6 +368,8 @@ class KeyboardWidget(QWidget):
 
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
+        #endregion
+
 
     def __rebuild_layout(self):
         # Detach listeners on the old key widgets to avoid leaking memory
@@ -251,7 +380,7 @@ class KeyboardWidget(QWidget):
         QWidget().setLayout(self.layout()) # Unparent and destroy the current layout so it can be replaced
         layout, key_widgets = self.__build_keyboard()
         self.setLayout(layout)
-        self.__key_widgets = key_widgets
+        key_widgets = key_widgets
         
 
     def event(self, event: QEvent) -> bool:
@@ -260,119 +389,5 @@ class KeyboardWidget(QWidget):
         if not isinstance(event, QTouchEvent):
             return super().event(event)
 
-        # Variables for detecting changes post-update
-        had_num_bar = "#" in self.__current_stroke
-
-        if event.type() in (QEvent.TouchBegin, QEvent.TouchUpdate):
-            old_stroke_length = len(self.__current_stroke)
-
-            for key_widget in self.__find_updated_key_widgets(event.touchPoints()):
-                self.__current_stroke += key_widget.substroke
-
-            if len(self.__current_stroke) > old_stroke_length and self.__current_stroke:
-                self.current_stroke_change.emit(self.__current_stroke)
-            if not had_num_bar and "#" in self.__current_stroke:
-                self.num_bar_pressed = True
-            
-
-        elif event.type() == QEvent.TouchEnd:
-            # This also filters out empty strokes (Plover accepts them and will insert extra spaces)
-            if self.__current_stroke and all(touch.state() == Qt.TouchPointReleased for touch in event.touchPoints()):
-                self.end_stroke.emit(self.__current_stroke)
-                self.__current_stroke = empty_stroke()
-                self.__touches_to_key_widgets.clear()
-                self.__key_widget_touch_counter.clear()
-            
-            if had_num_bar:
-                self.num_bar_pressed = False
-
-            
-        self.__update_key_widget_styles_and_state(self.__key_widget_touch_counter.keys())
-        
+        self.__handle_touch_event(event)
         return True
-
-    
-    def __find_updated_key_widgets(self, touch_points: list[QTouchEvent.TouchPoint]) -> Generator[KeyWidget, None, None]:
-        for touch in touch_points:
-            if touch.state() == Qt.TouchPointStationary: continue
-
-            if touch.id() in self.__touches_to_key_widgets:
-                old_key_widget = self.__touches_to_key_widgets[touch.id()]
-                self.__key_widget_touch_counter[old_key_widget] -= 1
-
-                del self.__touches_to_key_widgets[touch.id()]
-
-                if self.__key_widget_touch_counter[old_key_widget] == 0:
-                    del self.__key_widget_touch_counter[old_key_widget]
-
-            if touch.state() == Qt.TouchPointReleased: continue
-
-
-            key_widget = self.__key_widget_at(touch.pos().toPoint())
-            if key_widget is None: continue
-
-
-            self.__touches_to_key_widgets[touch.id()] = key_widget
-            self.__key_widget_touch_counter[key_widget] += 1
-
-            
-            if not key_widget.matched:
-                yield key_widget
-
-
-    def __key_widget_at(self, point: QPoint) -> "KeyWidget | None":
-        touched_widget = self.childAt(point)
-        if touched_widget is None: return
-
-        if isinstance(touched_widget, KeyWidget):
-            return touched_widget
-        
-        # Loop through all the key containers; since `childAt` can only return the topmost child at a point,
-        # a container that obscures another container with its empty space will cause `childAt` to fail to find a
-        # touched key if one is underneath. The container list is also `reversed` so that containers rendered last
-        # (i.e., on top) are processed first
-        for view in reversed(self.findChildren(RotatableKeyContainer)):
-            view: RotatableKeyContainer = view
-            key_widget: KeyWidget = view.key_widget_at_point(point)
-
-            if key_widget is None: continue
-            return key_widget
-
-        return
-
-        """ # For some reason, `touched_widget` is a widget that is a child of the QGraphicsView rather than the
-        # QGraphicsView itself
-        elif isinstance(touched_widget.parent(), RotatableKeyContainer):
-            view: RotatableKeyContainer = touched_widget.parent()
-            key_widget: KeyWidget = view.key_widget_at_point(point)
-
-            if key_widget is None: return
-            return key_widget """
-        
-        raise TypeError
-        
-
-    def __update_key_widget_styles_and_state(self, touched_key_widgets: list[KeyWidget]):
-        stroke_has_ended = len(self.__key_widget_touch_counter) == 0
-
-        for key_widget in self.__key_widgets:
-            old_touched, old_matched = key_widget.touched, key_widget.matched
-
-            if key_widget in touched_key_widgets:
-                key_widget.touched = True
-                key_widget.matched = True
-
-            elif ((not stroke_has_ended and key_widget.matched) # optimization assumes keys will not be removed mid-stroke
-                    or key_widget.substroke in self.__current_stroke):
-                key_widget.touched = False
-                key_widget.matched = True
-
-            else:
-                key_widget.touched = False
-                key_widget.matched = False
-
-
-            if (old_touched, old_matched) != (key_widget.touched, key_widget.matched):
-                # Reload stylesheet for dynamic properties: https://stackoverflow.com/questions/1595476/are-qts-stylesheets-really-handling-dynamic-properties
-                # self.style().unpolish(key_widget)
-                self.style().polish(key_widget)

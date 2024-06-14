@@ -10,10 +10,6 @@ else:
     KeyboardWidget = object
 
 def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget) -> LayoutDescriptor:
-    def _num_bar_affected_label(default_label: str, number_label: str):
-        return computed(lambda: number_label if keyboard_widget.num_bar_pressed else default_label,
-                keyboard_widget.num_bar_pressed_ref)
-
     #region Size values
 
     # in centimeters
@@ -104,9 +100,9 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                         reduced_key_height_small + pinky_offset / 2,
                                     ),
                                     col_widths=(
-                                        inner_end_column_width,
-                                        end_column_compound_width,
                                         end_column_width,
+                                        end_column_compound_width,
+                                        inner_end_column_width,
                                     ),
                                 ),
     
@@ -115,7 +111,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
     
     
                                 elements=(
-                                    Key(steno="S", label=_num_bar_affected_label("S", "1"), grid_location=(0, 2, 3, 1)),
+                                    Key(steno="S", label="S", grid_location=(0, 2, 3, 1)),
                                     Key(steno="^", label="^", grid_location=(0, 0)),
                                     Key(steno="^+", grid_location=(1, 0)),
                                     Key(steno="+", label="+", grid_location=(2, 0)),
@@ -132,7 +128,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                 y=-ring_offset / 2,
     
                                 elements=(
-                                    Key(steno="T", label=_num_bar_affected_label("T", "2"), height=reduced_key_height),
+                                    Key(steno="T", label="T", height=reduced_key_height),
                                     Key(steno="TK", height=compound_key_size),
                                     Key(steno="K", label="K", height=reduced_key_height + ring_offset / 2),
                                 ),
@@ -145,7 +141,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                 y=-middle_offset / 2,
     
                                 elements=(
-                                    Key(steno="P", label=_num_bar_affected_label("P", "3"), height=reduced_key_height),
+                                    Key(steno="P", label="P", height=reduced_key_height),
                                     Key(steno="PW", height=compound_key_size),
                                     Key(steno="W", label="W", height=reduced_key_height + middle_offset / 2),
                                 ),
@@ -167,7 +163,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
 
                                 elements=(
                                     Key(steno="&", label="&&", grid_location=(0, 2, 3, 1)),
-                                    Key(steno="H", label=_num_bar_affected_label("H", "4"), grid_location=(0, 0)),
+                                    Key(steno="H", label="H", grid_location=(0, 0)),
                                     Key(steno="HR", grid_location=(1, 0)),
                                     Key(steno="R", label="R", grid_location=(2, 0)),
                                     Key(steno="&H", grid_location=(0, 1)),
@@ -193,9 +189,9 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
 
                         elements=(
                             Key(steno="#", label="#", grid_location=(2, 0, 1, 3)),
-                            Key(steno="A", label=_num_bar_affected_label("A", "5"), grid_location=(0, 0)),
+                            Key(steno="A", label="A", grid_location=(0, 0)),
                             Key(steno="AO", grid_location=(0, 1)),
-                            Key(steno="O", label=_num_bar_affected_label("O", "0"), grid_location=(0, 2)),
+                            Key(steno="O", label="O", grid_location=(0, 2)),
                             Key(steno="#A", grid_location=(1, 0)),
                             Key(steno="#AO", grid_location=(1, 1)),
                             Key(steno="#O", grid_location=(1, 2)),
@@ -258,7 +254,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                     Key(steno="*F", grid_location=(0, 1)),
                                     Key(steno="*FR", grid_location=(1, 1)),
                                     Key(steno="*R", grid_location=(2, 1)),
-                                    Key(steno="-F", label=_num_bar_affected_label("F", "6"), grid_location=(0, 2)),
+                                    Key(steno="-F", label="F", grid_location=(0, 2)),
                                     Key(steno="-FR", grid_location=(1, 2)),
                                     Key(steno="-R", label="R", grid_location=(2, 2)),
                                 ),
@@ -271,7 +267,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                 y=-middle_offset / 2,
     
                                 elements=(
-                                    Key(steno="-P", label=_num_bar_affected_label("P", "7"), height=reduced_key_height),
+                                    Key(steno="-P", label="P", height=reduced_key_height),
                                     Key(steno="-PB", height=compound_key_size),
                                     Key(steno="-B", label="B", height=reduced_key_height + middle_offset / 2),
                                 ),
@@ -284,7 +280,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                 y=-ring_offset / 2,
     
                                 elements=(
-                                    Key(steno="-L", label=_num_bar_affected_label("L", "8"), height=reduced_key_height),
+                                    Key(steno="-L", label="L", height=reduced_key_height),
                                     Key(steno="-LG", height=compound_key_size),
                                     Key(steno="-G", label="G", height=reduced_key_height + ring_offset / 2),
                                 ),
@@ -308,7 +304,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                 y=-pinky_offset / 2,
     
                                 elements=(
-                                    Key(steno="-T", label=_num_bar_affected_label("T", "9"), grid_location=(0, 0)),
+                                    Key(steno="-T", label="T", grid_location=(0, 0)),
                                     Key(steno="-TS", grid_location=(1, 0)),
                                     Key(steno="-S", label="S", grid_location=(2, 0)),
                                     Key(steno="-TD", grid_location=(0, 1)),
