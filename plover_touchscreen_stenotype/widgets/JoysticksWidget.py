@@ -228,16 +228,16 @@ class JoysticksWidget(QWidget):
                 view.setSceneRect(rect)
 
                 joystick_widgets = {
-                    joysticks[0]: _GridJoystickWidget(view, joysticks[0]),
-                    joysticks[1]: _VerticalJoystickWidget(view, joysticks[1]),
-                    joysticks[2]: _VerticalJoystickWidget(view, joysticks[2]),
-                    joysticks[3]: _GridJoystickWidget(view, joysticks[3]),
-                    joysticks[4]: _GridJoystickWidget(view, joysticks[4]),
-                    joysticks[5]: _VerticalJoystickWidget(view, joysticks[5]),
-                    joysticks[6]: _VerticalJoystickWidget(view, joysticks[6]),
-                    joysticks[7]: _GridJoystickWidget(view, joysticks[7]),
-                    joysticks[8]: _GridJoystickWidget(view, joysticks[8]),
-                    joysticks[9]: _GridJoystickWidget(view, joysticks[9]),
+                    joysticks[0]: _GridJoystickWidget(view, joysticks[0], dpi=dpi),
+                    joysticks[1]: _VerticalJoystickWidget(view, joysticks[1], dpi=dpi),
+                    joysticks[2]: _VerticalJoystickWidget(view, joysticks[2], dpi=dpi),
+                    joysticks[3]: _GridJoystickWidget(view, joysticks[3], dpi=dpi),
+                    joysticks[4]: _GridJoystickWidget(view, joysticks[4], dpi=dpi),
+                    joysticks[5]: _VerticalJoystickWidget(view, joysticks[5], dpi=dpi),
+                    joysticks[6]: _VerticalJoystickWidget(view, joysticks[6], dpi=dpi),
+                    joysticks[7]: _GridJoystickWidget(view, joysticks[7], dpi=dpi),
+                    joysticks[8]: _GridJoystickWidget(view, joysticks[8], dpi=dpi),
+                    joysticks[9]: _GridJoystickWidget(view, joysticks[9], dpi=dpi),
                 }
                 for joystick_widget in joystick_widgets.values():
                     key_widgets.extend(joystick_widget.key_widgets)
@@ -367,7 +367,6 @@ class JoysticksWidget(QWidget):
                         del new_selected_joysticks[touch.id()]
 
             selected_joysticks = new_selected_joysticks
-            n_expected_touches = max(n_expected_touches, len(selected_joysticks))
 
             if new_release and state == JoysticksState.GATHERING_TOUCHES:
                 state = JoysticksState.AWAITING_TAPS
@@ -387,12 +386,25 @@ class JoysticksWidget(QWidget):
             if (
                 state == JoysticksState.AWAITING_TAPS
                     and new_press
-                    and len(selected_joysticks) >= n_expected_touches
+                    and len(selected_joysticks) == n_expected_touches
                     and len(current_stroke.value.keys()) > 0
             ):
                 self.end_stroke.emit(current_stroke.value)
 
+                for joystick in joysticks:
+                    if joystick in tapped_joysticks.value: continue
+                    joystick.set_center_to_current()
+
                 tapped_joysticks.value = {}
+
+            if (
+                state == JoysticksState.AWAITING_TAPS
+                    and new_press
+                    and len(selected_joysticks) > n_expected_touches
+            ):
+                state = JoysticksState.GATHERING_TOUCHES
+
+            n_expected_touches = max(n_expected_touches, len(selected_joysticks))
 
             update_key_widget_styles_and_state()
         self.__handle_touch_event = handle_touch_event
@@ -410,35 +422,34 @@ class JoysticksWidget(QWidget):
     
 
 class _JoystickTriggerWidget(QToolButton):
-    def __init__(self, trigger_distance: float):
+    def __init__(self, trigger_distance: float, *, dpi: UseDpi):
         super().__init__()
-
-        dpi = UseDpi(self)
 
         @watch(dpi.change)
         def set_button_size():
             self.setFixedSize(dpi.cm(trigger_distance * 2), dpi.cm(trigger_distance * 2))
 
 class _VerticalJoystickWidget(QWidget):
-    def __init__(self, view: QGraphicsView, joystick: Joystick):
+    def __init__(self, view: QGraphicsView, joystick: Joystick, *, dpi: UseDpi):
         super().__init__()
 
-        key_widgets: list[KeyWidget] = [KeyWidget(Stroke.from_steno(steno), label) for steno, label in joystick.key_descriptors]
+        key_widgets: tuple[KeyWidget, ...] = ()
         self.__key_widgets = key_widgets
-        dpi = UseDpi(self)
-
 
         self.setStyleSheet(KEY_STYLESHEET)
 
 
         @render(self, QGridLayout())
         def render_widget(widget: QWidget, layout: QGridLayout):
-            @child(widget, _JoystickTriggerWidget(TRIGGER_DISTANCE))
+            @child(widget, _JoystickTriggerWidget(TRIGGER_DISTANCE, dpi=dpi))
             def render_widget(button: _JoystickTriggerWidget, _: None):
                 return 0, 0, Qt.AlignCenter
             
             @child(widget, QWidget(), QVBoxLayout())
             def render_widget(joystick_container: QWidget, layout: QVBoxLayout):
+                nonlocal key_widgets
+                key_widgets = tuple(KeyWidget(Stroke.from_steno(steno), label, dpi=dpi) for steno, label in joystick.key_descriptors)
+
                 for key_widget in key_widgets:
                     layout.addWidget(key_widget)
 
@@ -530,13 +541,14 @@ class _VerticalJoystickWidget(QWidget):
         return self.__proxy
 
 class _GridJoystickWidget(QWidget):
-    def __init__(self, view: QGraphicsView, joystick: Joystick):
+    def __init__(self, view: QGraphicsView, joystick: Joystick, *, dpi: UseDpi):
+        """`dpi` is passed as an argument because DPI detection is unreliable in QGraphicsScene widgets"""
+
         super().__init__()
 
 
-        key_widgets: tuple[KeyWidget, ...] = tuple(KeyWidget(Stroke.from_steno(steno), label) for steno, label in joystick.key_descriptors)
+        key_widgets: tuple[KeyWidget, ...] = ()
         self.__key_widgets = key_widgets
-        dpi = UseDpi(self)
 
         
         self.setStyleSheet(KEY_STYLESHEET)
@@ -544,12 +556,16 @@ class _GridJoystickWidget(QWidget):
 
         @render(self, QGridLayout())
         def render_widget(widget: QWidget, layout: QGridLayout):
-            @child(widget, _JoystickTriggerWidget(TRIGGER_DISTANCE))
+            @child(widget, _JoystickTriggerWidget(TRIGGER_DISTANCE, dpi=dpi))
             def render_widget(button: _JoystickTriggerWidget, _: None):
                 return 0, 0, Qt.AlignCenter
             
             @child(widget, QWidget(), QGridLayout())
             def render_widget(joystick_container: QWidget, layout: QGridLayout):
+                nonlocal key_widgets
+
+                key_widgets = tuple(KeyWidget(Stroke.from_steno(steno), label, dpi=dpi) for steno, label in joystick.key_descriptors)
+
                 @watch(dpi.change)
                 def set_size():
                     key_widgets[0].setFixedSize(dpi.cm(MAX_DISPLACEMENT * 2), dpi.cm(MAX_DISPLACEMENT * 2))

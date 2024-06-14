@@ -16,9 +16,10 @@ T = TypeVar("T")
 def empty_stroke() -> Stroke:
     return Stroke.from_integer(0)
 
-def immediate(fn: Callable[[], T]) -> T:
+def immediate(fn: Callable[[], None]) -> Callable[[], None]:
     """Decorator that immediately calls a function"""
-    return fn()
+    fn()
+    return fn
 
 W = TypeVar("W", bound=QWidget)
 L = TypeVar("L", bound=Optional[QLayout])

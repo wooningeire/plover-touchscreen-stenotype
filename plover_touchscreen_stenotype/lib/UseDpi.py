@@ -10,6 +10,8 @@ from PyQt5.QtGui import (
     QScreen,
 )
 
+from .util import not_none
+
 class UseDpi(QObject):
     """Composable that handles DPI-responsivity."""
 
@@ -20,12 +22,12 @@ class UseDpi(QObject):
         super().__init__(widget)
 
         self.__widget = widget
-        self.__current_screen = widget.screen()
+        self.__current_screen = not_none(widget.screen())
 
         self.__current_screen.physicalDotsPerInchChanged.connect(self.__on_screen_physcial_dpi_change)
         self.__current_screen.logicalDotsPerInchChanged.connect(self.__on_screen_logical_dpi_change)
         def connect_window_change_event():
-            window_handle = widget.window().windowHandle()
+            window_handle = not_none(widget.window()).windowHandle()
             if window_handle is None: return
             window_handle.screenChanged.connect(self.__on_screen_change)
         # `widget.window().windowHandle()` may initially be None on Linux
@@ -33,18 +35,18 @@ class UseDpi(QObject):
 
     def cm(self, cm: float) -> int:
         """Converts cm to px using the current physical DPI."""
-        return round(cm * self.__widget.screen().physicalDotsPerInch() / 2.54)
+        return round(cm * not_none(self.__widget.screen()).physicalDotsPerInch() / 2.54)
 
     def dp(self, dp: float) -> int:
         """Converts dp to px using the current physical DPI. (Defines dp as the length of a pixel on a 96 dpi screen.)"""
-        return round(dp * self.__widget.screen().physicalDotsPerInch() / 96)
+        return round(dp * not_none(self.__widget.screen()).physicalDotsPerInch() / 96)
 
     def pt(self, pt: float) -> int:
         """Converts pt to px using the current logical DPI."""
-        return round(pt * self.__widget.screen().logicalDotsPerInch() / 72)
+        return round(pt * not_none(self.__widget.screen()).logicalDotsPerInch() / 72)
     
     def px_to_cm(self, px: int) -> float:
-        return px * 2.54 / self.__widget.screen().physicalDotsPerInch()
+        return px * 2.54 / not_none(self.__widget.screen()).physicalDotsPerInch()
 
     def __on_screen_change(self, screen: QScreen):
         self.__current_screen.physicalDotsPerInchChanged.disconnect(self.__on_screen_physcial_dpi_change)

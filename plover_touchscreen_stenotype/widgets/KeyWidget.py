@@ -22,7 +22,7 @@ from ..lib.constants import FONT_FAMILY
 class KeyWidget(QToolButton):
     #region Overrides
 
-    def __init__(self, substroke: Stroke, label_maybe_ref: "str | Ref[str]", parent: "QWidget | None"=None):
+    def __init__(self, substroke: Stroke, label_maybe_ref: "str | Ref[str]", parent: "QWidget | None"=None, *, dpi: "UseDpi | None"=None):
         # super().__init__(label, parent)
         super().__init__(parent)
 
@@ -33,7 +33,7 @@ class KeyWidget(QToolButton):
         self.__matched_soft = False
 
 
-        dpi = UseDpi(self)
+        dpi = dpi or UseDpi(self)
 
         @watch(dpi.change)
         def set_font():
