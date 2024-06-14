@@ -88,6 +88,46 @@ class Ref(QObject, Generic[T]):
         if isinstance(maybe_ref, Ref):
             return maybe_ref.value
         return maybe_ref
+    
+    def __add__(self, other: "Ref[T] | T") -> "Ref[T]":
+        if isinstance(other, Ref):
+            return computed(lambda: self.value + other.value,
+                    self, other)
+        return computed(lambda: self.value + other,
+                self)
+    
+    def __sub__(self, other: "Ref[T] | T") -> "Ref[T]":
+        if isinstance(other, Ref):
+            return computed(lambda: self.value - other.value,
+                    self, other)
+        return computed(lambda: self.value - other,
+                self)
+    
+    def __mul__(self, other: "Ref[T] | T") -> "Ref[T]":
+        if isinstance(other, Ref):
+            return computed(lambda: self.value * other.value,
+                    self, other)
+        return computed(lambda: self.value * other,
+                self)
+    
+    def __rmul__(self, other: "Ref[T] | T") -> "Ref[T]":
+        if isinstance(other, Ref):
+            return computed(lambda: other.value * self.value,
+                    self, other)
+        return computed(lambda: other * self.value,
+                self)
+    
+    def __truediv__(self, other: "Ref[T] | T") -> "Ref[T]":
+        if isinstance(other, Ref):
+            return computed(lambda: self.value / other.value,
+                    self, other)
+        return computed(lambda: self.value / other,
+                self)
+    
+    def __neg__(self) -> "Ref[T]":
+        return computed(lambda: -self.value,
+                self)
+    
 
 
 def _create_computed(handler: Callable[[], T]):

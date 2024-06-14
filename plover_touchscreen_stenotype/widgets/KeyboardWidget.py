@@ -2,11 +2,20 @@ from PyQt5.QtCore import (
     Qt,
     QEvent,
     pyqtSignal,
+    pyqtBoundSignal,
     QPoint,
+    QPointF,
+    QRectF,
 )
 from PyQt5.QtWidgets import (
     QWidget,
     QSizePolicy,
+    QGraphicsView,
+    QGraphicsScene,
+    QGridLayout,
+    QGraphicsItem,
+    QVBoxLayout,
+    QHBoxLayout,
 )
 from PyQt5.QtGui import (
     QTouchEvent,
@@ -24,12 +33,13 @@ else:
 
 from .KeyWidget import KeyWidget
 from .RotatableKeyContainer import RotatableKeyContainer
+from ..lib.keyboard_layout.LayoutDescriptor import Group, GroupOrganizationType, Key, KeyGroup, LayoutDescriptor, GroupOrganization, GroupOrganizationType, GroupAlignment
 from ..lib.keyboard_layout.use_build_keyboard import use_build_keyboard
 from ..settings import Settings
-from ..lib.reactivity import Ref, RefAttr, watch
+from ..lib.reactivity import Ref, RefAttr, watch, watch_many
 from ..lib.UseDpi import UseDpi
-from ..lib.constants import KEY_STYLESHEET
-from ..lib.util import empty_stroke
+from ..lib.constants import GRAPHICS_VIEW_STYLE, KEY_STYLESHEET
+from ..lib.util import empty_stroke, not_none, render, child
 
 
 class KeyboardWidget(QWidget):
@@ -41,7 +51,9 @@ class KeyboardWidget(QWidget):
     num_bar_pressed_ref = num_bar_pressed.ref_getter()
 
 
-    def __init__(self, settings: Settings, left_right_width_diff: Ref[float], parent: QWidget=None):
+    def __init__(self, settings: Settings, left_right_width_diff: Ref[float], parent: "QWidget | None"=None):
+        from ..lib.keyboard_layout.descriptors.english_stenotype_extended_custom import build_layout_descriptor
+
         super().__init__(parent)
 
         self.__current_stroke: Stroke = empty_stroke()
@@ -54,20 +66,172 @@ class KeyboardWidget(QWidget):
 
         self.settings = settings
 
-        self.__setup_ui(left_right_width_diff)
 
-    def __setup_ui(self, left_right_width_diff: Ref[float]):
         self.__dpi = dpi = UseDpi(self)
-        build_keyboard, left_right_width_diff_src = use_build_keyboard(self.settings, self, dpi)
+        layout_descriptor = build_layout_descriptor(self.settings, self)
 
-        self.__build_keyboard = build_keyboard
-        layout, key_widgets = build_keyboard()
-        self.setLayout(layout)
-        self.__key_widgets = key_widgets
 
-        @watch(left_right_width_diff_src.change)
-        def update_left_right_width_diff():
-            left_right_width_diff.value = left_right_width_diff_src.value
+        def build_group_elements(scene: QGraphicsScene, group: "LayoutDescriptor | Group"):
+            items: list[QGraphicsItem] = []
+
+            for subgroup in group.elements:
+                if isinstance(subgroup, Group):
+                    items.append(build_group(scene, subgroup))
+                elif isinstance(subgroup, KeyGroup):
+                    items.append(build_key_group(scene, subgroup))
+                    
+            return not_none(scene.createItemGroup(items))
+        
+        def set_group_transforms(item: QGraphicsItem, group: "Group | KeyGroup", bounding_rect_change_signals: list[pyqtBoundSignal]):
+            @watch_many(group.x.change, group.y.change, *bounding_rect_change_signals, dpi.change)
+            def set_group_pos():
+                rect = item.boundingRect()
+                item.setPos(
+                    dpi.cm(group.x.value) - rect.width() * group.alignment.value[0],
+                    dpi.cm(group.y.value) - rect.height() * group.alignment.value[1],
+                )
+
+            if group.angle is not None:
+                @watch_many(*bounding_rect_change_signals, dpi.change)
+                def set_origin_point():
+                    item.setTransformOriginPoint(
+                        item.boundingRect().width() * group.alignment.value[0],
+                        item.boundingRect().height() * group.alignment.value[1],
+                    )
+
+                @watch(group.angle.change)
+                def set_group_angle():
+                    item.setRotation(group.angle.value)
+
+
+        def build_group(scene: QGraphicsScene, group: Group):
+            item_group = build_group_elements(scene, group)
+            set_group_transforms(item_group, group, [])
+
+            return item_group
+
+        def build_key_group(scene: QGraphicsScene, group: KeyGroup):
+            items: list[QGraphicsItem] = []
+
+            bounding_rect_change_signals: list[pyqtBoundSignal] = []
+
+            if group.organization.type == GroupOrganizationType.VERTICAL:
+                @render(QWidget(), QVBoxLayout())
+                def render_widget(widget: QWidget, _: QVBoxLayout):
+                    @watch_many(group.organization.width.change, dpi.change)
+                    def set_key_width():
+                        widget.setFixedWidth(dpi.cm(group.organization.width.value))
+                    bounding_rect_change_signals.append(group.organization.width.change)
+
+                    for key in group.elements:
+                        assert key.height is not None
+
+                        @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, dpi=dpi))
+                        def render_widget(key_widget: KeyWidget, _: None):
+                            current_key = key
+
+                            @watch_many(current_key.height.change, dpi.change)
+                            def set_height():
+                                key_widget.setFixedHeight(dpi.cm(current_key.height.value))
+                            bounding_rect_change_signals.append(current_key.height.change)
+
+                            return ()
+
+                    proxy = not_none(scene.addWidget(widget))
+                    items.append(proxy)
+                
+                    return ()
+
+            elif group.organization.type == GroupOrganizationType.HORIZONTAL:
+                @render(QWidget(), QHBoxLayout())
+                def render_widget(widget: QWidget, _: QHBoxLayout):
+                    @watch_many(group.organization.height.change, dpi.change)
+                    def set_key_height():
+                        widget.setFixedHeight(dpi.cm(group.organization.height.value))
+                    bounding_rect_change_signals.append(group.organization.height.change)
+
+                    for key in group.elements:
+                        assert key.width is not None
+
+                        @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, dpi=dpi))
+                        def render_widget(key_widget: KeyWidget, _: None):
+                            current_key = key
+
+                            @watch_many(current_key.width.change, dpi.change)
+                            def set_width():
+                                key_widget.setFixedWidth(dpi.cm(current_key.width.value))
+                            bounding_rect_change_signals.append(current_key.width.change)
+
+                            return ()
+
+                    proxy = not_none(scene.addWidget(widget))
+                    items.append(proxy)
+                
+                    return ()
+                    
+            elif group.organization.type == GroupOrganizationType.GRID:
+                @render(QWidget(), QGridLayout())
+                def render_widget(widget: QWidget, layout: QGridLayout):
+                    for i, height in enumerate(not_none(group.organization.row_heights)):
+                        @watch_many(height.change, dpi.change)
+                        def set_row_height():
+                            layout.setRowMinimumHeight(i, dpi.cm(height.value))
+                        bounding_rect_change_signals.append(height.change)
+
+                    for i, width in enumerate(not_none(group.organization.col_widths)):
+                        @watch_many(width.change, dpi.change)
+                        def set_col_width():
+                            layout.setColumnMinimumWidth(i, dpi.cm(width.value))
+                        bounding_rect_change_signals.append(width.change)
+
+
+                    for key in group.elements:
+                        @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, dpi=dpi))
+                        def render_widget(key_widget: KeyWidget, _: None):
+                            return key.grid_location
+
+                    proxy = not_none(scene.addWidget(widget))
+                    items.append(proxy)
+                
+                    return ()
+                
+            item_group = not_none(scene.createItemGroup(items))
+            set_group_transforms(item_group, group, bounding_rect_change_signals)
+
+            return item_group
+        
+
+        @render(self, QGridLayout())
+        def render_widget(widget: QWidget, _: QGridLayout):
+            scene = QGraphicsScene(self)
+
+            @child(self, QGraphicsView(scene))
+            def render_widget(view: QGraphicsView, _: None):
+                view.setStyleSheet(GRAPHICS_VIEW_STYLE)
+                
+                item_group = build_group_elements(scene, layout_descriptor)
+                rect = QRectF(item_group.boundingRect())
+
+                # rect = QRectF(view.rect())
+                # rect.moveCenter(QPointF(0, 0))
+
+                view.setSceneRect(rect)
+
+                return ()
+            
+            return ()
+
+
+        # build_keyboard, left_right_width_diff_src = use_build_keyboard(self.settings, self, dpi)
+
+        # self.__build_keyboard = build_keyboard
+        # layout, key_widgets = build_keyboard()
+        # self.setLayout(layout)
+        # self.__key_widgets = key_widgets
+
+        # @watch(left_right_width_diff_src.change)
+        # def update_left_right_width_diff():
+        #     left_right_width_diff.value = left_right_width_diff_src.value
 
 
         self.setStyleSheet(KEY_STYLESHEET)
@@ -76,17 +240,6 @@ class KeyboardWidget(QWidget):
         self.setFocusPolicy(Qt.NoFocus)
 
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-
-    # def __handle_dpi_change(self):
-    #     # self.main_rows_layout.invalidate()
-    #     # self.vowel_row_layout.invalidate()
-    #     # self.layout().invalidate()
-
-    #     self.__dpi.change.emit()
-
-    #     # self.window().setMinimumSize(self.window().sizeHint()) # Needed in order to use QWidget.resize
-    #     # cast(Main, self.window()).resize_from_center(0, 0)
 
 
     def __rebuild_layout(self):

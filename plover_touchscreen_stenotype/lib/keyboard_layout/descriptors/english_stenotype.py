@@ -3,95 +3,17 @@ from typing import Callable, TYPE_CHECKING
 
 from ....settings import Settings
 from ...reactivity import Ref, computed
-from ..types import LayoutDescriptor, KeyColumnsTuple, KeyGridTuple
+from ..LayoutDescriptor import LayoutDescriptor, Key, KeyGroup, Group, GroupAlignment, GroupOrganization
 if TYPE_CHECKING:
     from ....widgets.KeyboardWidget import KeyboardWidget
 else:
     KeyboardWidget = object
 
 
-        
 def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget) -> LayoutDescriptor:
-    #region Key layouts
     def _num_bar_affected_label(default_label: str, number_label: str):
-        return computed(lambda: number_label if keyboard_widget.num_bar_pressed else default_label, keyboard_widget.num_bar_pressed_ref)
-
-    LOW_ROW = 2
-
-    # [keys], label, rowSpan?, numberLabel?
-    MAIN_ROWS_KEYS_STAGGERED_LEFT: KeyColumnsTuple = (
-        (
-            (["#"], "#"),
-            (["#", "S-"], ""),
-            (["S-"], _num_bar_affected_label("S", "1"), 3),
-        ), (
-            (["T-"], _num_bar_affected_label("T", "2")),
-            (["T-", "K-"], ""),
-            (["K-"], "K"),
-        ), (
-            (["P-"], _num_bar_affected_label("P", "3")),
-            (["P-", "W-"], ""),
-            (["W-"], "W"),
-        ), (
-            (["H-"], _num_bar_affected_label("H", "4")),
-            (["H-", "R-"], ""),
-            (["R-"], "R"),
-        ), (
-            (["H-", "*"], ""),
-            (["H-", "R-", "*"], ""),
-            (["R-", "*"], ""),
-        ), (
-            (["*"], "🞱", 3),
-        ),
-    )
-
-    MAIN_ROWS_KEYS_STAGGERED_RIGHT: KeyColumnsTuple = (
-        (
-            (["*"], "🞱", 3),
-        ), (
-            (["*", "-F"], ""),
-            (["*", "-F", "-R"], ""),
-            (["*", "-R"], ""),
-        ), (
-            (["-F"], _num_bar_affected_label("F", "6")),
-            (["-F", "-R"], ""),
-            (["-R"], "R"),
-        ), (
-            (["-P"], _num_bar_affected_label("P", "7")),
-            (["-P", "-B"], ""),
-            (["-B"], "B"),
-        ), (
-            (["-L"], _num_bar_affected_label("L", "8")),
-            (["-L", "-G"], ""),
-            (["-G"], "G"),
-        ), (
-            (["-T"], _num_bar_affected_label("T", "9")),
-            (["-T", "-S"], ""),
-            (["-S"], "S"),
-        ), (
-            (["-T", "-D"], ""),
-            (["-T", "-S", "-D", "-Z"], ""),
-            (["-S", "-Z"], ""),
-        ), (
-            (["-D"], "D"),
-            (["-D", "-Z"], ""),
-            (["-Z"], "Z"),
-        ),
-    )
-
-    VOWEL_ROW_KEYS_LEFT: KeyGridTuple = (
-        (["A-"], _num_bar_affected_label("A", "5"), (0, 0)),
-        (["A-", "O-"], "", (0, 1)),
-        (["O-"], _num_bar_affected_label("O", "0"), (0, 2)),
-    )
-
-    VOWEL_ROW_KEYS_RIGHT: KeyGridTuple = (
-        (["-E"], "E", (0, 0)),
-        (["-E", "-U"], "", (0, 1)),
-        (["-U"], "U", (0, 2)),
-    )
-
-    #endregion
+        return computed(lambda: number_label if keyboard_widget.num_bar_pressed else default_label,
+                keyboard_widget.num_bar_pressed_ref)
 
     #region Size values
 
@@ -102,10 +24,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
 
 
     """Computes the size of a key that has half of a compound key cutting into it"""
-    reduced_size: Callable[[Ref[float], Ref[float]], Ref[float]] = lambda key_size_ref, compound_size_ref: (
-            computed(lambda: key_size_ref.value - compound_size_ref.value / 2,
-                    key_size_ref, compound_size_ref)
-    )
+    reduced_size: Callable[[Ref[float], Ref[float]], Ref[float]] = lambda key_size_ref, compound_size_ref: key_size_ref - compound_size_ref / 2
 
     reduced_key_width = reduced_size(key_width, compound_key_size)
     reduced_key_height = reduced_size(key_height, compound_key_size)
@@ -116,162 +35,250 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
     index_stretch = settings.index_stretch_ref
     pinky_stretch = settings.pinky_stretch_ref
 
-    vowel_set_offset_fac = settings.vowel_set_offset_fac_ref
-    vowel_set_offset = computed(lambda: key_width.value * vowel_set_offset_fac.value,
-            key_width, vowel_set_offset_fac)
-
-    """Default row heights for every main rows column"""
-    row_heights = (
-        reduced_key_height,  # top row
-        compound_key_size,
-        reduced_key_height,  # bottom row
-    )
-
-
     # Row heights for specific columns in staggered mode
 
-    compound_height_small = computed(lambda: compound_key_size.value * 0.75,
-            compound_key_size)
-    reduced_height_small = reduced_size(key_height, compound_height_small)
+    compound_key_height_small = compound_key_size * 0.75
+    reduced_key_height_small = reduced_size(key_height, compound_key_height_small)
 
-    row_heights_small = (
-        reduced_height_small,
-        compound_height_small,
-        reduced_height_small,
-    )
-
-
-    row_heights_staggered_left = (
-        row_heights_small,
-        *(row_heights,) * 2,
-        *(row_heights_small,) * 4,
-    )
-
-    row_heights_staggered_right = (
-        *(row_heights_small,) * 3,
-        *(row_heights,) * 2,
-        *(row_heights_small,) * 3,
-    )
-
-
-    index_compound_width = computed(lambda: compound_key_size.value * 0.6,
-            compound_key_size)    
-    base_index_width = computed(lambda: key_width.value + index_stretch.value,
-            key_width, index_stretch)
+    
+    index_compound_width = compound_key_size * 0.6
+    base_index_width = key_width + index_stretch
     reduced_index_width = reduced_size(base_index_width, index_compound_width)
+    middle_key_width = reduced_key_width + key_width / 2
 
 
     END_COLUMN_WIDTH_BOOST = 0.4
 
-    end_column_compound_width = computed(lambda: compound_key_size.value * 0.875,
-            compound_key_size)
+    end_column_compound_width = compound_key_size * 0.875
     
     end_column_width = reduced_size(
-        computed(lambda: key_width.value + END_COLUMN_WIDTH_BOOST,
-                key_width),
+        key_width + END_COLUMN_WIDTH_BOOST,
         end_column_compound_width,
     )
     inner_end_column_width = reduced_size(
-        computed(lambda: key_width.value + pinky_stretch.value,
-                key_width, pinky_stretch),
+        key_width + pinky_stretch,
         end_column_compound_width,
-    )
-
-    col_widths_staggered_left = (
-        computed(lambda: key_width.value + pinky_stretch.value,
-                key_width, pinky_stretch),
-        key_width,
-        key_width,
-        reduced_index_width,  # H-, R-
-        index_compound_width,
-        computed(lambda: reduced_key_width.value + key_width.value / 2,
-                reduced_key_width, key_width), # *
-    )
-
-    col_widths_staggered_right = (
-        computed(lambda: reduced_key_width.value + key_width.value / 2,
-                reduced_key_width, key_width), # *
-        index_compound_width,
-        reduced_index_width,  # -F, -R
-        key_width,
-        key_width,
-        inner_end_column_width,  # -T, -S
-        end_column_compound_width,
-        end_column_width,  # -D, -Z
     )
 
     VOWEL_KEY_WIDTH_BOOST = 0.25
 
-    vowel_set_widths = (
-        computed(lambda: reduced_key_width.value + VOWEL_KEY_WIDTH_BOOST,
-                reduced_key_width),
-        compound_key_size,
-        computed(lambda: reduced_key_width.value + VOWEL_KEY_WIDTH_BOOST,
-                reduced_key_width),
-    )
-
-    vowel_set_heights = (
-        key_height,
-    )
-
-    index_stagger_fac = settings.index_stagger_fac_ref
-    middle_stagger_fac = settings.middle_stagger_fac_ref
-    ring_stagger_fac = settings.ring_stagger_fac_ref
-    pinky_stagger_fac = settings.pinky_stagger_fac_ref
-
-    index_offset = computed(lambda: key_width.value * index_stagger_fac.value,
-            key_width, index_stagger_fac)
-    middle_offset = computed(lambda: key_width.value * middle_stagger_fac.value,
-            key_width, middle_stagger_fac)
-    ring_offset = computed(lambda: key_width.value * ring_stagger_fac.value,
-            key_width, ring_stagger_fac)
-    pinky_offset = computed(lambda: key_width.value * pinky_stagger_fac.value,
-            key_width, pinky_stagger_fac)
+    index_offset = key_width * settings.index_stagger_fac_ref
+    middle_offset = key_width * settings.middle_stagger_fac_ref
+    ring_offset = key_width * settings.ring_stagger_fac_ref
+    pinky_offset = key_width * settings.pinky_stagger_fac_ref
 
 
-    col_offsets_staggered_left = (
-        pinky_offset,  # S-
-        ring_offset,  # T-, K-
-        middle_offset,  # P-, W-
-        index_offset,  # H-, R-
-        index_offset,
-        index_offset,
-    )
-
-    col_offsets_staggered_right = (
-        index_offset,
-        index_offset,
-        index_offset,  # -F, -R
-        middle_offset,  # -P, -B
-        ring_offset,  # -L, -G
-        pinky_offset,  # -T, -S
-        pinky_offset,
-        pinky_offset, # -D, -Z
-    )
+    index_group_width = middle_key_width + index_compound_width + reduced_index_width
 
     #endregion
 
 
     return LayoutDescriptor(
-        MAIN_ROWS_STAGGERED_LEFT=MAIN_ROWS_KEYS_STAGGERED_LEFT,
-        MAIN_ROWS_STAGGERED_RIGHT=MAIN_ROWS_KEYS_STAGGERED_RIGHT,
-        col_widths_staggered_left=col_widths_staggered_left,
-        col_widths_staggered_right=col_widths_staggered_right,
-        row_heights_staggered_left=row_heights_staggered_left,
-        row_heights_staggered_right=row_heights_staggered_right,
-        col_offsets_staggered_left=col_offsets_staggered_left,
-        col_offsets_staggered_right=col_offsets_staggered_right,
-        TALLEST_COLUMN_INDEX_LEFT=2,
-        TALLEST_COLUMN_INDEX_RIGHT=3,
+        elements=(
+            Group(
+                alignment=GroupAlignment.TOP_LEFT,
 
-        N_INDEX_COLS_LEFT=3,
-        N_INDEX_COLS_RIGHT=5,
+                x=-(index_group_width + 2),
+                y=Ref(0),
+                angle=settings.main_rows_angle_ref,
 
-        VOWEL_ROW_KEYS_LEFT=VOWEL_ROW_KEYS_LEFT,
-        VOWEL_ROW_KEYS_RIGHT=VOWEL_ROW_KEYS_RIGHT,
-        vowel_set_widths=vowel_set_widths,
-        vowel_set_heights=vowel_set_heights,
-        vowel_set_offset=vowel_set_offset,
+                elements=(
+                    Group(
+                        alignment=GroupAlignment.TOP_LEFT,
+    
+                        x=Ref(0),
+                        y=Ref(0),
+    
+                        elements=(
+                            KeyGroup(
+                                alignment=GroupAlignment.BOTTOM_RIGHT,
+                                organization=GroupOrganization.vertical(key_width),
+    
+                                x=-2 * settings.key_width_ref,
+                                y=-pinky_offset / 2,
+    
+                                elements=(
+                                    Key(steno="#", label="#", height=reduced_key_height_small),
+                                    Key(steno="#S", height=compound_key_height_small),
+                                    Key(steno="S", label=_num_bar_affected_label("S", "1"), height=reduced_key_height_small + pinky_offset / 2),
+                                ),
+                            ),
+                            KeyGroup(
+                                alignment=GroupAlignment.BOTTOM_RIGHT,
+                                organization=GroupOrganization.vertical(key_width),
+    
+                                x=-settings.key_width_ref,
+                                y=-ring_offset / 2,
+    
+                                elements=(
+                                    Key(steno="T", label=_num_bar_affected_label("T", "2"), height=reduced_key_height),
+                                    Key(steno="TK", height=compound_key_size),
+                                    Key(steno="K", label="K", height=reduced_key_height + ring_offset / 2),
+                                ),
+                            ),
+                            KeyGroup(
+                                alignment=GroupAlignment.BOTTOM_RIGHT,
+                                organization=GroupOrganization.vertical(key_width),
+    
+                                x=Ref(0),
+                                y=-middle_offset / 2,
+    
+                                elements=(
+                                    Key(steno="P", label=_num_bar_affected_label("P", "3"), height=reduced_key_height),
+                                    Key(steno="PW", height=compound_key_size),
+                                    Key(steno="W", label="W", height=reduced_key_height + middle_offset / 2),
+                                ),
+                            ),
+                    
+                            KeyGroup(
+                                alignment=GroupAlignment.BOTTOM_LEFT,
+                                organization=GroupOrganization.grid(
+                                    row_heights=(
+                                        reduced_key_height_small,
+                                        compound_key_height_small,
+                                        reduced_key_height_small + index_offset / 2,
+                                    ),
+                                    col_widths=(reduced_index_width, index_compound_width, middle_key_width),
+                                ),
 
-        LOW_ROW=LOW_ROW,
+                                x=Ref(0),
+                                y=-index_offset / 2,
+
+                                elements=(
+                                    Key(steno="&", label="&&", grid_location=(0, 2, 3, 1)),
+                                    Key(steno="H", label=_num_bar_affected_label("H", "4"), grid_location=(0, 0)),
+                                    Key(steno="HR", grid_location=(1, 0)),
+                                    Key(steno="R", label="R", grid_location=(2, 0)),
+                                    Key(steno="&H", grid_location=(0, 1)),
+                                    Key(steno="&HR", grid_location=(1, 1)),
+                                    Key(steno="&R", grid_location=(2, 1)),
+                                ),
+                            ),
+                        ),
+                    ),
+                    KeyGroup(
+                        alignment=GroupAlignment.TOP_LEFT,
+                        organization=GroupOrganization.horizontal(key_height),
+
+                        x=Ref(0),
+                        y=Ref(1),
+
+                        elements=(
+                            Key(steno="A", label=_num_bar_affected_label("A", "5"), width=reduced_key_width + VOWEL_KEY_WIDTH_BOOST),
+                            Key(steno="AO", width=compound_key_size),
+                            Key(steno="O", label=_num_bar_affected_label("O", "0"), width=reduced_key_width + VOWEL_KEY_WIDTH_BOOST),
+                        ),
+                    ),
+                ),
+            ),
+
+            Group(
+                alignment=GroupAlignment.TOP_LEFT,
+
+                x=index_group_width + 2,
+                y=Ref(0),
+                angle=-settings.main_rows_angle_ref,
+
+                elements=(
+                    KeyGroup(
+                        alignment=GroupAlignment.TOP_RIGHT,
+                        organization=GroupOrganization.horizontal(key_height),
+
+                        x=Ref(0),
+                        y=Ref(1),
+
+                        elements=(
+                            Key(steno="E", label="E", width=reduced_key_width + VOWEL_KEY_WIDTH_BOOST),
+                            Key(steno="EU", width=compound_key_size),
+                            Key(steno="U", label="U", width=reduced_key_width + VOWEL_KEY_WIDTH_BOOST),
+                        ),
+                    ),
+                    Group(
+                        alignment=GroupAlignment.TOP_LEFT,
+    
+                        x=Ref(0),
+                        y=Ref(0),
+    
+                        elements=(
+                            KeyGroup(
+                                alignment=GroupAlignment.BOTTOM_RIGHT,
+                                organization=GroupOrganization.grid(
+                                    row_heights=(reduced_key_height_small, compound_key_height_small, reduced_key_height_small + index_offset / 2),
+                                    col_widths=(middle_key_width, index_compound_width, reduced_index_width),
+                                ),
+
+                                x=Ref(0),
+                                y=-index_offset / 2,
+
+                                elements=(
+                                    Key(steno="*", label="🞱", grid_location=(0, 0, 3, 1)),
+                                    Key(steno="*F", grid_location=(0, 1)),
+                                    Key(steno="*FR", grid_location=(1, 1)),
+                                    Key(steno="*R", grid_location=(2, 1)),
+                                    Key(steno="-F", label=_num_bar_affected_label("F", "6"), grid_location=(0, 2)),
+                                    Key(steno="-FR", grid_location=(1, 2)),
+                                    Key(steno="-R", label="R", grid_location=(2, 2)),
+                                ),
+                            ),
+                            KeyGroup(
+                                alignment=GroupAlignment.BOTTOM_LEFT,
+                                organization=GroupOrganization.vertical(key_width),
+    
+                                x=Ref(0),
+                                y=-middle_offset / 2,
+    
+                                elements=(
+                                    Key(steno="-P", label=_num_bar_affected_label("P", "7"), height=reduced_key_height),
+                                    Key(steno="-PB", height=compound_key_size),
+                                    Key(steno="-B", label="B", height=reduced_key_height + middle_offset / 2),
+                                ),
+                            ),
+                            KeyGroup(
+                                alignment=GroupAlignment.BOTTOM_LEFT,
+                                organization=GroupOrganization.vertical(key_width),
+    
+                                x=settings.key_width_ref,
+                                y=-ring_offset / 2,
+    
+                                elements=(
+                                    Key(steno="-L", label=_num_bar_affected_label("L", "8"), height=reduced_key_height),
+                                    Key(steno="-LG", height=compound_key_size),
+                                    Key(steno="-G", label="G", height=reduced_key_height + ring_offset / 2),
+                                ),
+                            ),
+                            KeyGroup(
+                                alignment=GroupAlignment.BOTTOM_LEFT,
+                                organization=GroupOrganization.grid(
+                                    row_heights=(
+                                        reduced_key_height_small,
+                                        compound_key_height_small,
+                                        reduced_key_height_small + pinky_offset / 2,
+                                    ),
+                                    col_widths=(
+                                        inner_end_column_width,
+                                        end_column_compound_width,
+                                        end_column_width,
+                                    ),
+                                ),
+    
+                                x=2 * settings.key_width_ref,
+                                y=-pinky_offset / 2,
+    
+                                elements=(
+                                    Key(steno="-T", label=_num_bar_affected_label("T", "9"), grid_location=(0, 0)),
+                                    Key(steno="-TS", grid_location=(1, 0)),
+                                    Key(steno="-S", label="S", grid_location=(2, 0)),
+                                    Key(steno="-TD", grid_location=(0, 1)),
+                                    Key(steno="-TSDZ", grid_location=(1, 1)),
+                                    Key(steno="-SZ", grid_location=(2, 1)),
+                                    Key(steno="-D", label="D", grid_location=(0, 2)),
+                                    Key(steno="-DZ", grid_location=(1, 2)),
+                                    Key(steno="-Z", label="Z", grid_location=(2, 2)),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
     )
