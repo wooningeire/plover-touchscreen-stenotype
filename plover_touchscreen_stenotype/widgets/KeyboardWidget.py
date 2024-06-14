@@ -12,6 +12,8 @@ from PyQt5.QtGui import (
     QTouchEvent,
 )
 
+from plover.steno import Stroke
+
 from collections import Counter
 from typing import cast, TYPE_CHECKING, Generator
 if TYPE_CHECKING:
@@ -27,11 +29,12 @@ from ..settings import Settings
 from ..lib.reactivity import Ref, RefAttr, watch
 from ..lib.UseDpi import UseDpi
 from ..lib.constants import KEY_STYLESHEET
+from ..lib.util import empty_stroke
 
 
 class KeyboardWidget(QWidget):
-    end_stroke = pyqtSignal(set)  # set[str]
-    current_stroke_change = pyqtSignal(set)  # set[str]
+    end_stroke = pyqtSignal(Stroke)
+    current_stroke_change = pyqtSignal(Stroke)
 
     
     num_bar_pressed = RefAttr(bool)
@@ -41,7 +44,7 @@ class KeyboardWidget(QWidget):
     def __init__(self, settings: Settings, left_right_width_diff: Ref[float], parent: QWidget=None):
         super().__init__(parent)
 
-        self.__current_stroke_keys: set[str] = set()
+        self.__current_stroke: Stroke = empty_stroke()
 
         self.__touches_to_key_widgets: dict[int, KeyWidget] = {} # keys of dict are from QTouchPoint::id
         self.__key_widget_touch_counter: Counter[KeyWidget] = Counter()
@@ -105,28 +108,25 @@ class KeyboardWidget(QWidget):
             return super().event(event)
 
         # Variables for detecting changes post-update
-        had_num_bar = "#" in self.__current_stroke_keys
+        had_num_bar = "#" in self.__current_stroke
 
         if event.type() in (QEvent.TouchBegin, QEvent.TouchUpdate):
-            old_stroke_length = len(self.__current_stroke_keys)
+            old_stroke_length = len(self.__current_stroke)
 
-            self.__current_stroke_keys.update(
-                key
-                for key_widget in self.__find_updated_key_widgets(event.touchPoints())
-                for key in key_widget.substroke
-            )
+            for key_widget in self.__find_updated_key_widgets(event.touchPoints()):
+                self.__current_stroke += key_widget.substroke
 
-            if len(self.__current_stroke_keys) > old_stroke_length and self.__current_stroke_keys:
-                self.current_stroke_change.emit(self.__current_stroke_keys)
-            if not had_num_bar and "#" in self.__current_stroke_keys:
+            if len(self.__current_stroke) > old_stroke_length and self.__current_stroke:
+                self.current_stroke_change.emit(self.__current_stroke)
+            if not had_num_bar and "#" in self.__current_stroke:
                 self.num_bar_pressed = True
             
 
         elif event.type() == QEvent.TouchEnd:
             # This also filters out empty strokes (Plover accepts them and will insert extra spaces)
-            if self.__current_stroke_keys and all(touch.state() == Qt.TouchPointReleased for touch in event.touchPoints()):
-                self.end_stroke.emit(set(self.__current_stroke_keys))
-                self.__current_stroke_keys.clear()
+            if self.__current_stroke and all(touch.state() == Qt.TouchPointReleased for touch in event.touchPoints()):
+                self.end_stroke.emit(self.__current_stroke)
+                self.__current_stroke = empty_stroke()
                 self.__touches_to_key_widgets.clear()
                 self.__key_widget_touch_counter.clear()
             
@@ -210,7 +210,7 @@ class KeyboardWidget(QWidget):
                 key_widget.matched = True
 
             elif ((not stroke_has_ended and key_widget.matched) # optimization assumes keys will not be removed mid-stroke
-                    or all(key in self.__current_stroke_keys for key in key_widget.substroke)):
+                    or key_widget.substroke in self.__current_stroke):
                 key_widget.touched = False
                 key_widget.matched = True
 

@@ -124,7 +124,7 @@ class Main(Tool):
 
         self.stroke_preview = stroke_preview = StrokePreview(self.engine, self.__settings, left_right_width_diff, self)
 
-        if False:
+        if True:
             stenotype = KeyboardWidget(self.__settings, left_right_width_diff, self)
             stenotype.end_stroke.connect(self.__on_stenotype_input)
             stenotype.current_stroke_change.connect(self.__on_stroke_change)
@@ -174,7 +174,7 @@ class Main(Tool):
         layout = QGridLayout(self)
         layout.addWidget(stroke_preview, 0, 0)
         layout.addWidget(controls, 0, 0, Qt.AlignCenter)
-        if False:
+        if True:
             layout.addWidget(stenotype, 0, 0)
         else:
             layout.addWidget(joysticks, 0, 0)
