@@ -15,14 +15,24 @@ from PyQt5.QtGui import (
 from plover.steno import Stroke
 
 from ..lib.UseDpi import UseDpi
-from ..lib.reactivity import Ref, watch
+from ..lib.reactivity import Ref, watch, watch_many
 from ..lib.constants import FONT_FAMILY
+from ..lib.util import empty_stroke, not_none
 
 
 class KeyWidget(QToolButton):
     #region Overrides
 
-    def __init__(self, substroke: Stroke, label_maybe_ref: "str | Ref[str]", parent: "QWidget | None"=None, *, dpi: "UseDpi | None"=None):
+    def __init__(
+        self,
+        substroke: Stroke,
+        label_maybe_ref: "str | Ref[str]",
+        parent: "QWidget | None"=None,
+        *,
+        touched_key_widgets: "Ref[set[KeyWidget]] | None"=None,
+        current_stroke: "Ref[Stroke] | None"=None,
+        dpi: "UseDpi | None"=None,
+    ):
         # super().__init__(label, parent)
         super().__init__(parent)
 
@@ -32,8 +42,33 @@ class KeyWidget(QToolButton):
         self.__matched = False
         self.__matched_soft = False
 
-
+        touched_key_widgets = touched_key_widgets or Ref(set())
+        current_stroke = current_stroke or Ref(empty_stroke())
         dpi = dpi or UseDpi(self)
+
+
+        @watch_many(touched_key_widgets.change, current_stroke.change)
+        def update_highlight_state():
+            old_touched, old_matched = self.touched, self.matched
+
+            if self in touched_key_widgets.value:
+                self.touched = True
+                self.matched = True
+
+            elif substroke in current_stroke.value:
+                self.touched = False
+                self.matched = True
+
+            else:
+                self.touched = False
+                self.matched = False
+
+
+            if (old_touched, old_matched) != (self.touched, self.matched):
+                # Reload stylesheet for dynamic properties: https://stackoverflow.com/questions/1595476/are-qts-stylesheets-really-handling-dynamic-properties
+                # self.style().unpolish(key_widget)
+                not_none(self.style()).polish(self)
+
 
         @watch(dpi.change)
         def set_font():

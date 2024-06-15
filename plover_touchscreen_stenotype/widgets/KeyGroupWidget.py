@@ -48,7 +48,17 @@ def set_group_transforms(item: QGraphicsItem, group: "Group | KeyGroup", boundin
             item.setRotation(group.angle.value)
 
 class KeyGroupWidget(QWidget):
-    def __init__(self, group: KeyGroup, scene: QGraphicsScene, view: QGraphicsView, parent: "QWidget | None"=None, *, dpi: UseDpi):
+    def __init__(
+        self,
+        group: KeyGroup,
+        scene: QGraphicsScene,
+        view: QGraphicsView,
+        parent: "QWidget | None"=None,
+        *,
+        touched_key_widgets: Ref[set[KeyWidget]],
+        current_stroke: Ref[Stroke],
+        dpi: UseDpi,
+    ):
         super().__init__(parent)
 
         items: list[QGraphicsItem] = []
@@ -61,7 +71,7 @@ class KeyGroupWidget(QWidget):
         last_touched_key_widget: "Ref[KeyWidget | None]" = Ref(None)
 
         def compute_effective_pos():
-            if last_touched_key_widget.value is not None:
+            if last_touched_key_widget.value is not None and last_touch.value is not None:
                 proxy_rect = proxy.boundingRect()
                 key_widget_geometry = last_touched_key_widget.value.geometry()
                 key_widget_transform = proxy.deviceTransform(view.viewportTransform()).translate(-proxy_rect.x(), -proxy_rect.y())
@@ -77,10 +87,16 @@ class KeyGroupWidget(QWidget):
         effective_pos = computed(compute_effective_pos,
                 last_touch, last_touched_key_widget, group.x, group.y)
 
+
         def notify_touch_release(touch: QTouchEvent.TouchPoint, key_widget: KeyWidget):
             last_touch.value = touch
             last_touched_key_widget.value = key_widget
         self.notify_touch_release = notify_touch_release
+
+        def reset_position():
+            last_touch.value = None
+            last_touched_key_widget.value = None
+        self.reset_position = reset_position
 
 
         if group.organization.type == GroupOrganizationType.VERTICAL:
@@ -94,7 +110,7 @@ class KeyGroupWidget(QWidget):
                 for key in group.elements:
                     assert key.height is not None
 
-                    @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, dpi=dpi))
+                    @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, touched_key_widgets=touched_key_widgets, current_stroke=current_stroke, dpi=dpi))
                     def render_widget(key_widget: KeyWidget, _: None):
                         self.__key_widgets.append(key_widget)
                         current_key = key
@@ -118,7 +134,7 @@ class KeyGroupWidget(QWidget):
                 for key in group.elements:
                     assert key.width is not None
 
-                    @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, dpi=dpi))
+                    @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, touched_key_widgets=touched_key_widgets, current_stroke=current_stroke, dpi=dpi))
                     def render_widget(key_widget: KeyWidget, _: None):
                         self.__key_widgets.append(key_widget)
                         current_key = key
@@ -148,7 +164,7 @@ class KeyGroupWidget(QWidget):
 
 
                 for key in group.elements:
-                    @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, dpi=dpi))
+                    @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, touched_key_widgets=touched_key_widgets, current_stroke=current_stroke, dpi=dpi))
                     def render_widget(key_widget: KeyWidget, _: None):
                         self.__key_widgets.append(key_widget)
                         return key.grid_location
