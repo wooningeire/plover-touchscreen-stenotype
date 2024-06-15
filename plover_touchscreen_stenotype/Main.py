@@ -152,7 +152,7 @@ class Main(Tool):
 
         close_action = QAction(self)
         close_action.setIconText("×")
-        close_action.triggered.connect(lambda: self.setWindowState(Qt.WindowMinimized))
+        close_action.triggered.connect(lambda: self.close())
         @watch(dpi.change)
         def set_close_action_icon_size():
             close_action.setFont(QFont(FONT_FAMILY, dpi.dp(8)))

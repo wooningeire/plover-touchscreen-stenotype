@@ -45,7 +45,7 @@ class UseDpi(QObject):
         """Converts pt to px using the current logical DPI."""
         return round(pt * not_none(self.__widget.screen()).logicalDotsPerInch() / 72)
     
-    def px_to_cm(self, px: int) -> float:
+    def px_to_cm(self, px: "int | float") -> float:
         return px * 2.54 / not_none(self.__widget.screen()).physicalDotsPerInch()
 
     def __on_screen_change(self, screen: QScreen):

@@ -122,7 +122,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                             ),
                             KeyGroup(
                                 alignment=GroupAlignment.BOTTOM_RIGHT,
-                                organization=GroupOrganization.vertical(key_width),
+                                organization=GroupOrganization.vertical(key_width * 3/4),
     
                                 x=-settings.key_width_ref,
                                 y=-ring_offset / 2,
@@ -135,7 +135,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                             ),
                             KeyGroup(
                                 alignment=GroupAlignment.BOTTOM_RIGHT,
-                                organization=GroupOrganization.vertical(key_width),
+                                organization=GroupOrganization.vertical(key_width * 3/4),
     
                                 x=Ref(0),
                                 y=-middle_offset / 2,
@@ -185,7 +185,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                         ),
 
                         x=Ref(0),
-                        y=Ref(1),
+                        y=Ref(0.25),
 
                         elements=(
                             Key(steno="#", label="#", grid_location=(2, 0, 1, 3)),
@@ -220,7 +220,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                         ),
 
                         x=Ref(0),
-                        y=Ref(1),
+                        y=Ref(0.25),
 
                         elements=(
                             Key(steno="_", label="_", grid_location=(2, 0, 1, 3)),
@@ -261,7 +261,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                             ),
                             KeyGroup(
                                 alignment=GroupAlignment.BOTTOM_LEFT,
-                                organization=GroupOrganization.vertical(key_width),
+                                organization=GroupOrganization.vertical(key_width * 3/4),
     
                                 x=Ref(0),
                                 y=-middle_offset / 2,
@@ -274,7 +274,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                             ),
                             KeyGroup(
                                 alignment=GroupAlignment.BOTTOM_LEFT,
-                                organization=GroupOrganization.vertical(key_width),
+                                organization=GroupOrganization.vertical(key_width * 3/4),
     
                                 x=settings.key_width_ref,
                                 y=-ring_offset / 2,

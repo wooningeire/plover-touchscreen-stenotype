@@ -82,8 +82,8 @@ class Group:
 
     alignment: GroupAlignment
     
-    x: "Ref[float] | None" = None
-    y: "Ref[float] | None" = None
+    x: Ref[float]
+    y: Ref[float]
     angle: "Ref[float] | None" = None
 
 @dataclass
@@ -93,9 +93,9 @@ class KeyGroup:
     alignment: GroupAlignment
     organization: GroupOrganization
 
+    x: Ref[float]
+    y: Ref[float]
     angle: "Ref[float] | None" = None
-    x: "Ref[float] | None" = None
-    y: "Ref[float] | None" = None
     transform_origin_x: "Ref[float] | None" = None
     transform_origin_y: "Ref[float] | None" = None
 

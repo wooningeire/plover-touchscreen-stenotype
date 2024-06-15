@@ -161,7 +161,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                         organization=GroupOrganization.horizontal(key_height),
 
                         x=Ref(0),
-                        y=Ref(1),
+                        y=Ref(0.25),
 
                         elements=(
                             Key(steno="A", label=_num_bar_affected_label("A", "5"), width=reduced_key_width + VOWEL_KEY_WIDTH_BOOST),
@@ -185,7 +185,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                         organization=GroupOrganization.horizontal(key_height),
 
                         x=Ref(0),
-                        y=Ref(1),
+                        y=Ref(0.25),
 
                         elements=(
                             Key(steno="E", label="E", width=reduced_key_width + VOWEL_KEY_WIDTH_BOOST),

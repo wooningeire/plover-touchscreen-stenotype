@@ -1,3 +1,4 @@
+from collections import namedtuple
 from typing import Callable, TypeVar, Optional
 
 from plover.steno import Stroke
@@ -50,3 +51,22 @@ def not_none(value: "T | None") -> T:
     if value is None:
         raise Exception("value is None")
     return value
+
+
+class Point:
+    def __init__(self, x: float, y: float):
+        self.__tuple = (x, y)
+
+    @property
+    def x(self):
+        return self.__tuple[0]
+    
+    @property
+    def y(self):
+        return self.__tuple[1]
+    
+    def __add__(self, other: "Point"):
+        return Point(self.x + other.x, self.y + other.y)
+    
+    def __sub__(self, other: "Point"):
+        return Point(self.x - other.x, self.y - other.y)

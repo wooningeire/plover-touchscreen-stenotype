@@ -2,9 +2,7 @@ from PyQt5.QtCore import (
     Qt,
     QEvent,
     pyqtSignal,
-    pyqtBoundSignal,
     QPoint,
-    QPointF,
     QRectF,
 )
 from PyQt5.QtWidgets import (
@@ -14,32 +12,26 @@ from PyQt5.QtWidgets import (
     QGraphicsScene,
     QGridLayout,
     QGraphicsItem,
-    QVBoxLayout,
-    QHBoxLayout,
 )
 from PyQt5.QtGui import (
     QTouchEvent,
 )
 
 from plover.steno import Stroke
+import plover.log
 
 from collections import Counter
-from typing import cast, TYPE_CHECKING, Generator, Iterable
-if TYPE_CHECKING:
-    from ..Main import Main
-else:
-    Main = object
+from typing import Generator, Iterable
 
 
 from .KeyWidget import KeyWidget
-from .RotatableKeyContainer import RotatableKeyContainer
-from ..lib.keyboard_layout.LayoutDescriptor import Group, GroupOrganizationType, Key, KeyGroup, LayoutDescriptor, GroupOrganization, GroupOrganizationType, GroupAlignment
-from ..lib.keyboard_layout.use_build_keyboard import use_build_keyboard
+from .KeyGroupWidget import KeyGroupWidget, set_group_transforms
+from ..lib.keyboard_layout.LayoutDescriptor import Group, KeyGroup, LayoutDescriptor
 from ..settings import Settings
-from ..lib.reactivity import Ref, RefAttr, watch, watch_many
+from ..lib.reactivity import Ref, RefAttr, computed
 from ..lib.UseDpi import UseDpi
 from ..lib.constants import GRAPHICS_VIEW_STYLE, KEY_STYLESHEET
-from ..lib.util import empty_stroke, not_none, render, child
+from ..lib.util import empty_stroke, not_none, render, child, Point
 
 
 class KeyboardWidget(QWidget):
@@ -89,7 +81,7 @@ class KeyboardWidget(QWidget):
 
             elif event.type() == QEvent.TouchEnd:
                 # This also filters out empty strokes (Plover accepts them and will insert extra spaces)
-                if current_stroke and all(touch.state() == Qt.TouchPointReleased for touch in event.touchPoints()):
+                if len(current_stroke.keys()) > 0:
                     self.end_stroke.emit(current_stroke)
                     current_stroke = empty_stroke()
                     touches_to_key_widgets.clear()
@@ -97,6 +89,17 @@ class KeyboardWidget(QWidget):
                 
                 if had_num_bar:
                     self.num_bar_pressed = False
+
+            
+            if event.type() in (QEvent.TouchUpdate, QEvent.TouchEnd):
+                for touch in event.touchPoints():
+                    if touch.state() != Qt.TouchPointReleased: continue
+
+                    result = key_and_group_widgets_at(touch.pos().toPoint())
+                    if result is None: continue
+                    key_widget, key_group_widget = result
+
+                    key_group_widget.notify_touch_release(touch, key_widget)
 
                 
             update_key_widget_styles_and_state(key_widget_touch_counter.keys())
@@ -116,31 +119,30 @@ class KeyboardWidget(QWidget):
                     if key_widget_touch_counter[old_key_widget] == 0:
                         del key_widget_touch_counter[old_key_widget]
 
+
+                result = key_and_group_widgets_at(touch.pos().toPoint())
+                if result is None: continue
+                key_widget, key_group_widget = result
+
                 if touch.state() == Qt.TouchPointReleased: continue
-
-
-                key_widget = key_widget_at(touch.pos().toPoint())
-                if key_widget is None: continue
-
 
                 touches_to_key_widgets[touch.id()] = key_widget
                 key_widget_touch_counter[key_widget] += 1
 
-                
                 if not key_widget.matched:
                     yield key_widget
 
 
         containers: list[tuple[QWidget, QGraphicsItem]] = []
         graphics_view: QGraphicsView
-        def key_widget_at(point: QPoint) -> "KeyWidget | None":
-            for widget, proxy in containers:
+        def key_and_group_widgets_at(point: QPoint) -> "tuple[KeyWidget, KeyGroupWidget] | None":
+            for key_group_widget, proxy in containers:
                 proxy_transform = proxy.deviceTransform(graphics_view.viewportTransform())
                 widget_coords = proxy_transform.inverted()[0].map(point)
 
-                key_widget = widget.childAt(widget_coords)
+                key_widget = key_group_widget.childAt(widget_coords)
                 if key_widget is not None:
-                    return key_widget
+                    return key_widget, key_group_widget
 
             return None
 
@@ -179,144 +181,26 @@ class KeyboardWidget(QWidget):
         layout_descriptor = build_layout_descriptor(self.settings, self)
 
 
-        def build_group_elements(scene: QGraphicsScene, group: "LayoutDescriptor | Group"):
+        def build_group_elements(group: "LayoutDescriptor | Group", scene: QGraphicsScene, view: QGraphicsView):
             items: list[QGraphicsItem] = []
 
             for subgroup in group.elements:
                 if isinstance(subgroup, Group):
-                    items.append(build_group(scene, subgroup))
+                    items.append(build_group(subgroup, scene, view))
                 elif isinstance(subgroup, KeyGroup):
-                    items.append(build_key_group(scene, subgroup))
+                    key_group_widget = KeyGroupWidget(subgroup, scene, view, dpi=dpi)
+
+                    items.append(key_group_widget.proxy)
+                    containers.append((key_group_widget, key_group_widget.proxy))
+                    key_widgets.extend(key_group_widget.key_widgets)
                     
             return not_none(scene.createItemGroup(items))
-        
-        def set_group_transforms(item: QGraphicsItem, group: "Group | KeyGroup", bounding_rect_change_signals: list[pyqtBoundSignal]):
-            @watch_many(group.x.change, group.y.change, *bounding_rect_change_signals, dpi.change)
-            def set_group_pos():
-                rect = item.boundingRect()
-                item.setPos(
-                    dpi.cm(group.x.value) - rect.width() * group.alignment.value[0],
-                    dpi.cm(group.y.value) - rect.height() * group.alignment.value[1],
-                )
-
-            if group.angle is not None:
-                @watch_many(*bounding_rect_change_signals, dpi.change)
-                def set_origin_point():
-                    item.setTransformOriginPoint(
-                        item.boundingRect().width() * group.alignment.value[0],
-                        item.boundingRect().height() * group.alignment.value[1],
-                    )
-
-                @watch(group.angle.change)
-                def set_group_angle():
-                    item.setRotation(group.angle.value)
 
 
-        def build_group(scene: QGraphicsScene, group: Group):
-            item_group = build_group_elements(scene, group)
-            set_group_transforms(item_group, group, [])
-
-            return item_group
-
-        def build_key_group(scene: QGraphicsScene, group: KeyGroup):
-            items: list[QGraphicsItem] = []
-
-            bounding_rect_change_signals: list[pyqtBoundSignal] = []
-
-            if group.organization.type == GroupOrganizationType.VERTICAL:
-                @render(QWidget(), QVBoxLayout())
-                def render_widget(widget: QWidget, _: QVBoxLayout):
-                    @watch_many(group.organization.width.change, dpi.change)
-                    def set_key_width():
-                        widget.setFixedWidth(dpi.cm(group.organization.width.value))
-                    bounding_rect_change_signals.append(group.organization.width.change)
-
-                    for key in group.elements:
-                        assert key.height is not None
-
-                        @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, dpi=dpi))
-                        def render_widget(key_widget: KeyWidget, _: None):
-                            key_widgets.append(key_widget)
-                            current_key = key
-
-                            @watch_many(current_key.height.change, dpi.change)
-                            def set_height():
-                                key_widget.setFixedHeight(dpi.cm(current_key.height.value))
-                            bounding_rect_change_signals.append(current_key.height.change)
-
-                            return ()
-                        
-                    widget.setStyleSheet(KEY_STYLESHEET)
-
-                    proxy = not_none(scene.addWidget(widget))
-                    items.append(proxy)
-                    containers.append((widget, proxy))
-                
-                    return ()
-
-            elif group.organization.type == GroupOrganizationType.HORIZONTAL:
-                @render(QWidget(), QHBoxLayout())
-                def render_widget(widget: QWidget, _: QHBoxLayout):
-                    @watch_many(group.organization.height.change, dpi.change)
-                    def set_key_height():
-                        widget.setFixedHeight(dpi.cm(group.organization.height.value))
-                    bounding_rect_change_signals.append(group.organization.height.change)
-
-                    for key in group.elements:
-                        assert key.width is not None
-
-                        @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, dpi=dpi))
-                        def render_widget(key_widget: KeyWidget, _: None):
-                            key_widgets.append(key_widget)
-                            current_key = key
-
-                            @watch_many(current_key.width.change, dpi.change)
-                            def set_width():
-                                key_widget.setFixedWidth(dpi.cm(current_key.width.value))
-                            bounding_rect_change_signals.append(current_key.width.change)
-
-                            return ()
-                        
-                    widget.setStyleSheet(KEY_STYLESHEET)
-
-                    proxy = not_none(scene.addWidget(widget))
-                    items.append(proxy)
-                    containers.append((widget, proxy))
-                
-                    return ()
-                    
-            elif group.organization.type == GroupOrganizationType.GRID:
-                @render(QWidget(), QGridLayout())
-                def render_widget(widget: QWidget, layout: QGridLayout):
-                    for i, height in enumerate(not_none(group.organization.row_heights)):
-                        @watch_many(height.change, dpi.change)
-                        def set_row_height():
-                            layout.setRowMinimumHeight(i, dpi.cm(height.value))
-                        bounding_rect_change_signals.append(height.change)
-
-                    for i, width in enumerate(not_none(group.organization.col_widths)):
-                        @watch_many(width.change, dpi.change)
-                        def set_col_width():
-                            layout.setColumnMinimumWidth(i, dpi.cm(width.value))
-                        bounding_rect_change_signals.append(width.change)
-
-
-                    for key in group.elements:
-                        @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, dpi=dpi))
-                        def render_widget(key_widget: KeyWidget, _: None):
-                            key_widgets.append(key_widget)
-                            return key.grid_location
-                        
-                    widget.setStyleSheet(KEY_STYLESHEET)
-
-                    proxy = not_none(scene.addWidget(widget))
-                    items.append(proxy)
-                    containers.append((widget, proxy))
-                
-                    return ()
-                
-            item_group = not_none(scene.createItemGroup(items))
-            set_group_transforms(item_group, group, bounding_rect_change_signals)
+        def build_group(group: Group, scene: QGraphicsScene, view: QGraphicsView):
+            item_group = build_group_elements(group, scene, view)
+            set_group_transforms(item_group, group, [], pos=computed(lambda: Point(group.x.value, group.y.value),
+                    group.x, group.y), dpi=dpi)
 
             return item_group
         
@@ -334,7 +218,7 @@ class KeyboardWidget(QWidget):
 
                 view.setStyleSheet(GRAPHICS_VIEW_STYLE)
                 
-                item_group = build_group_elements(scene, layout_descriptor)
+                item_group = build_group_elements(layout_descriptor, scene, view)
                 rect = QRectF(item_group.boundingRect())
 
                 # rect = QRectF(view.rect())
