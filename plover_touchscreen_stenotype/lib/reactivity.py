@@ -57,6 +57,7 @@ class _RefGetter(Generic[T]):
         setattr(instance, self.__private_attr_name, value)
 
 
+F = TypeVar("F", bound=float)
 class Ref(QObject, Generic[T]):
     change = pyqtSignal(object) # T
 
@@ -89,11 +90,18 @@ class Ref(QObject, Generic[T]):
             return maybe_ref.value
         return maybe_ref
     
-    def __add__(self, other: "Ref[T] | T") -> "Ref[T]":
+    def __add__(self: "Ref[F]", other: "Ref[F] | F") -> "Ref[F]":
         if isinstance(other, Ref):
             return computed(lambda: self.value + other.value,
                     self, other)
         return computed(lambda: self.value + other,
+                self)
+    
+    def __radd__(self: "Ref[F]", other: "Ref[F] | F") -> "Ref[F]":
+        if isinstance(other, Ref):
+            return computed(lambda: other.value + self.value,
+                    self, other)
+        return computed(lambda: other + self.value,
                 self)
     
     def __sub__(self, other: "Ref[T] | T") -> "Ref[T]":
@@ -103,6 +111,13 @@ class Ref(QObject, Generic[T]):
         return computed(lambda: self.value - other,
                 self)
     
+    def __rsub__(self, other: "Ref[T] | T") -> "Ref[T]":
+        if isinstance(other, Ref):
+            return computed(lambda: other.value - self.value,
+                    self, other)
+        return computed(lambda: other - self.value,
+                self)
+
     def __mul__(self, other: "Ref[T] | T") -> "Ref[T]":
         if isinstance(other, Ref):
             return computed(lambda: self.value * other.value,

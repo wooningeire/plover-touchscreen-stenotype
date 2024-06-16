@@ -27,6 +27,7 @@ from typing import Generator, Iterable
 
 from .KeyWidget import KeyWidget
 from .KeyGroupWidget import KeyGroupWidget, set_group_transforms
+from .GroupObject import GroupObject
 from ..lib.keyboard_layout.LayoutDescriptor import Group, KeyGroup, LayoutDescriptor
 from ..settings import Settings
 from ..lib.reactivity import Ref, RefAttr, computed, on
@@ -35,7 +36,7 @@ from ..lib.constants import GRAPHICS_VIEW_STYLE, KEY_STYLESHEET
 from ..lib.util import empty_stroke, not_none, render, child, Point
 
 
-POSITION_RESET_TIMEOUT = 2000
+POSITION_RESET_TIMEOUT = 1000
 
 class KeyboardWidget(QWidget):
     end_stroke = pyqtSignal(Stroke)
@@ -148,7 +149,8 @@ class KeyboardWidget(QWidget):
                 key_widget_touch_counter.emit()
 
 
-        containers: list[KeyGroupWidget] = []
+        containers: list[KeyGroupWidget]
+        group_objects: list[GroupObject]
         graphics_view: QGraphicsView
         def key_and_group_widgets_at(point: QPoint) -> "tuple[KeyWidget, KeyGroupWidget] | None":
             for key_group_widget in containers:
@@ -168,38 +170,14 @@ class KeyboardWidget(QWidget):
             for container in containers:
                 container.reset_position()
 
+            for group_object in group_objects:
+                group_object.reset_position()
+
         #endregion
-
-
-        #region Layout
+        
 
         self.__dpi = dpi = UseDpi(self)
         layout_descriptor = build_layout_descriptor(self.settings, self)
-
-
-        def build_group_elements(group: "LayoutDescriptor | Group", scene: QGraphicsScene, view: QGraphicsView):
-            items: list[QGraphicsItem] = []
-
-            for subgroup in group.elements:
-                if isinstance(subgroup, Group):
-                    items.append(build_group(subgroup, scene, view))
-                elif isinstance(subgroup, KeyGroup):
-                    key_group_widget = KeyGroupWidget(subgroup, scene, view, touched_key_widgets=touched_key_widgets, current_stroke=current_stroke, dpi=dpi)
-
-                    items.append(key_group_widget.proxy)
-                    containers.append(key_group_widget)
-                    
-            return not_none(scene.createItemGroup(items))
-
-
-        def build_group(group: Group, scene: QGraphicsScene, view: QGraphicsView):
-            item_group = build_group_elements(group, scene, view)
-            set_group_transforms(item_group, group, [], pos=computed(lambda: Point(group.x.value, group.y.value),
-                    group.x, group.y), dpi=dpi)
-
-            return item_group
-        
-        #endregion
 
         #region Render
 
@@ -210,15 +188,18 @@ class KeyboardWidget(QWidget):
             @child(self, QGraphicsView(scene))
             def render_widget(view: QGraphicsView, _: None):
                 nonlocal graphics_view
+                nonlocal containers
+                nonlocal group_objects
 
                 view.setStyleSheet(GRAPHICS_VIEW_STYLE)
                 
-                item_group = build_group_elements(layout_descriptor, scene, view)
-                rect = QRectF(item_group.boundingRect())
-
+                group_object = GroupObject(layout_descriptor, scene, view, current_stroke=current_stroke, touched_key_widgets=touched_key_widgets, dpi=dpi)
+                containers = group_object.key_group_widgets
+                group_objects = group_object.group_objects
+                
+                rect = QRectF(group_object.item_group.boundingRect())
                 # rect = QRectF(view.rect())
                 # rect.moveCenter(QPointF(0, 0))
-
                 view.setSceneRect(rect)
 
                 graphics_view = view

@@ -6,6 +6,7 @@ from plover.steno import Stroke
 from PyQt5.QtCore import (
     Qt,
     QTimer,
+    QPointF,
 )
 from PyQt5.QtWidgets import (
     QWidget,
@@ -68,5 +69,24 @@ class Point:
     def __add__(self, other: "Point"):
         return Point(self.x + other.x, self.y + other.y)
     
+    def __radd__(self, other: "Point"):
+        return Point(other.x + self.x, other.y + self.y)
+    
     def __sub__(self, other: "Point"):
         return Point(self.x - other.x, self.y - other.y)
+    
+    def __mul__(self, other: float):
+        return Point(self.x * other, self.y * other)
+    
+    def __truediv__(self, other: float):
+        return Point(self.x / other, self.y / other)
+    
+    def to_qpointf(self):
+        return QPointF(self.x, self.y)
+    
+    @staticmethod
+    def from_qpointf(qpointf: QPointF):
+        return Point(qpointf.x(), qpointf.y())
+    
+    def __repr__(self):
+        return f"Point(x={self.x}, y={self.y})"

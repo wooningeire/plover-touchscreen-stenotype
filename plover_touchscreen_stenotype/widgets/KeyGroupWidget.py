@@ -1,6 +1,6 @@
 from PyQt5.QtCore import (
+    pyqtSignal,
     pyqtBoundSignal,
-    QPoint,
     QPointF,
 )
 from PyQt5.QtWidgets import (
@@ -14,25 +14,26 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import (
     QTouchEvent,
-    QTransform,
 )
 
 from plover.steno import Stroke
+import plover.log
 
 from .KeyWidget import KeyWidget
-from ..lib.keyboard_layout.LayoutDescriptor import Group, GroupOrganizationType, KeyGroup, GroupOrganizationType
-from ..lib.reactivity import watch, watch_many, Ref, computed
+from ..lib.keyboard_layout.LayoutDescriptor import Group, GroupOrganizationType, KeyGroup, Key, GroupOrganizationType, ADAPTATION_RATE
+from ..lib.reactivity import on, watch, watch_many, Ref, computed
 from ..lib.UseDpi import UseDpi
 from ..lib.constants import KEY_STYLESHEET
 from ..lib.util import not_none, render, child, Point
 
-def set_group_transforms(item: QGraphicsItem, group: "Group | KeyGroup", bounding_rect_change_signals: list[pyqtBoundSignal], *, pos: Ref[Point], dpi: UseDpi):
-    @watch_many(pos.change, *bounding_rect_change_signals, dpi.change)
+
+def set_group_transforms(item: QGraphicsItem, group: "Group | KeyGroup", bounding_rect_change_signals: list[pyqtBoundSignal], *, displacement: Ref[Point], dpi: UseDpi):
+    @watch_many(group.x.change, group.y.change, displacement.change, *bounding_rect_change_signals, dpi.change)
     def set_group_pos():
         rect = item.boundingRect()
         item.setPos(
-            dpi.cm(pos.value.x) - rect.width() * group.alignment.value[0],
-            dpi.cm(pos.value.y) - rect.height() * group.alignment.value[1],
+            dpi.cm(group.x.value + displacement.value.x) - rect.width() * group.alignment.value[0],
+            dpi.cm(group.y.value + displacement.value.y) - rect.height() * group.alignment.value[1],
         )
 
     if group.angle is not None:
@@ -48,6 +49,8 @@ def set_group_transforms(item: QGraphicsItem, group: "Group | KeyGroup", boundin
             item.setRotation(group.angle.value)
 
 class KeyGroupWidget(QWidget):
+    displacement_change = pyqtSignal(object, object)  # KeyGroupWidget, Point | None
+
     def __init__(
         self,
         group: KeyGroup,
@@ -57,6 +60,7 @@ class KeyGroupWidget(QWidget):
         *,
         touched_key_widgets: Ref[set[KeyWidget]],
         current_stroke: Ref[Stroke],
+        group_displacement: Ref[Point],
         dpi: UseDpi,
     ):
         super().__init__(parent)
@@ -64,28 +68,44 @@ class KeyGroupWidget(QWidget):
         items: list[QGraphicsItem] = []
         bounding_rect_change_signals: list[pyqtBoundSignal] = []
 
-        self.__key_widgets: list[KeyWidget] = []
+        key_widgets_to_keys: dict[KeyWidget, Key] = {}
 
 
         last_touch: "Ref[QTouchEvent.TouchPoint | None]" = Ref(None)
         last_touched_key_widget: "Ref[KeyWidget | None]" = Ref(None)
 
-        def compute_effective_pos():
-            if last_touched_key_widget.value is not None and last_touch.value is not None:
-                proxy_rect = proxy.boundingRect()
-                key_widget_geometry = last_touched_key_widget.value.geometry()
-                key_widget_transform = proxy.deviceTransform(view.viewportTransform()).translate(-proxy_rect.x(), -proxy_rect.y())
-                
-                local_touch_pos = key_widget_transform.inverted()[0].map(last_touch.value.pos())
-                return effective_pos.value + Point(
-                    dpi.px_to_cm(local_touch_pos.x() - key_widget_geometry.center().x()),
-                    dpi.px_to_cm(local_touch_pos.y() - key_widget_geometry.center().y()),
-                )
-            
-            return Point(group.x.value, group.y.value)
+        displacement_active = computed(lambda: group.adaptive_transform and last_touched_key_widget.value is not None and last_touch.value is not None,
+                last_touched_key_widget, last_touch)
 
-        effective_pos = computed(compute_effective_pos,
-                last_touch, last_touched_key_widget, group.x, group.y)
+        def compute_adaptive_displacement():
+            if not displacement_active.value:
+                return Point(0, 0)
+            
+            proxy_rect = proxy.boundingRect()
+
+            key = key_widgets_to_keys[last_touched_key_widget.value]
+
+            key_widget_center = not_none(last_touched_key_widget.value).geometry().center()
+            proxy_inverse_transform = proxy.deviceTransform(view.viewportTransform()).translate(-proxy_rect.x(), -proxy_rect.y()).inverted()[0]
+            local_touch_pos = proxy_inverse_transform.map(not_none(last_touch.value).pos())
+            return adaptive_displacement.value + Point(
+                dpi.px_to_cm(local_touch_pos.x() - key_widget_center.x()),# - (key.center_offset_x.value if key.center_offset_x is not None else 0),
+                dpi.px_to_cm(local_touch_pos.y() - key_widget_center.y()),# - (key.center_offset_y.value if key.center_offset_y is not None else 0),
+            ) * ADAPTATION_RATE
+
+        adaptive_displacement = computed(compute_adaptive_displacement,
+                last_touch, last_touched_key_widget, displacement_active)
+        
+    
+        @on(adaptive_displacement.change)
+        def emit_displacement_update():
+            if displacement_active.value:
+                proxy_transform = proxy.deviceTransform(view.viewportTransform())
+                point_px = Point.from_qpointf(proxy_transform.map(adaptive_displacement.value.to_qpointf()) - proxy_transform.map(QPointF(0, 0)))
+                plover.log.info(point_px)
+                self.displacement_change.emit(self, point_px)
+            else:
+                self.displacement_change.emit(self, None)
 
 
         def notify_touch_release(touch: QTouchEvent.TouchPoint, key_widget: KeyWidget):
@@ -112,7 +132,7 @@ class KeyGroupWidget(QWidget):
 
                     @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, touched_key_widgets=touched_key_widgets, current_stroke=current_stroke, dpi=dpi))
                     def render_widget(key_widget: KeyWidget, _: None):
-                        self.__key_widgets.append(key_widget)
+                        key_widgets_to_keys[key_widget] = key
                         current_key = key
 
                         @watch_many(current_key.height.change, dpi.change)
@@ -136,7 +156,7 @@ class KeyGroupWidget(QWidget):
 
                     @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, touched_key_widgets=touched_key_widgets, current_stroke=current_stroke, dpi=dpi))
                     def render_widget(key_widget: KeyWidget, _: None):
-                        self.__key_widgets.append(key_widget)
+                        key_widgets_to_keys[key_widget] = key
                         current_key = key
 
                         @watch_many(current_key.width.change, dpi.change)
@@ -166,7 +186,7 @@ class KeyGroupWidget(QWidget):
                 for key in group.elements:
                     @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, touched_key_widgets=touched_key_widgets, current_stroke=current_stroke, dpi=dpi))
                     def render_widget(key_widget: KeyWidget, _: None):
-                        self.__key_widgets.append(key_widget)
+                        key_widgets_to_keys[key_widget] = key
                         return key.grid_location
                 return ()
             
@@ -174,14 +194,22 @@ class KeyGroupWidget(QWidget):
         self.__proxy = proxy = not_none(scene.addWidget(self))
         items.append(proxy)
 
-        set_group_transforms(self.__proxy, group, bounding_rect_change_signals, pos=effective_pos, dpi=dpi)
+
+        def compute_final_displacement():
+            if not displacement_active.value:
+                return Point(0, 0)
+            
+            proxy_transform = proxy.deviceTransform(view.viewportTransform())
+            proxy_inverse_transform = proxy_transform.inverted()[0]
+            plover.log.info(f"group displacement = {group_displacement.value}")
+            return adaptive_displacement.value - Point.from_qpointf(proxy_inverse_transform.map(group_displacement.value.to_qpointf() + proxy_transform.map(QPointF(0, 0))))
+        final_displacement = computed(compute_final_displacement,
+                displacement_active, group_displacement)
+
+        set_group_transforms(self.__proxy, group, bounding_rect_change_signals, displacement=final_displacement, dpi=dpi)
                     
         self.setStyleSheet(KEY_STYLESHEET)
     
     @property
     def proxy(self):
         return self.__proxy
-    
-    @property
-    def key_widgets(self):
-        return self.__key_widgets

@@ -83,6 +83,8 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                 y=Ref(0),
                 angle=settings.main_rows_angle_ref,
 
+                adaptive_transform=True,
+
                 elements=(
                     Group(
                         alignment=GroupAlignment.TOP_LEFT,
@@ -102,22 +104,21 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                     col_widths=(
                                         end_column_width,
                                         end_column_compound_width,
-                                        inner_end_column_width,
+                                        reduced_key_width + pinky_stretch,
                                     ),
                                 ),
     
                                 x=-2 * settings.key_width_ref,
                                 y=-pinky_offset / 2,
     
-    
                                 elements=(
-                                    Key(steno="S", label="S", grid_location=(0, 2, 3, 1)),
-                                    Key(steno="^", label="^", grid_location=(0, 0)),
-                                    Key(steno="^+", grid_location=(1, 0)),
-                                    Key(steno="+", label="+", grid_location=(2, 0)),
-                                    Key(steno="^S", grid_location=(0, 1)),
+                                    Key(steno="^", label="^", grid_location=(0, 0), center_offset_x=end_column_compound_width / 2, center_offset_y=compound_key_height_small / 2),
+                                    Key(steno="^+", grid_location=(1, 0), center_offset_x=end_column_compound_width / 2),
+                                    Key(steno="+", label="+", grid_location=(2, 0), center_offset_x=end_column_compound_width / 2, center_offset_y=-compound_key_height_small / 2 - pinky_offset / 4),
+                                    Key(steno="^S", grid_location=(0, 1), center_offset_y=compound_key_height_small / 2),
                                     Key(steno="^+S", grid_location=(1, 1)),
-                                    Key(steno="+S", grid_location=(2, 1)),
+                                    Key(steno="+S", grid_location=(2, 1), center_offset_y=-compound_key_height_small / 2 - pinky_offset / 4),
+                                    Key(steno="S", label="S", grid_location=(0, 2, 3, 1), center_offset_x=-pinky_stretch / 2 - end_column_compound_width / 2, center_offset_y=-pinky_offset / 4),
                                 ),
                             ),
                             KeyGroup(
@@ -128,9 +129,9 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                 y=-ring_offset / 2,
     
                                 elements=(
-                                    Key(steno="T", label="T", height=reduced_key_height),
+                                    Key(steno="T", label="T", height=reduced_key_height, center_offset_y=compound_key_size / 2),
                                     Key(steno="TK", height=compound_key_size),
-                                    Key(steno="K", label="K", height=reduced_key_height + ring_offset / 2),
+                                    Key(steno="K", label="K", height=reduced_key_height + ring_offset / 2, center_offset_y=-compound_key_size / 2 - ring_offset / 4),
                                 ),
                             ),
                             KeyGroup(
@@ -141,9 +142,9 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                 y=-middle_offset / 2,
     
                                 elements=(
-                                    Key(steno="P", label="P", height=reduced_key_height),
+                                    Key(steno="P", label="P", height=reduced_key_height, center_offset_y=compound_key_size / 2),
                                     Key(steno="PW", height=compound_key_size),
-                                    Key(steno="W", label="W", height=reduced_key_height + middle_offset / 2),
+                                    Key(steno="W", label="W", height=reduced_key_height + middle_offset / 2, center_offset_y=-compound_key_size / 2 - middle_offset / 4),
                                 ),
                             ),
                     
@@ -162,13 +163,13 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                 y=-index_offset / 2,
 
                                 elements=(
-                                    Key(steno="&", label="&&", grid_location=(0, 2, 3, 1)),
-                                    Key(steno="H", label="H", grid_location=(0, 0)),
-                                    Key(steno="HR", grid_location=(1, 0)),
+                                    Key(steno="&", label="&&", grid_location=(0, 2, 3, 1), center_offset_x=-key_width / 4 - index_compound_width / 2, center_offset_y=-index_offset / 4),
+                                    Key(steno="H", label="H", grid_location=(0, 0), center_offset_x=index_compound_width / 2 + index_stretch / 2, center_offset_y=compound_key_height_small / 2),
+                                    Key(steno="HR", grid_location=(1, 0), center_offset_x=index_compound_width / 2 + index_stretch / 2),
                                     Key(steno="R", label="R", grid_location=(2, 0)),
-                                    Key(steno="&H", grid_location=(0, 1)),
-                                    Key(steno="&HR", grid_location=(1, 1)),
-                                    Key(steno="&R", grid_location=(2, 1)),
+                                    Key(steno="&H", grid_location=(0, 1), center_offset_y=compound_key_height_small / 2),
+                                    Key(steno="&HR", grid_location=(1, 1), center_offset_x=index_compound_width / 2 + index_stretch / 2, center_offset_y=-compound_key_height_small / 2 - index_offset / 4),
+                                    Key(steno="&R", grid_location=(2, 1), center_offset_y=-compound_key_height_small / 2 - index_offset / 4),
                                 ),
                             ),
                         ),
@@ -188,13 +189,13 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                         y=Ref(0.25),
 
                         elements=(
-                            Key(steno="#", label="#", grid_location=(2, 0, 1, 3)),
-                            Key(steno="A", label="A", grid_location=(0, 0)),
-                            Key(steno="AO", grid_location=(0, 1)),
-                            Key(steno="O", label="O", grid_location=(0, 2)),
-                            Key(steno="#A", grid_location=(1, 0)),
+                            Key(steno="#", label="#", grid_location=(2, 0, 1, 3), center_offset_y=-vowel_compound_height / 2),
+                            Key(steno="A", label="A", grid_location=(0, 0), center_offset_x=VOWEL_KEY_WIDTH_BOOST / 2 + compound_key_size / 2, center_offset_y=vowel_compound_height / 2),
+                            Key(steno="AO", grid_location=(0, 1), center_offset_y=vowel_compound_height / 2),
+                            Key(steno="O", label="O", grid_location=(0, 2), center_offset_x=-VOWEL_KEY_WIDTH_BOOST / 2 - compound_key_size / 2, center_offset_y=vowel_compound_height / 2),
+                            Key(steno="#A", grid_location=(1, 0), center_offset_x=VOWEL_KEY_WIDTH_BOOST / 2 + compound_key_size / 2),
                             Key(steno="#AO", grid_location=(1, 1)),
-                            Key(steno="#O", grid_location=(1, 2)),
+                            Key(steno="#O", grid_location=(1, 2), center_offset_x=-VOWEL_KEY_WIDTH_BOOST / 2 - compound_key_size / 2),
                         ),
                     ),
                 ),
@@ -206,6 +207,8 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                 x=index_group_width + 2,
                 y=Ref(0),
                 angle=-settings.main_rows_angle_ref,
+
+                adaptive_transform=True,
 
                 elements=(
                     KeyGroup(
@@ -223,13 +226,13 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                         y=Ref(0.25),
 
                         elements=(
-                            Key(steno="_", label="_", grid_location=(2, 0, 1, 3)),
-                            Key(steno="E", label="E", grid_location=(0, 0)),
-                            Key(steno="EU", grid_location=(0, 1)),
-                            Key(steno="U", label="U", grid_location=(0, 2)),
-                            Key(steno="_E", grid_location=(1, 0)),
+                            Key(steno="_", label="_", grid_location=(2, 0, 1, 3), center_offset_y=-vowel_compound_height / 2),
+                            Key(steno="E", label="E", grid_location=(0, 0), center_offset_x=VOWEL_KEY_WIDTH_BOOST / 2 + compound_key_size / 2, center_offset_y=vowel_compound_height / 2),
+                            Key(steno="EU", grid_location=(0, 1), center_offset_y=vowel_compound_height / 2),
+                            Key(steno="U", label="U", grid_location=(0, 2), center_offset_x=-VOWEL_KEY_WIDTH_BOOST / 2 - compound_key_size / 2, center_offset_y=vowel_compound_height / 2),
+                            Key(steno="_E", grid_location=(1, 0), center_offset_x=VOWEL_KEY_WIDTH_BOOST / 2 + compound_key_size / 2),
                             Key(steno="_EU", grid_location=(1, 1)),
-                            Key(steno="_U", grid_location=(1, 2)),
+                            Key(steno="_U", grid_location=(1, 2), center_offset_x=-VOWEL_KEY_WIDTH_BOOST / 2 - compound_key_size / 2),
                         ),
                     ),
                     Group(
@@ -250,13 +253,13 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                 y=-index_offset / 2,
 
                                 elements=(
-                                    Key(steno="*", label="🞱", grid_location=(0, 0, 3, 1)),
-                                    Key(steno="*F", grid_location=(0, 1)),
+                                    Key(steno="*", label="🞱", grid_location=(0, 0, 3, 1), center_offset_x=key_width / 4 + index_compound_width / 2, center_offset_y=-index_offset / 4),
+                                    Key(steno="*F", grid_location=(0, 1), center_offset_y=compound_key_height_small / 2),
                                     Key(steno="*FR", grid_location=(1, 1)),
-                                    Key(steno="*R", grid_location=(2, 1)),
-                                    Key(steno="-F", label="F", grid_location=(0, 2)),
-                                    Key(steno="-FR", grid_location=(1, 2)),
-                                    Key(steno="-R", label="R", grid_location=(2, 2)),
+                                    Key(steno="*R", grid_location=(2, 1), center_offset_y=-compound_key_height_small / 2 - index_offset / 4),
+                                    Key(steno="-F", label="F", grid_location=(0, 2), center_offset_x=-index_compound_width / 2 - index_stretch / 2, center_offset_y=compound_key_height_small / 2),
+                                    Key(steno="-FR", grid_location=(1, 2), center_offset_x=-index_compound_width / 2 - index_stretch / 2),
+                                    Key(steno="-R", label="R", grid_location=(2, 2), center_offset_x=-index_compound_width / 2 - index_stretch / 2, center_offset_y=-compound_key_height_small / 2 - index_offset / 4),
                                 ),
                             ),
                             KeyGroup(
@@ -267,9 +270,9 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                 y=-middle_offset / 2,
     
                                 elements=(
-                                    Key(steno="-P", label="P", height=reduced_key_height),
+                                    Key(steno="-P", label="P", height=reduced_key_height, center_offset_y=compound_key_size / 2),
                                     Key(steno="-PB", height=compound_key_size),
-                                    Key(steno="-B", label="B", height=reduced_key_height + middle_offset / 2),
+                                    Key(steno="-B", label="B", height=reduced_key_height + middle_offset / 2, center_offset_y=-compound_key_size / 2 - middle_offset / 4),
                                 ),
                             ),
                             KeyGroup(
@@ -280,9 +283,9 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                 y=-ring_offset / 2,
     
                                 elements=(
-                                    Key(steno="-L", label="L", height=reduced_key_height),
+                                    Key(steno="-L", label="L", height=reduced_key_height, center_offset_y=compound_key_size / 2),
                                     Key(steno="-LG", height=compound_key_size),
-                                    Key(steno="-G", label="G", height=reduced_key_height + ring_offset / 2),
+                                    Key(steno="-G", label="G", height=reduced_key_height + ring_offset / 2, center_offset_y=-compound_key_size / 2 - ring_offset / 4),
                                 ),
                             ),
                             KeyGroup(
@@ -294,7 +297,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                         reduced_key_height_small + pinky_offset / 2,
                                     ),
                                     col_widths=(
-                                        inner_end_column_width,
+                                        reduced_key_width + pinky_stretch,
                                         end_column_compound_width,
                                         end_column_width,
                                     ),
@@ -304,15 +307,15 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                 y=-pinky_offset / 2,
     
                                 elements=(
-                                    Key(steno="-T", label="T", grid_location=(0, 0)),
-                                    Key(steno="-TS", grid_location=(1, 0)),
-                                    Key(steno="-S", label="S", grid_location=(2, 0)),
-                                    Key(steno="-TD", grid_location=(0, 1)),
+                                    Key(steno="-T", label="T", grid_location=(0, 0), center_offset_x=pinky_stretch / 2 + end_column_compound_width / 2, center_offset_y=compound_key_height_small / 2),
+                                    Key(steno="-TS", grid_location=(1, 0), center_offset_x=pinky_stretch / 2 + end_column_compound_width / 2),
+                                    Key(steno="-S", label="S", grid_location=(2, 0), center_offset_x=pinky_stretch / 2 + end_column_compound_width / 2, center_offset_y=-compound_key_height_small / 2 - pinky_offset / 4),
+                                    Key(steno="-TD", grid_location=(0, 1), center_offset_y=compound_key_height_small / 2),
                                     Key(steno="-TSDZ", grid_location=(1, 1)),
-                                    Key(steno="-SZ", grid_location=(2, 1)),
-                                    Key(steno="-D", label="D", grid_location=(0, 2)),
-                                    Key(steno="-DZ", grid_location=(1, 2)),
-                                    Key(steno="-Z", label="Z", grid_location=(2, 2)),
+                                    Key(steno="-SZ", grid_location=(2, 1), center_offset_y=-compound_key_height_small / 2 - pinky_offset / 4),
+                                    Key(steno="-D", label="D", grid_location=(0, 2), center_offset_x=-end_column_compound_width / 2, center_offset_y=compound_key_height_small / 2),
+                                    Key(steno="-DZ", grid_location=(1, 2), center_offset_x=-end_column_compound_width / 2),
+                                    Key(steno="-Z", label="Z", grid_location=(2, 2), center_offset_x=-end_column_compound_width / 2, center_offset_y=-compound_key_height_small / 2 - pinky_offset / 4),
                                 ),
                             ),
                         ),

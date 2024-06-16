@@ -2,6 +2,12 @@ from dataclasses import dataclass
 from enum import Enum, auto
 
 from ..reactivity import Ref
+from ..util import Point
+
+
+"""The factor any change in displacement will be multiplied by. Useful for counteracting misstrokes and generally avoiding drastic movements."""
+ADAPTATION_RATE = 1
+
 
 KeyColumnsTuple = tuple[
     tuple[
@@ -28,6 +34,9 @@ class Key:
     x: "Ref[float] | None" = None
     y: "Ref[float] | None" = None
     grid_location: tuple[int, ...] = ()
+
+    center_offset_x: "Ref[float] | None" = None
+    center_offset_y: "Ref[float] | None" = None
 
 class GroupAlignment(Enum):
     CENTER = (0.5, 0.5)
@@ -86,6 +95,8 @@ class Group:
     y: Ref[float]
     angle: "Ref[float] | None" = None
 
+    adaptive_transform: bool = False
+
 @dataclass
 class KeyGroup:
     elements: "tuple[Key, ...]"
@@ -98,6 +109,8 @@ class KeyGroup:
     angle: "Ref[float] | None" = None
     transform_origin_x: "Ref[float] | None" = None
     transform_origin_y: "Ref[float] | None" = None
+
+    adaptive_transform: bool = True
 
 @dataclass
 class LayoutDescriptor:
