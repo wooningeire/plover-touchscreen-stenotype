@@ -18,7 +18,7 @@ from typing import Callable
 
 from .DisplayAlignmentLayout import DisplayAlignmentLayout
 from ..lib.reactivity import Ref, watch
-from ..lib.UseDpi import UseDpi
+from .composables.UseDpi import UseDpi
 from ..lib.constants import FONT_FAMILY
 
 class CenterControls(QWidget):

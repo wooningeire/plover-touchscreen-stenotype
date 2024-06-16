@@ -28,16 +28,16 @@ import math
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 
-from .KeyWidget import KeyWidget
-from ..settings import Settings
-from ..lib.Joystick import Joystick, JoystickLayout, JoystickSemicircleSide, MAX_DISPLACEMENT, NEUTRAL_THRESHOLD_PROPORTION, TRIGGER_DISTANCE
-from ..lib.UseJoystickControl import UseJoystickControl
-from ..lib.reactivity import Ref, computed, on, on_many, watch, watch_many
-from ..lib.UseDpi import UseDpi
-from ..lib.constants import GRAPHICS_VIEW_STYLE, KEY_STYLESHEET, KEY_CONTAINER_STYLE
-from ..lib.util import child, empty_stroke, render, not_none
+from ..KeyWidget import KeyWidget
+from ...settings import Settings
+from ...lib.Joystick import Joystick, JoystickLayout, JoystickSemicircleSide, MAX_DISPLACEMENT, NEUTRAL_THRESHOLD_PROPORTION, TRIGGER_DISTANCE
+from ..composables.UseJoystickControl import UseJoystickControl
+from ...lib.reactivity import Ref, computed, on, on_many, watch, watch_many
+from ..composables.UseDpi import UseDpi
+from ...lib.constants import GRAPHICS_VIEW_STYLE, KEY_STYLESHEET, KEY_CONTAINER_STYLE
+from ...lib.util import child, empty_stroke, render, not_none
 if TYPE_CHECKING:
-    from ..Main import Main
+    from ...Main import Main
 else:
     Main = object
 

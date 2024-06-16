@@ -19,12 +19,12 @@ from PyQt5.QtGui import (
 from plover.steno import Stroke
 import plover.log
 
-from .KeyWidget import KeyWidget
-from ..lib.keyboard_layout.LayoutDescriptor import Group, GroupOrganizationType, KeyGroup, Key, GroupOrganizationType, ADAPTATION_RATE
-from ..lib.reactivity import on, watch, watch_many, Ref, computed
-from ..lib.UseDpi import UseDpi
-from ..lib.constants import KEY_STYLESHEET
-from ..lib.util import not_none, render, child, Point
+from ..KeyWidget import KeyWidget
+from ...lib.keyboard_layout.LayoutDescriptor import Group, GroupOrganizationType, KeyGroup, Key, GroupOrganizationType, ADAPTATION_RATE
+from ...lib.reactivity import on, watch, watch_many, Ref, computed
+from ..composables.UseDpi import UseDpi
+from ...lib.constants import KEY_STYLESHEET
+from ...lib.util import not_none, render, child, Point
 
 
 def set_group_transforms(item: QGraphicsItem, group: "Group | KeyGroup", bounding_rect_change_signals: list[pyqtBoundSignal], *, displacement: Ref[Point], dpi: UseDpi):

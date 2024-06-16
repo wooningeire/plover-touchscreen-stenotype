@@ -28,11 +28,11 @@ from plover.steno import Stroke
 
 from .settings import Settings
 from .lib.reactivity import Ref, on, on_many, watch
-from .lib.UseDpi import UseDpi
+from .widgets.composables.UseDpi import UseDpi
 from .lib.constants import FONT_FAMILY
 from .lib.util import immediate
-from .widgets.KeyboardWidget import KeyboardWidget
-from .widgets.JoysticksWidget import JoysticksWidget
+from .widgets.keyboard.KeyboardWidget import KeyboardWidget
+from .widgets.joysticks.JoysticksWidget import JoysticksWidget
 from .widgets.StrokePreview import StrokePreview
 from .widgets.SettingsDialog import SettingsDialog
 from .widgets.CenterControls import CenterControls

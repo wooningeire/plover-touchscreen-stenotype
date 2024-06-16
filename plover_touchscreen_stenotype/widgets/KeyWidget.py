@@ -14,7 +14,7 @@ from PyQt5.QtGui import (
 
 from plover.steno import Stroke
 
-from ..lib.UseDpi import UseDpi
+from .composables.UseDpi import UseDpi
 from ..lib.reactivity import Ref, watch, watch_many
 from ..lib.constants import FONT_FAMILY
 from ..lib.util import empty_stroke, not_none

@@ -25,7 +25,7 @@ from typing import Iterable
 from .DisplayAlignmentLayout import DisplayAlignmentLayout
 from ..settings import Settings
 from ..lib.reactivity import Ref, watch, watch_many
-from ..lib.UseDpi import UseDpi
+from .composables.UseDpi import UseDpi
 from ..lib.constants import FONT_FAMILY
 
 class StrokePreview(QWidget):

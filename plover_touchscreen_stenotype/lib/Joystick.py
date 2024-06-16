@@ -11,7 +11,7 @@ from PyQt5.QtGui import (
 )
 
 from .reactivity import Ref, on
-from .UseDpi import UseDpi
+from ..widgets.composables.UseDpi import UseDpi
 
 
 MAX_DISPLACEMENT = 0.375

@@ -12,9 +12,9 @@ from PyQt5.QtGui import (
     QTouchEvent,
 )
 
-from .Joystick import Joystick, JoystickLayout, JoystickSemicircleSide, MAX_DISPLACEMENT, NEUTRAL_THRESHOLD_PROPORTION, TRIGGER_DISTANCE
+from ...lib.Joystick import Joystick, JoystickLayout, JoystickSemicircleSide, MAX_DISPLACEMENT, NEUTRAL_THRESHOLD_PROPORTION, TRIGGER_DISTANCE
 from .UseDpi import UseDpi
-from .reactivity import watch
+from ...lib.reactivity import watch
 
 class UseJoystickControl:
     """Composable that sets up a joystick control"""

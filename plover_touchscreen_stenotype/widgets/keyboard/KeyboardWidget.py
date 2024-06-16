@@ -22,18 +22,18 @@ from plover.steno import Stroke
 import plover.log
 
 from collections import Counter
-from typing import Generator, Iterable
+from typing import Generator
 
 
-from .KeyWidget import KeyWidget
-from .KeyGroupWidget import KeyGroupWidget, set_group_transforms
+from ..KeyWidget import KeyWidget
+from .KeyGroupWidget import KeyGroupWidget
 from .GroupObject import GroupObject
-from ..lib.keyboard_layout.LayoutDescriptor import Group, KeyGroup, LayoutDescriptor
-from ..settings import Settings
-from ..lib.reactivity import Ref, RefAttr, computed, on
-from ..lib.UseDpi import UseDpi
-from ..lib.constants import GRAPHICS_VIEW_STYLE, KEY_STYLESHEET
-from ..lib.util import empty_stroke, not_none, render, child, Point
+from ...settings import Settings
+from ...lib.reactivity import Ref, RefAttr, computed, on
+from ..composables.UseDpi import UseDpi
+from ...lib.constants import GRAPHICS_VIEW_STYLE, KEY_STYLESHEET
+from ...lib.util import empty_stroke, render, child
+from ...lib.keyboard_layout.descriptors.english_stenotype_extended_custom import build_layout_descriptor
 
 
 POSITION_RESET_TIMEOUT = 1000
@@ -53,8 +53,6 @@ class KeyboardWidget(QWidget):
         left_right_width_diff: Ref[float],
         parent: "QWidget | None"=None,
     ):
-        from ..lib.keyboard_layout.descriptors.english_stenotype_extended_custom import build_layout_descriptor
-
         super().__init__(parent)
 
         current_stroke = Ref(empty_stroke())

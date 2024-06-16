@@ -15,12 +15,12 @@ import plover.log
 from typing import cast
 
 
-from .KeyWidget import KeyWidget
+from ..KeyWidget import KeyWidget
 from .KeyGroupWidget import KeyGroupWidget, set_group_transforms
-from ..lib.keyboard_layout.LayoutDescriptor import Group, KeyGroup, LayoutDescriptor
-from ..lib.reactivity import Ref, on
-from ..lib.UseDpi import UseDpi
-from ..lib.util import not_none, Point
+from ...lib.keyboard_layout.LayoutDescriptor import Group, KeyGroup, LayoutDescriptor
+from ...lib.reactivity import Ref, on
+from ..composables.UseDpi import UseDpi
+from ...lib.util import not_none, Point
 
 
 class GroupObject(QObject):

@@ -10,7 +10,7 @@ from PyQt5.QtGui import (
     QScreen,
 )
 
-from .util import not_none
+from ...lib.util import not_none
 
 class UseDpi(QObject):
     """Composable that handles DPI-responsivity."""

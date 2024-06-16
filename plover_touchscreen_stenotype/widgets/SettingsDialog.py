@@ -34,7 +34,7 @@ from ..lib.constants import FONT_FAMILY
 
 
 class SettingsDialog(QDialog):
-    def __init__(self, settings: Settings, parent: Main=None):
+    def __init__(self, settings: Settings, parent: "Main | None"=None):
         super().__init__(parent)
         
         self.__settings = settings
