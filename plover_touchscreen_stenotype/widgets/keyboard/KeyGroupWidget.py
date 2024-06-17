@@ -1,3 +1,5 @@
+from typing import cast
+
 from PyQt5.QtCore import (
     pyqtSignal,
     pyqtBoundSignal,
@@ -21,7 +23,7 @@ import plover.log
 
 from ..KeyWidget import KeyWidget
 from ...lib.keyboard_layout.LayoutDescriptor import Group, GroupOrganizationType, KeyGroup, Key, GroupOrganizationType, ADAPTATION_RATE
-from ...lib.reactivity import on, watch, watch_many, Ref, computed
+from ...lib.reactivity import on, on_many, watch, watch_many, Ref, computed
 from ..composables.UseDpi import UseDpi
 from ...lib.constants import KEY_STYLESHEET
 from ...lib.util import not_none, render, child, Point
@@ -77,7 +79,12 @@ class KeyGroupWidget(QWidget):
         displacement_active = computed(lambda: group.adaptive_transform and last_touched_key_widget.value is not None and last_touch.value is not None,
                 last_touched_key_widget, last_touch)
 
-        def compute_adaptive_displacement():
+        displacement = Ref(Point(0, 0))
+
+        tapped_in_current_stroke = Ref(False)
+        last_displacement = Ref(Point(0, 0))
+
+        def recompute_displacement_this_stroke():
             if not displacement_active.value:
                 return Point(0, 0)
             
@@ -88,27 +95,49 @@ class KeyGroupWidget(QWidget):
             key_widget_center = not_none(last_touched_key_widget.value).geometry().center()
             proxy_inverse_transform = proxy.deviceTransform(view.viewportTransform()).translate(-proxy_rect.x(), -proxy_rect.y()).inverted()[0]
             local_touch_pos = proxy_inverse_transform.map(not_none(last_touch.value).pos())
-            return adaptive_displacement.value + Point(
+            return cast(Point, displacement_this_stroke.value + Point(
                 dpi.px_to_cm(local_touch_pos.x() - key_widget_center.x()),# - (key.center_offset_x.value if key.center_offset_x is not None else 0),
                 dpi.px_to_cm(local_touch_pos.y() - key_widget_center.y()),# - (key.center_offset_y.value if key.center_offset_y is not None else 0),
-            ) * ADAPTATION_RATE
+            ) * ADAPTATION_RATE)
 
-        adaptive_displacement = computed(compute_adaptive_displacement,
-                last_touch, last_touched_key_widget, displacement_active)
+        displacement_this_stroke = Ref(Point(0, 0))
         
+        @on_many(last_touch.change, last_touched_key_widget.change, displacement_active.change)
+        def update_displacement_this_stroke():
+            displacement_this_stroke.value = recompute_displacement_this_stroke()
+            emit_displacement_update()
+        
+        displacement = Ref(Point(0, 0))
+        
+
+        @on(group_displacement.change)
+        def on_stroke_reset():
+            if current_stroke.value: return
+
+            local_group_displacement = Point(0, 0)
+
+            if not tapped_in_current_stroke.value:
+                proxy_transform = proxy.deviceTransform(view.viewportTransform())
+                proxy_inverse_transform = proxy_transform.inverted()[0]
+                local_group_displacement = Point.from_qpointf(proxy_inverse_transform.map(group_displacement.value.to_qpointf() + proxy_transform.map(QPointF(0, 0))))
+        
+            displacement.value = last_displacement.value + displacement_this_stroke.value + local_group_displacement
+
+            last_displacement.value = displacement.value
+            tapped_in_current_stroke.value = False
+            displacement_this_stroke.value = Point(0, 0)
     
-        @on(adaptive_displacement.change)
         def emit_displacement_update():
             if displacement_active.value:
                 proxy_transform = proxy.deviceTransform(view.viewportTransform())
-                point_px = Point.from_qpointf(proxy_transform.map(adaptive_displacement.value.to_qpointf()) - proxy_transform.map(QPointF(0, 0)))
-                plover.log.info(point_px)
+                point_px = Point.from_qpointf(proxy_transform.map(displacement_this_stroke.value.to_qpointf()) - proxy_transform.map(QPointF(0, 0)))
                 self.displacement_change.emit(self, point_px)
             else:
                 self.displacement_change.emit(self, None)
 
 
         def notify_touch_release(touch: QTouchEvent.TouchPoint, key_widget: KeyWidget):
+            tapped_in_current_stroke.value = True
             last_touch.value = touch
             last_touched_key_widget.value = key_widget
         self.notify_touch_release = notify_touch_release
@@ -116,6 +145,11 @@ class KeyGroupWidget(QWidget):
         def reset_position():
             last_touch.value = None
             last_touched_key_widget.value = None
+
+            last_displacement.value = Point(0, 0)
+            displacement_this_stroke.value = Point(0, 0)
+            tapped_in_current_stroke.value = False
+            displacement.value = Point(0, 0)
         self.reset_position = reset_position
 
 
@@ -195,18 +229,7 @@ class KeyGroupWidget(QWidget):
         items.append(proxy)
 
 
-        def compute_final_displacement():
-            if not displacement_active.value:
-                return Point(0, 0)
-            
-            proxy_transform = proxy.deviceTransform(view.viewportTransform())
-            proxy_inverse_transform = proxy_transform.inverted()[0]
-            plover.log.info(f"group displacement = {group_displacement.value}")
-            return adaptive_displacement.value - Point.from_qpointf(proxy_inverse_transform.map(group_displacement.value.to_qpointf() + proxy_transform.map(QPointF(0, 0))))
-        final_displacement = computed(compute_final_displacement,
-                displacement_active, group_displacement)
-
-        set_group_transforms(self.__proxy, group, bounding_rect_change_signals, displacement=final_displacement, dpi=dpi)
+        set_group_transforms(self.__proxy, group, bounding_rect_change_signals, displacement=displacement, dpi=dpi)
                     
         self.setStyleSheet(KEY_STYLESHEET)
     

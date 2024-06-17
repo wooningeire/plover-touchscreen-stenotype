@@ -36,7 +36,7 @@ from ...lib.util import empty_stroke, render, child
 from ...lib.keyboard_layout.descriptors.english_stenotype_extended_custom import build_layout_descriptor
 
 
-POSITION_RESET_TIMEOUT = 1000
+POSITION_RESET_TIMEOUT = 1500
 
 class KeyboardWidget(QWidget):
     end_stroke = pyqtSignal(Stroke)
@@ -71,6 +71,15 @@ class KeyboardWidget(QWidget):
         #region Touch handling
 
         def handle_touch_event(event: QTouchEvent):
+            if event.type() in (QEvent.TouchUpdate, QEvent.TouchEnd):
+                for touch in event.touchPoints():
+                    if touch.state() != Qt.TouchPointReleased: continue
+
+                    result = key_and_group_widgets_at(touch.pos().toPoint())
+                    if result is None: continue
+                    key_widget, key_group_widget = result
+
+                    key_group_widget.notify_touch_release(touch, key_widget)
 
             # Variables for detecting changes post-update
             had_num_bar = "#" in current_stroke.value
@@ -103,17 +112,6 @@ class KeyboardWidget(QWidget):
                     self.num_bar_pressed = False
 
                 position_reset_timer.start(POSITION_RESET_TIMEOUT)
-
-            
-            if event.type() in (QEvent.TouchUpdate, QEvent.TouchEnd):
-                for touch in event.touchPoints():
-                    if touch.state() != Qt.TouchPointReleased: continue
-
-                    result = key_and_group_widgets_at(touch.pos().toPoint())
-                    if result is None: continue
-                    key_widget, key_group_widget = result
-
-                    key_group_widget.notify_touch_release(touch, key_widget)
         self.__handle_touch_event = handle_touch_event
 
 

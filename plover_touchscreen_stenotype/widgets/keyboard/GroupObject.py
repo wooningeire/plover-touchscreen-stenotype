@@ -57,10 +57,7 @@ class GroupObject(QObject):
 
 
         use_adaptive_transform = isinstance(group, Group) and group.adaptive_transform
-        if use_adaptive_transform:
-            child_displacement = absolute_group_displacement
-        else:
-            child_displacement = parent_group_displacement
+        child_displacement = absolute_group_displacement if use_adaptive_transform else parent_group_displacement
 
         def handle_displacement_update(key_group_widget: KeyGroupWidget, displacement: "Point | None"):
             self.displacement_change.emit(key_group_widget, displacement)
@@ -72,7 +69,12 @@ class GroupObject(QObject):
             if key_group_widget in key_group_displacements:
                 del key_group_displacements[key_group_widget]
 
-        def recompute_group_displacement():
+        @on(current_stroke.change)
+        def on_stroke_reset():
+            nonlocal key_group_displacements
+
+            if current_stroke.value: return
+
             if not use_adaptive_transform or len(key_group_displacements) == 0:
                 group_displacement.value = Point(0, 0)
                 return
@@ -83,10 +85,10 @@ class GroupObject(QObject):
             inverse_transform = transform.inverted()[0]
             local_avg_displacement = inverse_transform.map(avg_displacement.to_qpointf() + transform.map(QPointF(0, 0)))
 
-            plover.log.info(key_group_displacements)
-            plover.log.info(f"avg displacement = {avg_displacement}")
             absolute_group_displacement.value = avg_displacement
             group_displacement.value = Point.from_qpointf(local_avg_displacement)
+
+            key_group_displacements = {}
 
 
         for subgroup in group.elements:
@@ -101,7 +103,6 @@ class GroupObject(QObject):
                 @on(group_object.displacement_change)
                 def update_displacement(key_group_widget: KeyGroupWidget, displacement: "Point | None"):
                     handle_displacement_update(key_group_widget, displacement)
-                    recompute_group_displacement()
 
 
                 items.append(group_object.item_group)
@@ -118,7 +119,6 @@ class GroupObject(QObject):
                 @on(key_group_widget.displacement_change)
                 def update_displacement(key_group_widget: KeyGroupWidget, displacement: "Point | None"):
                     handle_displacement_update(key_group_widget, displacement)
-                    recompute_group_displacement()
 
                 items.append(key_group_widget.proxy)
                 self.__key_group_widgets.append(key_group_widget)
@@ -127,7 +127,7 @@ class GroupObject(QObject):
 
 
         if isinstance(group, Group):
-            set_group_transforms(self.__item_group, group, [], displacement=group_displacement, dpi=dpi)
+            set_group_transforms(self.__item_group, group, [], displacement=Ref(Point(0, 0)), dpi=dpi)
 
     @property
     def item_group(self):
