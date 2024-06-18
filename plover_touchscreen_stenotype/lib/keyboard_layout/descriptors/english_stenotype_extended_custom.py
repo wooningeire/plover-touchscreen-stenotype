@@ -5,7 +5,7 @@ from ....settings import Settings
 from ...reactivity import Ref, computed
 from ..LayoutDescriptor import LayoutDescriptor, Key, KeyGroup, Group, GroupAlignment, GroupOrganization
 if TYPE_CHECKING:
-    from ....widgets.KeyboardWidget import KeyboardWidget
+    from ....widgets.keyboard.KeyboardWidget import KeyboardWidget
 else:
     KeyboardWidget = object
 
@@ -186,7 +186,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                         ),
 
                         x=Ref(0),
-                        y=Ref(0.25),
+                        y=Ref(0),
 
                         elements=(
                             Key(steno="#", label="#", grid_location=(2, 0, 1, 3), center_offset_y=-vowel_compound_height / 2),
@@ -223,7 +223,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                         ),
 
                         x=Ref(0),
-                        y=Ref(0.25),
+                        y=Ref(0),
 
                         elements=(
                             Key(steno="_", label="_", grid_location=(2, 0, 1, 3), center_offset_y=-vowel_compound_height / 2),

@@ -6,7 +6,8 @@ from ..util import Point
 
 
 """The factor any change in displacement will be multiplied by. Useful for counteracting misstrokes and generally avoiding drastic movements."""
-ADAPTATION_RATE = 0.25
+ADAPTATION_RATE = 0.125
+MEAN_DEVIATION_FACTOR = 0.75
 
 
 KeyColumnsTuple = tuple[

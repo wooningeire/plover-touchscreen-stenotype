@@ -1,4 +1,4 @@
-from collections import namedtuple
+import math
 from typing import Callable, TypeVar, Optional
 
 from plover.steno import Stroke
@@ -78,6 +78,9 @@ class Point:
     def __mul__(self, other: float):
         return Point(self.x * other, self.y * other)
     
+    def __rmul__(self, other: float):
+        return Point(other * self.x, other * self.y)
+    
     def __truediv__(self, other: float):
         return Point(self.x / other, self.y / other)
     
@@ -90,3 +93,13 @@ class Point:
     
     def __repr__(self):
         return f"Point(x={self.x}, y={self.y})"
+    
+    def sqdist(self):
+        return self.x**2 + self.y**2
+    
+    def hypot(self):
+        return math.hypot(self.x, self.y)
+    
+    def with_hypot(self, hypot: float):
+        angle = math.atan2(self.y, self.x)
+        return hypot * Point(math.cos(angle), math.sin(angle))

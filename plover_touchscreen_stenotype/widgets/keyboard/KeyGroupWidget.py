@@ -13,6 +13,8 @@ from PyQt5.QtWidgets import (
     QGridLayout,
     QVBoxLayout,
     QHBoxLayout,
+    QSizePolicy,
+    QLayout,
 )
 from PyQt5.QtGui import (
     QTouchEvent,
@@ -22,7 +24,7 @@ from plover.steno import Stroke
 import plover.log
 
 from ..KeyWidget import KeyWidget
-from ...lib.keyboard_layout.LayoutDescriptor import Group, GroupOrganizationType, KeyGroup, Key, GroupOrganizationType, ADAPTATION_RATE
+from ...lib.keyboard_layout.LayoutDescriptor import Group, GroupOrganizationType, KeyGroup, Key, GroupOrganizationType, ADAPTATION_RATE, MEAN_DEVIATION_FACTOR
 from ...lib.reactivity import on, on_many, watch, watch_many, Ref, computed
 from ..composables.UseDpi import UseDpi
 from ...lib.constants import KEY_STYLESHEET
@@ -51,7 +53,8 @@ def set_group_transforms(item: QGraphicsItem, group: "Group | KeyGroup", boundin
             item.setRotation(group.angle.value)
 
 class KeyGroupWidget(QWidget):
-    displacement_change = pyqtSignal(object, object)  # KeyGroupWidget, Point | None
+    displacement_this_stroke_change = pyqtSignal(object, object)  # KeyGroupWidget, Point | None, Point | None,
+    last_displacement_change = pyqtSignal(object, object)  # KeyGroupWidget, Point | None, Point | None,
 
     def __init__(
         self,
@@ -62,7 +65,8 @@ class KeyGroupWidget(QWidget):
         *,
         touched_key_widgets: Ref[set[KeyWidget]],
         current_stroke: Ref[Stroke],
-        group_displacement: Ref[Point],
+        avg_group_displacement_this_stroke: Ref[Point],
+        avg_group_displacement: Ref[Point],
         dpi: UseDpi,
     ):
         super().__init__(parent)
@@ -95,11 +99,11 @@ class KeyGroupWidget(QWidget):
             key_widget_center = not_none(last_touched_key_widget.value).geometry().center()
             proxy_inverse_transform = proxy.deviceTransform(view.viewportTransform()).translate(-proxy_rect.x(), -proxy_rect.y()).inverted()[0]
             local_touch_pos = proxy_inverse_transform.map(not_none(last_touch.value).pos())
-            return cast(Point, displacement_this_stroke.value + Point(
+            return Point(
                 dpi.px_to_cm(local_touch_pos.x() - key_widget_center.x()),# - (key.center_offset_x.value if key.center_offset_x is not None else 0),
                 dpi.px_to_cm(local_touch_pos.y() - key_widget_center.y()),# - (key.center_offset_y.value if key.center_offset_y is not None else 0),
-            ) * ADAPTATION_RATE)
-
+            ) * ADAPTATION_RATE
+        
         displacement_this_stroke = Ref(Point(0, 0))
         
         @on_many(last_touch.change, last_touched_key_widget.change, displacement_active.change)
@@ -110,30 +114,36 @@ class KeyGroupWidget(QWidget):
         displacement = Ref(Point(0, 0))
         
 
-        @on(group_displacement.change)
+        @on(avg_group_displacement.change)
         def on_stroke_reset():
             if current_stroke.value: return
 
-            local_group_displacement = Point(0, 0)
-
-            if not tapped_in_current_stroke.value:
-                proxy_transform = proxy.deviceTransform(view.viewportTransform())
-                proxy_inverse_transform = proxy_transform.inverted()[0]
-                local_group_displacement = Point.from_qpointf(proxy_inverse_transform.map(group_displacement.value.to_qpointf() + proxy_transform.map(QPointF(0, 0))))
-        
-            displacement.value = last_displacement.value + displacement_this_stroke.value + local_group_displacement
+            proxy_transform = proxy.deviceTransform(view.viewportTransform())
+            proxy_inverse_transform = proxy_transform.inverted()[0]
+            local_avg_group_displacement_this_stroke = Point.from_qpointf(proxy_inverse_transform.map(avg_group_displacement_this_stroke.value.to_qpointf() + proxy_transform.map(QPointF(0, 0))))
+            local_avg_group_displacement = Point.from_qpointf(proxy_inverse_transform.map(avg_group_displacement.value.to_qpointf() + proxy_transform.map(QPointF(0, 0))))
+            
+            if tapped_in_current_stroke.value:
+                new_displacement_centered = last_displacement.value + displacement_this_stroke.value - local_avg_group_displacement
+                displacement.value = local_avg_group_displacement + new_displacement_centered * MEAN_DEVIATION_FACTOR 
+            else:
+                displacement.value = last_displacement.value + local_avg_group_displacement_this_stroke
 
             last_displacement.value = displacement.value
             tapped_in_current_stroke.value = False
             displacement_this_stroke.value = Point(0, 0)
+
+            proxy_transform = proxy.deviceTransform(view.viewportTransform())
+            absolute_last_displacement = Point.from_qpointf(proxy_transform.map(last_displacement.value.to_qpointf()) - proxy_transform.map(QPointF(0, 0)))
+            self.last_displacement_change.emit(self, absolute_last_displacement)
     
         def emit_displacement_update():
             if displacement_active.value:
                 proxy_transform = proxy.deviceTransform(view.viewportTransform())
-                point_px = Point.from_qpointf(proxy_transform.map(displacement_this_stroke.value.to_qpointf()) - proxy_transform.map(QPointF(0, 0)))
-                self.displacement_change.emit(self, point_px)
+                absolute_displacement_this_stroke = Point.from_qpointf(proxy_transform.map(displacement_this_stroke.value.to_qpointf()) - proxy_transform.map(QPointF(0, 0)))
+                self.displacement_this_stroke_change.emit(self, absolute_displacement_this_stroke)
             else:
-                self.displacement_change.emit(self, None)
+                self.displacement_this_stroke_change.emit(self, None)
 
 
         def notify_touch_release(touch: QTouchEvent.TouchPoint, key_widget: KeyWidget):
@@ -156,6 +166,8 @@ class KeyGroupWidget(QWidget):
         if group.organization.type == GroupOrganizationType.VERTICAL:
             @render(self, QVBoxLayout())
             def render_widget(widget: QWidget, _: QVBoxLayout):
+                widget.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+                
                 @watch_many(group.organization.width.change, dpi.change)
                 def set_key_width():
                     widget.setFixedWidth(dpi.cm(group.organization.width.value))
@@ -180,6 +192,8 @@ class KeyGroupWidget(QWidget):
         elif group.organization.type == GroupOrganizationType.HORIZONTAL:
             @render(self, QHBoxLayout())
             def render_widget(widget: QWidget, _: QHBoxLayout):
+                widget.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+
                 @watch_many(group.organization.height.change, dpi.change)
                 def set_key_height():
                     widget.setFixedHeight(dpi.cm(group.organization.height.value))
@@ -204,16 +218,24 @@ class KeyGroupWidget(QWidget):
         elif group.organization.type == GroupOrganizationType.GRID:
             @render(self, QGridLayout())
             def render_widget(widget: QWidget, layout: QGridLayout):
+                layout.setSizeConstraint(QLayout.SetFixedSize)
+
                 for i, height in enumerate(not_none(group.organization.row_heights)):
                     @watch_many(height.change, dpi.change)
                     def set_row_height():
-                        layout.setRowMinimumHeight(i, dpi.cm(height.value))
+                        current_height = height
+
+                        layout.setRowMinimumHeight(i, dpi.cm(current_height.value))
+                        layout.setRowStretch(i, 0)
                     bounding_rect_change_signals.append(height.change)
 
                 for i, width in enumerate(not_none(group.organization.col_widths)):
                     @watch_many(width.change, dpi.change)
                     def set_col_width():
-                        layout.setColumnMinimumWidth(i, dpi.cm(width.value))
+                        current_width = width
+
+                        layout.setColumnMinimumWidth(i, dpi.cm(current_width.value))
+                        layout.setColumnStretch(i, 0)
                     bounding_rect_change_signals.append(width.change)
 
 
