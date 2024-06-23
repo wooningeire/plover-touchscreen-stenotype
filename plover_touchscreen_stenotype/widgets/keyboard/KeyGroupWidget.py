@@ -166,11 +166,14 @@ class KeyGroupWidget(QWidget):
         if group.organization.type == GroupOrganizationType.VERTICAL:
             @render(self, QVBoxLayout())
             def render_widget(widget: QWidget, _: QVBoxLayout):
-                widget.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-                
-                @watch_many(group.organization.width.change, dpi.change)
-                def set_key_width():
-                    widget.setFixedWidth(dpi.cm(group.organization.width.value))
+                @watch_many(not_none(group.organization.width).change, dpi.change)
+                def set_container_width():
+                    widget.setFixedWidth(dpi.cm(not_none(group.organization.width).value))
+
+                @watch_many(*(not_none(element.height).change for element in group.elements), dpi.change)
+                def set_container_height():
+                    widget.setFixedHeight(dpi.cm(sum(not_none(element.height).value for element in group.elements)))
+
                 bounding_rect_change_signals.append(group.organization.width.change)
 
                 for key in group.elements:
@@ -192,11 +195,14 @@ class KeyGroupWidget(QWidget):
         elif group.organization.type == GroupOrganizationType.HORIZONTAL:
             @render(self, QHBoxLayout())
             def render_widget(widget: QWidget, _: QHBoxLayout):
-                widget.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-
                 @watch_many(group.organization.height.change, dpi.change)
-                def set_key_height():
+                def set_container_height():
                     widget.setFixedHeight(dpi.cm(group.organization.height.value))
+
+                @watch_many(*(not_none(element.width).change for element in group.elements), dpi.change)
+                def set_container_width():
+                    widget.setFixedWidth(dpi.cm(sum(not_none(element.width).value for element in group.elements)))
+
                 bounding_rect_change_signals.append(group.organization.height.change)
 
                 for key in group.elements:
@@ -216,33 +222,37 @@ class KeyGroupWidget(QWidget):
                 return ()
                 
         elif group.organization.type == GroupOrganizationType.GRID:
+            heights = not_none(group.organization.row_heights)
+            widths = not_none(group.organization.col_widths)
+
             @render(self, QGridLayout())
             def render_widget(widget: QWidget, layout: QGridLayout):
-                layout.setSizeConstraint(QLayout.SetFixedSize)
+                @watch_many(*(height.change for height in heights), dpi.change)
+                def set_container_height():
+                    widget.setFixedHeight(dpi.cm(sum(height.value for height in heights)))
 
-                for i, height in enumerate(not_none(group.organization.row_heights)):
-                    @watch_many(height.change, dpi.change)
-                    def set_row_height():
-                        current_height = height
+                @watch_many(*(width.change for width in widths), dpi.change)
+                def set_container_width():
+                    widget.setFixedWidth(dpi.cm(sum(width.value for width in widths)))
 
-                        layout.setRowMinimumHeight(i, dpi.cm(current_height.value))
-                        layout.setRowStretch(i, 0)
-                    bounding_rect_change_signals.append(height.change)
-
-                for i, width in enumerate(not_none(group.organization.col_widths)):
-                    @watch_many(width.change, dpi.change)
-                    def set_col_width():
-                        current_width = width
-
-                        layout.setColumnMinimumWidth(i, dpi.cm(current_width.value))
-                        layout.setColumnStretch(i, 0)
-                    bounding_rect_change_signals.append(width.change)
-
+                bounding_rect_change_signals.extend(height.change for height in heights)
+                bounding_rect_change_signals.extend(width.change for width in widths)
 
                 for key in group.elements:
                     @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, touched_key_widgets=touched_key_widgets, current_stroke=current_stroke, dpi=dpi))
                     def render_widget(key_widget: KeyWidget, _: None):
+                        row_start = key.grid_location[0]
+                        col_start = key.grid_location[1]
+                        row_span = key.grid_location[2] if len(key.grid_location) > 2 else 1
+                        col_span = key.grid_location[3] if len(key.grid_location) > 2 else 1
+
+                        key_height = sum(heights[row_start + 1:row_start + row_span], heights[row_start])
+                        key_width = sum(widths[col_start + 1:col_start + col_span], widths[col_start])
+
                         key_widgets_to_keys[key_widget] = key
+                        @watch_many(key_height.change, key_width.change, dpi.change)
+                        def set_size():
+                            key_widget.setFixedSize(dpi.cm(key_width.value), dpi.cm(key_height.value))
                         return key.grid_location
                 return ()
             
