@@ -1,6 +1,6 @@
-from math import sin, cos, radians
 from typing import Callable, TYPE_CHECKING
 
+from .common import build_common_params
 from ...reactivity import Ref, computed
 from ..LayoutDescriptor import LayoutDescriptor, Key, KeyGroup, Group, GroupAlignment, GroupOrganization
 if TYPE_CHECKING:
@@ -11,52 +11,43 @@ else:
     KeyboardWidget = object
 
 def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget) -> LayoutDescriptor:
-    #region Size values
-
-    # in centimeters
-    key_width = settings.key_width_ref
-    key_height = settings.key_height_ref
-    compound_key_size = settings.compound_key_size_ref
-
-
-    """Computes the size of a key that has half of a compound key cutting into it"""
-    reduced_size: Callable[[Ref[float], Ref[float]], Ref[float]] = lambda key_size_ref, compound_size_ref: key_size_ref - compound_size_ref / 2
-
-    reduced_key_width = reduced_size(key_width, compound_key_size)
-    reduced_key_height = reduced_size(key_height, compound_key_size)
-
-    """ key_height_num_bar = computed(lambda: key_height.value / 2,
-            key_height) """
-
-    index_stretch = settings.index_stretch_ref
-    pinky_stretch = settings.pinky_stretch_ref
-
-    # Row heights for specific columns in staggered mode
-
-    compound_key_height_small = compound_key_size * 0.75
-    reduced_key_height_small = reduced_size(key_height, compound_key_height_small)
-
+    common_params = build_common_params(settings, keyboard_widget)
     
-    index_compound_width = compound_key_size * 0.6
-    base_index_width = key_width + index_stretch
-    reduced_index_width = reduced_size(base_index_width, index_compound_width)
-    middle_key_width = reduced_key_width + key_width / 2
+    key_width = common_params.key_width
+    key_height = common_params.key_height
+    compound_key_size = common_params.compound_key_size
+    reduced_size = common_params.reduced_size
+
+    reduced_key_width = common_params.reduced_key_width
+    reduced_key_height = common_params.reduced_key_height
+
+    index_stretch = common_params.index_stretch
+    pinky_stretch = common_params.pinky_stretch
+
+    compound_key_height_small = common_params.compound_key_height_small
+    reduced_key_height_small = common_params.reduced_key_height_small
+
+        
+    index_compound_width = common_params.index_compound_width
+    reduced_index_width = common_params.reduced_index_width
+    middle_key_width = common_params.middle_key_width
 
 
-    END_COLUMN_WIDTH_BOOST = 0.4
+    end_column_compound_width = common_params.end_column_compound_width
+        
+    end_column_width = common_params.end_column_width
 
-    end_column_compound_width = compound_key_size * 0.875
-    
-    end_column_width = reduced_size(
-        key_width + END_COLUMN_WIDTH_BOOST,
-        end_column_compound_width,
-    )
-    inner_end_column_width = reduced_size(
-        key_width + pinky_stretch,
-        end_column_compound_width,
-    )
+    index_offset = common_params.index_offset
+    middle_offset = common_params.middle_offset
+    ring_offset = common_params.ring_offset
+    pinky_offset = common_params.pinky_offset
 
-    VOWEL_KEY_WIDTH_BOOST = 0.25
+
+    vowel_key_width_boost = common_params.vowel_key_width_boost
+
+    bank_offset = common_params.bank_offset
+    vowel_set_offset = common_params.vowel_set_offset
+
     vowel_compound_height = index_compound_width
     vowel_set_heights = (
         reduced_size(key_height, vowel_compound_height),
@@ -64,13 +55,11 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
         reduced_size(key_height * 0.75, vowel_compound_height),
     )
 
-    index_offset = key_width * settings.index_stagger_fac_ref
-    middle_offset = key_width * settings.middle_stagger_fac_ref
-    ring_offset = key_width * settings.ring_stagger_fac_ref
-    pinky_offset = key_width * settings.pinky_stagger_fac_ref
-
-
-    index_group_width = middle_key_width + index_compound_width + reduced_index_width
+    asterisk_row_heights = (
+        reduced_key_height_small,
+        compound_key_height_small,
+        reduced_key_height_small + index_offset / 2,
+    )
 
     #endregion
 
@@ -80,7 +69,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
             Group(
                 alignment=GroupAlignment.TOP_LEFT,
 
-                x=-(index_group_width + settings.bank_spacing_ref / 2),
+                x=-bank_offset,
                 y=Ref(0),
                 angle=settings.bank_angle_ref,
 
@@ -152,11 +141,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                             KeyGroup(
                                 alignment=GroupAlignment.BOTTOM_LEFT,
                                 organization=GroupOrganization.grid(
-                                    row_heights=(
-                                        reduced_key_height_small,
-                                        compound_key_height_small,
-                                        reduced_key_height_small + index_offset / 2,
-                                    ),
+                                    row_heights=asterisk_row_heights,
                                     col_widths=(reduced_index_width, index_compound_width, middle_key_width),
                                 ),
 
@@ -180,25 +165,25 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                         organization=GroupOrganization.grid(
                             row_heights=vowel_set_heights,
                             col_widths=(
-                                reduced_key_width + VOWEL_KEY_WIDTH_BOOST,
+                                reduced_key_width + vowel_key_width_boost,
                                 compound_key_size,
-                                reduced_key_width + VOWEL_KEY_WIDTH_BOOST,
+                                reduced_key_width + vowel_key_width_boost,
                             ),
                         ),
 
-                        x=-(settings.vowel_set_offset_fac_ref * settings.key_width_ref),
+                        x=-vowel_set_offset,
                         y=settings.row_spacing_ref,
 
                         angle=settings.vowel_angle_ref,
 
                         elements=(
                             Key(steno="#", label="#", grid_location=(2, 0, 1, 3), center_offset_y=-vowel_compound_height / 2),
-                            Key(steno="A", label="A", grid_location=(0, 0), center_offset_x=VOWEL_KEY_WIDTH_BOOST / 2 + compound_key_size / 2, center_offset_y=vowel_compound_height / 2),
+                            Key(steno="A", label="A", grid_location=(0, 0), center_offset_x=vowel_key_width_boost / 2 + compound_key_size / 2, center_offset_y=vowel_compound_height / 2),
                             Key(steno="AO", grid_location=(0, 1), center_offset_y=vowel_compound_height / 2),
-                            Key(steno="O", label="O", grid_location=(0, 2), center_offset_x=-VOWEL_KEY_WIDTH_BOOST / 2 - compound_key_size / 2, center_offset_y=vowel_compound_height / 2),
-                            Key(steno="#A", grid_location=(1, 0), center_offset_x=VOWEL_KEY_WIDTH_BOOST / 2 + compound_key_size / 2),
+                            Key(steno="O", label="O", grid_location=(0, 2), center_offset_x=-vowel_key_width_boost / 2 - compound_key_size / 2, center_offset_y=vowel_compound_height / 2),
+                            Key(steno="#A", grid_location=(1, 0), center_offset_x=vowel_key_width_boost / 2 + compound_key_size / 2),
                             Key(steno="#AO", grid_location=(1, 1)),
-                            Key(steno="#O", grid_location=(1, 2), center_offset_x=-VOWEL_KEY_WIDTH_BOOST / 2 - compound_key_size / 2),
+                            Key(steno="#O", grid_location=(1, 2), center_offset_x=-vowel_key_width_boost / 2 - compound_key_size / 2),
                         ),
                     ),
                 ),
@@ -207,7 +192,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
             Group(
                 alignment=GroupAlignment.TOP_LEFT,
 
-                x=index_group_width + settings.bank_spacing_ref / 2,
+                x=bank_offset,
                 y=Ref(0),
                 angle=-settings.bank_angle_ref,
 
@@ -219,25 +204,25 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                         organization=GroupOrganization.grid(
                             row_heights=vowel_set_heights,
                             col_widths=(
-                                reduced_key_width + VOWEL_KEY_WIDTH_BOOST,
+                                reduced_key_width + vowel_key_width_boost,
                                 compound_key_size,
-                                reduced_key_width + VOWEL_KEY_WIDTH_BOOST,
+                                reduced_key_width + vowel_key_width_boost,
                             ),
                         ),
 
-                        x=settings.vowel_set_offset_fac_ref * settings.key_width_ref,
+                        x=vowel_set_offset,
                         y=settings.row_spacing_ref,
 
                         angle=-settings.vowel_angle_ref,
 
                         elements=(
                             Key(steno="_", label="_", grid_location=(2, 0, 1, 3), center_offset_y=-vowel_compound_height / 2),
-                            Key(steno="E", label="E", grid_location=(0, 0), center_offset_x=VOWEL_KEY_WIDTH_BOOST / 2 + compound_key_size / 2, center_offset_y=vowel_compound_height / 2),
+                            Key(steno="E", label="E", grid_location=(0, 0), center_offset_x=vowel_key_width_boost / 2 + compound_key_size / 2, center_offset_y=vowel_compound_height / 2),
                             Key(steno="EU", grid_location=(0, 1), center_offset_y=vowel_compound_height / 2),
-                            Key(steno="U", label="U", grid_location=(0, 2), center_offset_x=-VOWEL_KEY_WIDTH_BOOST / 2 - compound_key_size / 2, center_offset_y=vowel_compound_height / 2),
-                            Key(steno="_E", grid_location=(1, 0), center_offset_x=VOWEL_KEY_WIDTH_BOOST / 2 + compound_key_size / 2),
+                            Key(steno="U", label="U", grid_location=(0, 2), center_offset_x=-vowel_key_width_boost / 2 - compound_key_size / 2, center_offset_y=vowel_compound_height / 2),
+                            Key(steno="_E", grid_location=(1, 0), center_offset_x=vowel_key_width_boost / 2 + compound_key_size / 2),
                             Key(steno="_EU", grid_location=(1, 1)),
-                            Key(steno="_U", grid_location=(1, 2), center_offset_x=-VOWEL_KEY_WIDTH_BOOST / 2 - compound_key_size / 2),
+                            Key(steno="_U", grid_location=(1, 2), center_offset_x=-vowel_key_width_boost / 2 - compound_key_size / 2),
                         ),
                     ),
                     Group(
@@ -250,7 +235,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                             KeyGroup(
                                 alignment=GroupAlignment.BOTTOM_RIGHT,
                                 organization=GroupOrganization.grid(
-                                    row_heights=(reduced_key_height_small, compound_key_height_small, reduced_key_height_small + index_offset / 2),
+                                    row_heights=asterisk_row_heights,
                                     col_widths=(middle_key_width, index_compound_width, reduced_index_width),
                                 ),
 

@@ -57,6 +57,8 @@ class KeyLayout(Enum):
 
 
 class Settings(QObject):
+    # Lengths are in centimeters
+
     keyboard_layout = _PersistentSetting(str, type(None))
 
     stroke_preview_stroke = _PersistentSetting(bool)

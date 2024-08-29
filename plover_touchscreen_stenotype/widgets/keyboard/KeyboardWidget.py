@@ -206,7 +206,6 @@ class KeyboardWidget(QWidget):
                     rect = QRectF(group_object.item_group.boundingRect())
                     # rect = QRectF(view.rect())
                     # rect.moveCenter(QPointF(0, 0))
-                    view.setSceneRect(rect)
 
 
                     center_diff = layout_descriptor.out_center_diff
@@ -215,6 +214,9 @@ class KeyboardWidget(QWidget):
                         def set_left_right_width_diff():
                             left_right_width_diff.value = center_diff.value
                             view.setSceneRect(rect)
+                    else:
+                        left_right_width_diff.value = 0
+                        view.setSceneRect(rect)
 
                 graphics_view = view
 

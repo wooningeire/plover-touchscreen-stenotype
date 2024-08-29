@@ -63,6 +63,7 @@ class SettingsDialog(QDialog):
 
         layout_combobox = QComboBox(layout_box)
         layout_combobox.addItems(KEYBOARD_LAYOUT_BUILDERS.keys())
+        layout_combobox.setCurrentText(settings.keyboard_layout)
         @on(layout_combobox.currentTextChanged)
         def update_keyboard_layout(layout_name: str):
             settings.keyboard_layout = layout_name
