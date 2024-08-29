@@ -15,13 +15,14 @@ import plover.log
 from typing import cast
 
 
-from ..KeyWidget import KeyWidget
-from .KeyGroupWidget import KeyGroupWidget, set_group_transforms
-from ...lib.keyboard_layout.LayoutDescriptor import Group, KeyGroup, LayoutDescriptor
-from ...lib.reactivity import Ref, on
-from ..composables.UseDpi import UseDpi
-from ...lib.util import not_none, Point
 
+from .KeyGroupWidget import KeyGroupWidget, set_group_transforms
+from ..KeyWidget import KeyWidget
+from ..composables.UseDpi import UseDpi
+from ...lib.keyboard_layout.LayoutDescriptor import Group, KeyGroup, LayoutDescriptor
+from ...lib.reactivity import Ref, computed, on
+from ...lib.util import not_none, Point
+from ...settings import Settings
 
 class GroupObject(QObject):
     displacement_this_stroke_change = pyqtSignal(KeyGroupWidget, object)
@@ -32,6 +33,7 @@ class GroupObject(QObject):
         group: "LayoutDescriptor | Group",
         scene: QGraphicsScene,
         view: QGraphicsView,
+        settings: Settings,
         *,
         touched_key_widgets: Ref[set[KeyWidget]],
         current_stroke: Ref[Stroke],
@@ -59,8 +61,14 @@ class GroupObject(QObject):
 
 
         use_adaptive_transform = isinstance(group, Group) and group.adaptive_transform
-        child_displacement_this_stroke = absolute_group_displacement_this_stroke if use_adaptive_transform else parent_group_displacement_this_stroke
-        child_displacement = absolute_group_displacement if use_adaptive_transform else parent_group_displacement
+        child_displacement_this_stroke = computed(
+            lambda: absolute_group_displacement_this_stroke.value if use_adaptive_transform and settings.adaptive_layout else parent_group_displacement_this_stroke.value,
+            settings.adaptive_layout_ref, absolute_group_displacement_this_stroke, parent_group_displacement_this_stroke,
+        )
+        child_displacement = computed(
+            lambda: absolute_group_displacement.value if use_adaptive_transform and settings.adaptive_layout else parent_group_displacement.value,
+            settings.adaptive_layout_ref, absolute_group_displacement, parent_group_displacement,
+        )
 
         def handle_displacement_this_stroke_update(key_group_widget: KeyGroupWidget, displacement: "Point | None"):
             self.displacement_this_stroke_change.emit(key_group_widget, displacement)
@@ -107,7 +115,7 @@ class GroupObject(QObject):
 
         for subgroup in group.elements:
             if isinstance(subgroup, Group):
-                group_object = GroupObject(subgroup, scene, view,
+                group_object = GroupObject(subgroup, scene, view, settings,
                     touched_key_widgets=touched_key_widgets,
                     current_stroke=current_stroke,
                     parent_group_displacement_this_stroke=child_displacement_this_stroke,

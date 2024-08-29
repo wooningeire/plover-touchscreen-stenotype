@@ -86,6 +86,8 @@ class Settings(QObject):
     window_height = RefAttr(float)
     frameless = _PersistentSetting(bool)
 
+    adaptive_layout = _PersistentSetting(bool)
+
 
     # key_layout_ref = key_layout.ref_getter()
 
@@ -116,6 +118,8 @@ class Settings(QObject):
     window_width_ref = window_width.ref_getter()
     window_height_ref = window_height.ref_getter()
     frameless_ref = frameless.ref_getter()
+
+    adaptive_layout_ref = adaptive_layout.ref_getter()
 
 
     stroke_preview_change = pyqtSignal()
@@ -152,6 +156,8 @@ class Settings(QObject):
         self.window_width_ref = Ref(30)
         self.window_height_ref = Ref(12.5)
         self.frameless = True
+
+        self.adaptive_layout = True
 
         @on_many(self.stroke_preview_stroke_ref.change, self.stroke_preview_translation_ref.change)
         def emit_stroke_preview_change():

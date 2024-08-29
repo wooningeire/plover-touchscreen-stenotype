@@ -56,30 +56,20 @@ class SettingsDialog(QDialog):
         settings = self.__settings
 
 
-        key_layout_box = QGroupBox("Key layout", self)
-        key_layout_group = QButtonGroup(key_layout_box)
+        layout_box = QGroupBox("Layout", self)
 
-        key_layout_radios = {
-        }
-        # key_layout_radios[settings.key_layout].setChecked(True)
+        adaptive_layout_checkbox = QCheckBox("Adaptive", layout_box)
+        adaptive_layout_checkbox.setChecked(settings.adaptive_layout)
+        @on(adaptive_layout_checkbox.toggled)
+        def update_adaptive_layout(checked: bool):
+            settings.adaptive_layout = checked
 
-        self.__key_layout_radios = {
-            id(button): value
-            for value, button in key_layout_radios.items()
-        }
+        layout_box_layout = QVBoxLayout()
+        layout_box_layout.addWidget(adaptive_layout_checkbox)
 
-        key_layout_box_layout = QVBoxLayout()
-        for radio in key_layout_radios.values():
-            key_layout_box_layout.addWidget(radio)
-            key_layout_group.addButton(radio)
+        layout_box_layout.addStretch(1)
+        layout_box.setLayout(layout_box_layout)
 
-        key_layout_box_layout.addStretch(1)
-        key_layout_box.setLayout(key_layout_box_layout)
-
-        @on(key_layout_group.buttonToggled)
-        def update_keyboard_layout(button: QRadioButton, checked: bool):
-            if not checked: return
-            # settings.key_layout = self.__key_layout_radios[id(button)]
 
 
         stroke_preview_box = QGroupBox("Stroke preview", self)
@@ -294,7 +284,7 @@ class SettingsDialog(QDialog):
 
 
         layout = QGridLayout()
-        layout.addWidget(key_layout_box, 0, 0)
+        layout.addWidget(layout_box, 0, 0)
         layout.addWidget(stroke_preview_box, 1, 0)
         layout.addWidget(window_box, 2, 0)
         layout.addWidget(size_box, 0, 1, 4, 1)

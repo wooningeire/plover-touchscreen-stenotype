@@ -190,7 +190,7 @@ class KeyboardWidget(QWidget):
 
                 view.setStyleSheet(GRAPHICS_VIEW_STYLE)
                 
-                group_object = GroupObject(layout_descriptor, scene, view, current_stroke=current_stroke, touched_key_widgets=touched_key_widgets, dpi=dpi)
+                group_object = GroupObject(layout_descriptor, scene, view, settings, current_stroke=current_stroke, touched_key_widgets=touched_key_widgets, dpi=dpi)
                 containers = group_object.key_group_widgets
                 group_objects = group_object.group_objects
                 
