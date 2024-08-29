@@ -1,3 +1,8 @@
+from collections import Counter
+from typing import Callable, Generator
+from pathlib import Path
+
+
 from PyQt5.QtCore import (
     Qt,
     QEvent,
@@ -22,19 +27,16 @@ from PyQt5.QtGui import (
 from plover.steno import Stroke
 import plover.log
 
-from collections import Counter
-from typing import Generator
 
-
-from ..KeyWidget import KeyWidget
 from .KeyGroupWidget import KeyGroupWidget
 from .GroupObject import GroupObject
+from ..KeyWidget import KeyWidget
+from ..composables.UseDpi import UseDpi
 from ...settings import Settings
 from ...lib.reactivity import Ref, RefAttr, computed, on, watch
-from ..composables.UseDpi import UseDpi
 from ...lib.constants import GRAPHICS_VIEW_STYLE, KEY_STYLESHEET
 from ...lib.util import empty_stroke, not_none, render, child
-from ...lib.keyboard_layout.descriptors.english_stenotype import build_layout_descriptor
+from ...lib.keyboard_layout.descriptors import KEYBOARD_LAYOUT_BUILDERS, DEFAULT_KEYBOARD_LAYOUT_NAME
 
 
 POSITION_RESET_TIMEOUT = 1500
@@ -173,8 +175,7 @@ class KeyboardWidget(QWidget):
         #endregion
         
 
-        self.__dpi = dpi = UseDpi(self)
-        layout_descriptor = build_layout_descriptor(self.settings, self)
+        dpi = UseDpi(self)
 
         #region Render
 
@@ -185,32 +186,41 @@ class KeyboardWidget(QWidget):
             @child(self, QGraphicsView(scene))
             def render_widget(view: QGraphicsView, _: None):
                 nonlocal graphics_view
-                nonlocal containers
-                nonlocal group_objects
 
                 view.setStyleSheet(GRAPHICS_VIEW_STYLE)
                 
-                group_object = GroupObject(layout_descriptor, scene, view, settings, current_stroke=current_stroke, touched_key_widgets=touched_key_widgets, dpi=dpi)
-                containers = group_object.key_group_widgets
-                group_objects = group_object.group_objects
-                
-                rect = QRectF(group_object.item_group.boundingRect())
-                # rect = QRectF(view.rect())
-                # rect.moveCenter(QPointF(0, 0))
-                view.setSceneRect(rect)
+                @watch(settings.keyboard_layout_ref.change)
+                def set_keyboard_layout():
+                    nonlocal containers
+                    nonlocal group_objects
+
+                    scene.clear()
+
+                    build_layout_descriptor = KEYBOARD_LAYOUT_BUILDERS.get(settings.keyboard_layout) or KEYBOARD_LAYOUT_BUILDERS[DEFAULT_KEYBOARD_LAYOUT_NAME]
+                    layout_descriptor = build_layout_descriptor(self.settings, self)
+
+                    group_object = GroupObject(layout_descriptor, scene, view, settings, current_stroke=current_stroke, touched_key_widgets=touched_key_widgets, dpi=dpi)
+                    containers = group_object.key_group_widgets
+                    group_objects = group_object.group_objects
+                    
+                    rect = QRectF(group_object.item_group.boundingRect())
+                    # rect = QRectF(view.rect())
+                    # rect.moveCenter(QPointF(0, 0))
+                    view.setSceneRect(rect)
+
+
+                    center_diff = layout_descriptor.out_center_diff
+                    if center_diff is not None:
+                        @watch(center_diff.change)
+                        def set_left_right_width_diff():
+                            left_right_width_diff.value = center_diff.value
+                            view.setSceneRect(rect)
 
                 graphics_view = view
 
                 return ()
             
             return ()
-
-        center_diff = layout_descriptor.out_center_diff
-        if center_diff is not None:
-            @watch(center_diff.change)
-            def set_left_right_width_diff():
-                left_right_width_diff.value = center_diff.value
-                graphics_view.setSceneRect(not_none(graphics_view.scene()).itemsBoundingRect())
 
 
         # build_keyboard, left_right_width_diff_src = use_build_keyboard(self.settings, self, dpi)
@@ -233,18 +243,6 @@ class KeyboardWidget(QWidget):
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         #endregion
-
-
-    def __rebuild_layout(self):
-        # Detach listeners on the old key widgets to avoid leaking memory
-        # TODO removing all listeners may become overzealous in the future
-        self.__dpi.change.disconnect()
-
-        # https://stackoverflow.com/questions/10416582/replacing-layout-on-a-qwidget-with-another-layout
-        QWidget().setLayout(self.layout()) # Unparent and destroy the current layout so it can be replaced
-        layout, key_widgets = self.__build_keyboard()
-        self.setLayout(layout)
-        key_widgets = key_widgets
         
 
     def event(self, event: QEvent) -> bool:

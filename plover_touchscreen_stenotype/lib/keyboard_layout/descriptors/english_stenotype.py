@@ -1,12 +1,13 @@
 from math import sin, cos, radians
 from typing import Callable, TYPE_CHECKING
 
-from ....settings import Settings
 from ...reactivity import Ref, computed
 from ..LayoutDescriptor import LayoutDescriptor, Key, KeyGroup, Group, GroupAlignment, GroupOrganization
 if TYPE_CHECKING:
+    from ....settings import Settings
     from ....widgets.keyboard.KeyboardWidget import KeyboardWidget
 else:
+    Settings = object
     KeyboardWidget = object
 
 

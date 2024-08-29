@@ -1,5 +1,7 @@
 import math
 from typing import Callable, TypeVar, Optional
+import importlib.util
+from importlib.machinery import SourceFileLoader
 
 from plover.steno import Stroke
 
@@ -52,7 +54,6 @@ def not_none(value: "T | None") -> T:
     if value is None:
         raise Exception("value is None")
     return value
-
 
 class Point:
     def __init__(self, x: float, y: float):

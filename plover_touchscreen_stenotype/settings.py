@@ -1,14 +1,17 @@
+from enum import Enum, auto
+from weakref import WeakKeyDictionary
+from typing import TypeVar, Generic, Any
+
+
 from PyQt5.QtCore import (
     QObject,
     pyqtSignal,
     QSettings,
 )
 
-from enum import Enum, auto
-from weakref import WeakKeyDictionary
-from typing import TypeVar, Generic, Any
 
 from .lib.reactivity import Ref, RefAttr, on_many
+from .lib.keyboard_layout.descriptors import DEFAULT_KEYBOARD_LAYOUT_NAME
 
 
 T = TypeVar("T")
@@ -54,7 +57,7 @@ class KeyLayout(Enum):
 
 
 class Settings(QObject):
-    # key_layout = _PersistentSetting(KeyLayout, type(None))
+    keyboard_layout = _PersistentSetting(str, type(None))
 
     stroke_preview_stroke = _PersistentSetting(bool)
     stroke_preview_translation = _PersistentSetting(bool)
@@ -89,7 +92,7 @@ class Settings(QObject):
     adaptive_layout = _PersistentSetting(bool)
 
 
-    # key_layout_ref = key_layout.ref_getter()
+    keyboard_layout_ref = keyboard_layout.ref_getter()
 
     stroke_preview_stroke_ref = stroke_preview_stroke.ref_getter()
     stroke_preview_translation_ref = stroke_preview_translation.ref_getter()
@@ -127,7 +130,7 @@ class Settings(QObject):
     def __init__(self):
         super().__init__()
 
-        # self.key_layout = KeyLayout.STAGGERED
+        self.keyboard_layout = DEFAULT_KEYBOARD_LAYOUT_NAME
 
         self.stroke_preview_stroke = True
         self.stroke_preview_translation = True

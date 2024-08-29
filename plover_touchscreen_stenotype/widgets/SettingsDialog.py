@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import (
     QCheckBox,
     QLabel,
     QSizePolicy,
+    QComboBox,
 )
 from PyQt5.QtGui import (
     QFont,
@@ -31,6 +32,8 @@ from .FloatInput import FloatSlider, FloatEntry
 from ..settings import Settings
 from ..lib.reactivity import Ref, on, watch_many
 from ..lib.constants import FONT_FAMILY
+from ..lib.keyboard_layout.descriptors import KEYBOARD_LAYOUT_BUILDERS, DEFAULT_KEYBOARD_LAYOUT_NAME
+
 
 
 class SettingsDialog(QDialog):
@@ -58,6 +61,12 @@ class SettingsDialog(QDialog):
 
         layout_box = QGroupBox("Layout", self)
 
+        layout_combobox = QComboBox(layout_box)
+        layout_combobox.addItems(KEYBOARD_LAYOUT_BUILDERS.keys())
+        @on(layout_combobox.currentTextChanged)
+        def update_keyboard_layout(layout_name: str):
+            settings.keyboard_layout = layout_name
+
         adaptive_layout_checkbox = QCheckBox("Adaptive", layout_box)
         adaptive_layout_checkbox.setChecked(settings.adaptive_layout)
         @on(adaptive_layout_checkbox.toggled)
@@ -65,6 +74,7 @@ class SettingsDialog(QDialog):
             settings.adaptive_layout = checked
 
         layout_box_layout = QVBoxLayout()
+        layout_box_layout.addWidget(layout_combobox)
         layout_box_layout.addWidget(adaptive_layout_checkbox)
 
         layout_box_layout.addStretch(1)
