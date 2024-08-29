@@ -81,7 +81,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
 
                 x=-(index_group_width + settings.bank_spacing_ref / 2),
                 y=Ref(0),
-                angle=settings.main_rows_angle_ref,
+                angle=settings.bank_angle_ref,
 
                 adaptive_transform=True,
 
@@ -188,7 +188,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                         x=-(settings.vowel_set_offset_fac_ref * settings.key_width_ref),
                         y=settings.row_spacing_ref,
 
-                        angle=settings.vowel_rows_angle_ref,
+                        angle=settings.vowel_angle_ref,
 
                         elements=(
                             Key(steno="#", label="#", grid_location=(2, 0, 1, 3), center_offset_y=-vowel_compound_height / 2),
@@ -208,7 +208,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
 
                 x=index_group_width + settings.bank_spacing_ref / 2,
                 y=Ref(0),
-                angle=-settings.main_rows_angle_ref,
+                angle=-settings.bank_angle_ref,
 
                 adaptive_transform=True,
 
@@ -227,7 +227,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                         x=settings.vowel_set_offset_fac_ref * settings.key_width_ref,
                         y=settings.row_spacing_ref,
 
-                        angle=-settings.vowel_rows_angle_ref,
+                        angle=-settings.vowel_angle_ref,
 
                         elements=(
                             Key(steno="_", label="_", grid_location=(2, 0, 1, 3), center_offset_y=-vowel_compound_height / 2),

@@ -262,15 +262,15 @@ class JoysticksWidget(QWidget):
                 left_vowels = not_none(scene.createItemGroup((joystick_widgets[joysticks[8]].proxy,)))
                 right_vowels = not_none(scene.createItemGroup((joystick_widgets[joysticks[9]].proxy,)))
 
-                @watch(settings.main_rows_angle_ref.change)
+                @watch(settings.bank_angle_ref.change)
                 def set_bank_angle():
-                    left_bank.setRotation(settings.main_rows_angle)
-                    right_bank.setRotation(-settings.main_rows_angle)
+                    left_bank.setRotation(settings.bank_angle)
+                    right_bank.setRotation(-settings.bank_angle)
 
-                @watch(settings.vowel_rows_angle_ref.change)
+                @watch(settings.vowel_angle_ref.change)
                 def set_bank_angle():
-                    left_vowels.setRotation(settings.vowel_rows_angle)
-                    right_vowels.setRotation(-settings.vowel_rows_angle)
+                    left_vowels.setRotation(settings.vowel_angle)
+                    right_vowels.setRotation(-settings.vowel_angle)
 
                 return ()
             

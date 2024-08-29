@@ -80,7 +80,9 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
 
                 x=-(index_group_width + settings.bank_spacing_ref / 2),
                 y=Ref(0),
-                angle=settings.main_rows_angle_ref,
+                angle=settings.bank_angle_ref,
+
+                adaptive_transform=True,
 
                 elements=(
                     Group(
@@ -92,7 +94,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                         elements=(
                             KeyGroup(
                                 alignment=GroupAlignment.BOTTOM_RIGHT,
-                                organization=GroupOrganization.vertical(key_width),
+                                organization=GroupOrganization.vertical(key_width + pinky_stretch + END_COLUMN_WIDTH_BOOST),
     
                                 x=-2 * settings.key_width_ref,
                                 y=-pinky_offset / 2,
@@ -163,7 +165,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                         x=-(settings.vowel_set_offset_fac_ref * settings.key_width_ref),
                         y=settings.row_spacing_ref,
 
-                        angle=settings.vowel_rows_angle_ref,
+                        angle=settings.vowel_angle_ref,
 
                         elements=(
                             Key(steno="A", label=_num_bar_affected_label("A", "5"), width=reduced_key_width + VOWEL_KEY_WIDTH_BOOST),
@@ -179,7 +181,9 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
 
                 x=index_group_width + settings.bank_spacing_ref / 2,
                 y=Ref(0),
-                angle=-settings.main_rows_angle_ref,
+                angle=-settings.bank_angle_ref,
+
+                adaptive_transform=True,
 
                 elements=(
                     KeyGroup(
@@ -189,7 +193,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                         x=settings.vowel_set_offset_fac_ref * settings.key_width_ref,
                         y=settings.row_spacing_ref,
 
-                        angle=-settings.vowel_rows_angle_ref,
+                        angle=-settings.vowel_angle_ref,
 
                         elements=(
                             Key(steno="E", label="E", width=reduced_key_width + VOWEL_KEY_WIDTH_BOOST),
@@ -285,4 +289,6 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                 ),
             ),
         ),
+
+        out_center_diff=-key_width,
     )

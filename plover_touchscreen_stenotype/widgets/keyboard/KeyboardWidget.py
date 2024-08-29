@@ -5,6 +5,7 @@ from PyQt5.QtCore import (
     QPoint,
     QRectF,
     QTimer,
+    QPoint,
 )
 from PyQt5.QtWidgets import (
     QWidget,
@@ -29,10 +30,10 @@ from ..KeyWidget import KeyWidget
 from .KeyGroupWidget import KeyGroupWidget
 from .GroupObject import GroupObject
 from ...settings import Settings
-from ...lib.reactivity import Ref, RefAttr, computed, on
+from ...lib.reactivity import Ref, RefAttr, computed, on, watch
 from ..composables.UseDpi import UseDpi
 from ...lib.constants import GRAPHICS_VIEW_STYLE, KEY_STYLESHEET
-from ...lib.util import empty_stroke, render, child
+from ...lib.util import empty_stroke, not_none, render, child
 from ...lib.keyboard_layout.descriptors.english_stenotype import build_layout_descriptor
 
 
@@ -203,6 +204,13 @@ class KeyboardWidget(QWidget):
                 return ()
             
             return ()
+
+        center_diff = layout_descriptor.out_center_diff
+        if center_diff is not None:
+            @watch(center_diff.change)
+            def set_left_right_width_diff():
+                left_right_width_diff.value = center_diff.value
+                graphics_view.setSceneRect(not_none(graphics_view.scene()).itemsBoundingRect())
 
 
         # build_keyboard, left_right_width_diff_src = use_build_keyboard(self.settings, self, dpi)

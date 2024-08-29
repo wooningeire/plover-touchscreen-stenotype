@@ -116,3 +116,6 @@ class KeyGroup:
 @dataclass
 class LayoutDescriptor:
     elements: "tuple[Group | KeyGroup, ...]"
+    out_center_diff: "Ref[float] | None" = None
+    """The "center" x of the layout. Usually the difference in width between the left and right banks. Used to make UI
+    elements appear "centered"."""

@@ -203,7 +203,7 @@ class SettingsDialog(QDialog):
             ("Row spacing",
                 *_build_entry_slider_pair(
                     settings.row_spacing_ref,
-                    min=0,
+                    min=-2,
                     max=2,
                     spin_box_step=0.1,
                     parent=size_box,
@@ -211,7 +211,7 @@ class SettingsDialog(QDialog):
             ("Bank spacing",
                 *_build_entry_slider_pair(
                     settings.bank_spacing_ref,
-                    min=0,
+                    min=-4,
                     max=20,
                     spin_box_step=0.1,
                     parent=size_box,
@@ -226,7 +226,7 @@ class SettingsDialog(QDialog):
                 ), ""),
             ("Bank angle",
                 *_build_entry_slider_pair(
-                    settings.main_rows_angle_ref,
+                    settings.bank_angle_ref,
                     min=0,
                     max=45,
                     spin_box_step=0.5,
@@ -234,7 +234,7 @@ class SettingsDialog(QDialog):
                 ), "°"),
             ("Vowel angle",
                 *_build_entry_slider_pair(
-                    settings.vowel_rows_angle_ref,
+                    settings.vowel_angle_ref,
                     min=-25,
                     max=25,
                     spin_box_step=0.5,

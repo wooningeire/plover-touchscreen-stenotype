@@ -90,8 +90,8 @@ class StrokePreview(QWidget):
 
 
         #region Display alignment
-        display_alignment_layout = DisplayAlignmentLayout(right_left_width_diff)
-        display_alignment_layout.addLayout(labels_layout, 0, 0)
+        display_alignment_layout = DisplayAlignmentLayout(right_left_width_diff, dpi)
+        display_alignment_layout.addLayout(labels_layout)
 
         labels_layout.setAlignment(Qt.AlignTop)
         top_spacer.changeSize(0, -8)

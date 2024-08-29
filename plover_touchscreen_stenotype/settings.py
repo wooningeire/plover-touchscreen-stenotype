@@ -73,8 +73,8 @@ class Settings(QObject):
     ring_stagger_fac = _PersistentSetting(float)
     pinky_stagger_fac = _PersistentSetting(float)
 
-    main_rows_angle = _PersistentSetting(float)
-    vowel_rows_angle = _PersistentSetting(float)
+    bank_angle = _PersistentSetting(float)
+    vowel_angle = _PersistentSetting(float)
 
     row_spacing = _PersistentSetting(float)
     bank_spacing = _PersistentSetting(float)
@@ -106,8 +106,8 @@ class Settings(QObject):
     ring_stagger_fac_ref = ring_stagger_fac.ref_getter() 
     pinky_stagger_fac_ref = pinky_stagger_fac.ref_getter()
 
-    main_rows_angle_ref = main_rows_angle.ref_getter()
-    vowel_rows_angle_ref = vowel_rows_angle.ref_getter()
+    bank_angle_ref = bank_angle.ref_getter()
+    vowel_angle_ref = vowel_angle.ref_getter()
 
     row_spacing_ref = row_spacing.ref_getter()
     bank_spacing_ref = bank_spacing.ref_getter()
@@ -142,8 +142,8 @@ class Settings(QObject):
         self.ring_stagger_fac = 0.5
         self.pinky_stagger_fac = 0
 
-        self.main_rows_angle = 22.5
-        self.vowel_rows_angle = 0
+        self.bank_angle = 22.5
+        self.vowel_angle = 0
 
         self.row_spacing = 0
         self.bank_spacing = 4
@@ -151,7 +151,7 @@ class Settings(QObject):
         self.window_opacity = 0.675
         self.window_width_ref = Ref(30)
         self.window_height_ref = Ref(12.5)
-        self.frameless = False
+        self.frameless = True
 
         @on_many(self.stroke_preview_stroke_ref.change, self.stroke_preview_translation_ref.change)
         def emit_stroke_preview_change():

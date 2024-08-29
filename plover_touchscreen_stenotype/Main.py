@@ -164,12 +164,7 @@ class Main(Tool):
         for button in toolbar.findChildren(QWidget):
             button.setFocusPolicy(Qt.NoFocus)
 
-        @watch(dpi.change)
-        def resize_toolbar_button_size():
-            toolbar.setIconSize(QSize(dpi.dp(32), dpi.dp(32)))
-        toolbar.setOrientation(Qt.Vertical)
-
-        controls = CenterControls(self.mousePressEvent, toolbar, left_right_width_diff, self)
+        controls = CenterControls(self.mousePressEvent, settings_action, minimize_action, close_action, left_right_width_diff, self)
 
         layout = QGridLayout(self)
         layout.addWidget(stroke_preview, 0, 0)
