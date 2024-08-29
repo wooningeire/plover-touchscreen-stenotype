@@ -210,7 +210,7 @@ class KeyboardWidget(QWidget):
 
                     center_diff = layout_descriptor.out_center_diff
                     if center_diff is not None:
-                        @watch(center_diff.change)
+                        @watch(center_diff.change, parent=group_object)
                         def set_left_right_width_diff():
                             left_right_width_diff.value = center_diff.value
                             view.setSceneRect(rect)

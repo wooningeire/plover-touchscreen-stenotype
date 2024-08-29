@@ -32,7 +32,7 @@ from ...lib.util import not_none, render, child, Point
 
 
 def set_group_transforms(item: QGraphicsItem, group: "Group | KeyGroup", bounding_rect_change_signals: list[pyqtBoundSignal], *, displacement: Ref[Point], dpi: UseDpi):
-    @watch_many(group.x.change, group.y.change, displacement.change, *bounding_rect_change_signals, dpi.change)
+    @watch_many(group.x.change, group.y.change, displacement.change, *bounding_rect_change_signals, dpi.change, parent=item.parentWidget())
     def set_group_pos():
         rect = item.boundingRect()
         item.setPos(
@@ -41,14 +41,14 @@ def set_group_transforms(item: QGraphicsItem, group: "Group | KeyGroup", boundin
         )
 
     if group.angle is not None:
-        @watch_many(*bounding_rect_change_signals, dpi.change)
+        @watch_many(*bounding_rect_change_signals, dpi.change, parent=item.parentWidget())
         def set_origin_point():
             item.setTransformOriginPoint(
                 item.boundingRect().width() * group.alignment.value[0],
                 item.boundingRect().height() * group.alignment.value[1],
             )
 
-        @watch(group.angle.change)
+        @watch(group.angle.change, parent=item.parentWidget())
         def set_group_angle():
             item.setRotation(group.angle.value)
 
@@ -166,11 +166,11 @@ class KeyGroupWidget(QWidget):
         if group.organization.type == GroupOrganizationType.VERTICAL:
             @render(self, QVBoxLayout())
             def render_widget(widget: QWidget, _: QVBoxLayout):
-                @watch_many(not_none(group.organization.width).change, dpi.change)
+                @watch_many(not_none(group.organization.width).change, dpi.change, parent=widget)
                 def set_container_width():
                     widget.setFixedWidth(dpi.cm(not_none(group.organization.width).value))
 
-                @watch_many(*(not_none(element.height).change for element in group.elements), dpi.change)
+                @watch_many(*(not_none(element.height).change for element in group.elements), dpi.change, parent=widget)
                 def set_container_height():
                     widget.setFixedHeight(dpi.cm(sum(not_none(element.height).value for element in group.elements)))
 
@@ -184,7 +184,7 @@ class KeyGroupWidget(QWidget):
                         key_widgets_to_keys[key_widget] = key
                         current_key = key
 
-                        @watch_many(current_key.height.change, dpi.change)
+                        @watch_many(current_key.height.change, dpi.change, parent=key_widget)
                         def set_height():
                             key_widget.setFixedHeight(dpi.cm(current_key.height.value))
                         bounding_rect_change_signals.append(current_key.height.change)
@@ -195,11 +195,11 @@ class KeyGroupWidget(QWidget):
         elif group.organization.type == GroupOrganizationType.HORIZONTAL:
             @render(self, QHBoxLayout())
             def render_widget(widget: QWidget, _: QHBoxLayout):
-                @watch_many(group.organization.height.change, dpi.change)
+                @watch_many(group.organization.height.change, dpi.change, parent=widget)
                 def set_container_height():
                     widget.setFixedHeight(dpi.cm(group.organization.height.value))
 
-                @watch_many(*(not_none(element.width).change for element in group.elements), dpi.change)
+                @watch_many(*(not_none(element.width).change for element in group.elements), dpi.change, parent=widget)
                 def set_container_width():
                     widget.setFixedWidth(dpi.cm(sum(not_none(element.width).value for element in group.elements)))
 
@@ -213,7 +213,7 @@ class KeyGroupWidget(QWidget):
                         key_widgets_to_keys[key_widget] = key
                         current_key = key
 
-                        @watch_many(current_key.width.change, dpi.change)
+                        @watch_many(current_key.width.change, dpi.change, parent=key_widget)
                         def set_width():
                             key_widget.setFixedWidth(dpi.cm(current_key.width.value))
                         bounding_rect_change_signals.append(current_key.width.change)
@@ -227,11 +227,11 @@ class KeyGroupWidget(QWidget):
 
             @render(self, QGridLayout())
             def render_widget(widget: QWidget, layout: QGridLayout):
-                @watch_many(*(height.change for height in heights), dpi.change)
+                @watch_many(*(height.change for height in heights), dpi.change, parent=widget)
                 def set_container_height():
                     widget.setFixedHeight(dpi.cm(sum(height.value for height in heights)))
 
-                @watch_many(*(width.change for width in widths), dpi.change)
+                @watch_many(*(width.change for width in widths), dpi.change, parent=widget)
                 def set_container_width():
                     widget.setFixedWidth(dpi.cm(sum(width.value for width in widths)))
 
@@ -250,7 +250,7 @@ class KeyGroupWidget(QWidget):
                         key_width = sum(widths[col_start + 1:col_start + col_span], widths[col_start])
 
                         key_widgets_to_keys[key_widget] = key
-                        @watch_many(key_height.change, key_width.change, dpi.change)
+                        @watch_many(key_height.change, key_width.change, dpi.change, parent=key_widget)
                         def set_size():
                             key_widget.setFixedSize(dpi.cm(key_width.value), dpi.cm(key_height.value))
                         return key.grid_location

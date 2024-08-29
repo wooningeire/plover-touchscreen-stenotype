@@ -47,7 +47,7 @@ class KeyWidget(QToolButton):
         dpi = dpi or UseDpi(self)
 
 
-        @watch_many(touched_key_widgets.change, current_stroke.change)
+        @watch_many(touched_key_widgets.change, current_stroke.change, parent=self)
         def update_highlight_state():
             old_touched, old_matched = self.touched, self.matched
 
@@ -70,7 +70,7 @@ class KeyWidget(QToolButton):
                 not_none(self.style()).polish(self)
 
 
-        @watch(dpi.change)
+        @watch(dpi.change, parent=self)
         def set_font():
             self.setFont(QFont(FONT_FAMILY, dpi.dp(8)))
 
@@ -79,7 +79,7 @@ class KeyWidget(QToolButton):
             self.setText(label)
         else:
             label_ref: Ref[str] = label_maybe_ref
-            @watch(label_ref.change)
+            @watch(label_ref.change, parent=self)
             def set_label():
                 self.setText(label_ref.value)
 
