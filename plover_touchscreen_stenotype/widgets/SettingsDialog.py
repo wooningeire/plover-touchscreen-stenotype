@@ -184,7 +184,7 @@ class SettingsDialog(QDialog):
                         spin_box_step=0.05,
                         parent=size_box,
                     )), "cm"),
-            ("Index finger stretch",
+            ("Index stretch",
                 *_build_entry_slider_pair(
                     settings.index_stretch_ref,
                     min=-0.25,
@@ -192,7 +192,7 @@ class SettingsDialog(QDialog):
                     spin_box_step=0.05,
                     parent=size_box,
                 ), "cm"),
-            ("Pinky finger stretch",
+            ("Pinky stretch",
                 *_build_entry_slider_pair(
                     settings.pinky_stretch_ref,
                     min=0,
@@ -200,15 +200,31 @@ class SettingsDialog(QDialog):
                     spin_box_step=0.05,
                     parent=size_box,
                 ), "cm"),
+            ("Row spacing",
+                *_build_entry_slider_pair(
+                    settings.row_spacing_ref,
+                    min=0,
+                    max=2,
+                    spin_box_step=0.1,
+                    parent=size_box,
+                ), "cm"),
+            ("Bank spacing",
+                *_build_entry_slider_pair(
+                    settings.bank_spacing_ref,
+                    min=0,
+                    max=20,
+                    spin_box_step=0.1,
+                    parent=size_box,
+                ), "cm"),
             ("Vowels offset",
                 *_build_entry_slider_pair(
                     settings.vowel_set_offset_fac_ref,
-                    min=0,
+                    min=-1.5,
                     max=1.5,
                     spin_box_step=0.05,
                     parent=size_box,
                 ), ""),
-            ("Main rows angle",
+            ("Bank angle",
                 *_build_entry_slider_pair(
                     settings.main_rows_angle_ref,
                     min=0,
@@ -216,11 +232,11 @@ class SettingsDialog(QDialog):
                     spin_box_step=0.5,
                     parent=size_box,
                 ), "°"),
-            ("Vowel rows angle",
+            ("Vowel angle",
                 *_build_entry_slider_pair(
                     settings.vowel_rows_angle_ref,
-                    min=0,
-                    max=75,
+                    min=-25,
+                    max=25,
                     spin_box_step=0.5,
                     parent=size_box,
                 ), "°"),
@@ -242,7 +258,7 @@ class SettingsDialog(QDialog):
 
         window_box_index += 1
 
-        size_box_layout.addWidget(QLabel("Column stagger factors"), window_box_index * 2, 0, 1, 3)
+        size_box_layout.addWidget(QLabel("Column stagger"), window_box_index * 2, 0, 1, 3)
 
         stagger_layout = QGridLayout()
         stagger_layout.setContentsMargins(0, 0, 0, 0)
@@ -271,10 +287,6 @@ class SettingsDialog(QDialog):
         size_box.setLayout(size_box_layout)
 
 
-        label_resizing = QLabel("Resize the stenotype window to adjust spacing", self)
-        label_resizing.setWordWrap(True)
-        label_resizing.setStyleSheet("font-style: italic; color: #7f000000;")
-
         label_troubleshooting = QLabel("If there are issues with responsiveness, check the plugin description (§ Additional setup) for possible solutions",
                 self)
         label_troubleshooting.setWordWrap(True)
@@ -287,8 +299,7 @@ class SettingsDialog(QDialog):
         layout.addWidget(window_box, 2, 0)
         layout.addWidget(size_box, 0, 1, 4, 1)
         layout.setRowStretch(3, 1)
-        layout.addWidget(label_resizing, 4, 0, 1, 2)
-        layout.addWidget(label_troubleshooting, 5, 0, 1, 2)
+        layout.addWidget(label_troubleshooting, 4, 0, 1, 2)
         # layout.addWidget(sizes_box)
         self.setLayout(layout)
 

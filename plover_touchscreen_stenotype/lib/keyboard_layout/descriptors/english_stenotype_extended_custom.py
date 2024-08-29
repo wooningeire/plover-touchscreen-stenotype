@@ -79,7 +79,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
             Group(
                 alignment=GroupAlignment.TOP_LEFT,
 
-                x=-(index_group_width + 2),
+                x=-(index_group_width + settings.bank_spacing_ref / 2),
                 y=Ref(0),
                 angle=settings.main_rows_angle_ref,
 
@@ -112,12 +112,12 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                 y=-pinky_offset / 2,
     
                                 elements=(
-                                    Key(steno="^", label="^", grid_location=(0, 0), center_offset_x=end_column_compound_width / 2, center_offset_y=compound_key_height_small / 2),
-                                    Key(steno="^+", grid_location=(1, 0), center_offset_x=end_column_compound_width / 2),
-                                    Key(steno="+", label="+", grid_location=(2, 0), center_offset_x=end_column_compound_width / 2, center_offset_y=-compound_key_height_small / 2 - pinky_offset / 4),
-                                    Key(steno="^S", grid_location=(0, 1), center_offset_y=compound_key_height_small / 2),
-                                    Key(steno="^+S", grid_location=(1, 1)),
-                                    Key(steno="+S", grid_location=(2, 1), center_offset_y=-compound_key_height_small / 2 - pinky_offset / 4),
+                                    Key(steno="&", label="&&", grid_location=(0, 0), center_offset_x=end_column_compound_width / 2, center_offset_y=compound_key_height_small / 2),
+                                    Key(steno="&@", grid_location=(1, 0), center_offset_x=end_column_compound_width / 2),
+                                    Key(steno="@", label="@", grid_location=(2, 0), center_offset_x=end_column_compound_width / 2, center_offset_y=-compound_key_height_small / 2 - pinky_offset / 4),
+                                    Key(steno="&S", grid_location=(0, 1), center_offset_y=compound_key_height_small / 2),
+                                    Key(steno="&@S", grid_location=(1, 1)),
+                                    Key(steno="@S", grid_location=(2, 1), center_offset_y=-compound_key_height_small / 2 - pinky_offset / 4),
                                     Key(steno="S", label="S", grid_location=(0, 2, 3, 1), center_offset_x=-pinky_stretch / 2 - end_column_compound_width / 2, center_offset_y=-pinky_offset / 4),
                                 ),
                             ),
@@ -163,13 +163,13 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                 y=-index_offset / 2,
 
                                 elements=(
-                                    Key(steno="&", label="&&", grid_location=(0, 2, 3, 1), center_offset_x=-key_width / 4 - index_compound_width / 2, center_offset_y=-index_offset / 4),
+                                    Key(steno="^", label="^", grid_location=(0, 2, 3, 1), center_offset_x=-key_width / 4 - index_compound_width / 2, center_offset_y=-index_offset / 4),
                                     Key(steno="H", label="H", grid_location=(0, 0), center_offset_x=index_compound_width / 2 + index_stretch / 2, center_offset_y=compound_key_height_small / 2),
                                     Key(steno="HR", grid_location=(1, 0), center_offset_x=index_compound_width / 2 + index_stretch / 2),
                                     Key(steno="R", label="R", grid_location=(2, 0)),
-                                    Key(steno="&H", grid_location=(0, 1), center_offset_y=compound_key_height_small / 2),
-                                    Key(steno="&HR", grid_location=(1, 1), center_offset_x=index_compound_width / 2 + index_stretch / 2, center_offset_y=-compound_key_height_small / 2 - index_offset / 4),
-                                    Key(steno="&R", grid_location=(2, 1), center_offset_y=-compound_key_height_small / 2 - index_offset / 4),
+                                    Key(steno="^H", grid_location=(0, 1), center_offset_y=compound_key_height_small / 2),
+                                    Key(steno="^HR", grid_location=(1, 1), center_offset_x=index_compound_width / 2 + index_stretch / 2, center_offset_y=-compound_key_height_small / 2 - index_offset / 4),
+                                    Key(steno="^R", grid_location=(2, 1), center_offset_y=-compound_key_height_small / 2 - index_offset / 4),
                                 ),
                             ),
                         ),
@@ -185,8 +185,10 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                             ),
                         ),
 
-                        x=Ref(0),
-                        y=Ref(0),
+                        x=-(settings.vowel_set_offset_fac_ref * settings.key_width_ref),
+                        y=settings.row_spacing_ref,
+
+                        angle=settings.vowel_rows_angle_ref,
 
                         elements=(
                             Key(steno="#", label="#", grid_location=(2, 0, 1, 3), center_offset_y=-vowel_compound_height / 2),
@@ -204,7 +206,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
             Group(
                 alignment=GroupAlignment.TOP_LEFT,
 
-                x=index_group_width + 2,
+                x=index_group_width + settings.bank_spacing_ref / 2,
                 y=Ref(0),
                 angle=-settings.main_rows_angle_ref,
 
@@ -222,8 +224,10 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                             ),
                         ),
 
-                        x=Ref(0),
-                        y=Ref(0),
+                        x=settings.vowel_set_offset_fac_ref * settings.key_width_ref,
+                        y=settings.row_spacing_ref,
+
+                        angle=-settings.vowel_rows_angle_ref,
 
                         elements=(
                             Key(steno="_", label="_", grid_location=(2, 0, 1, 3), center_offset_y=-vowel_compound_height / 2),

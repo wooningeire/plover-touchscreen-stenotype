@@ -78,7 +78,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
             Group(
                 alignment=GroupAlignment.TOP_LEFT,
 
-                x=-(index_group_width + 2),
+                x=-(index_group_width + settings.bank_spacing_ref / 2),
                 y=Ref(0),
                 angle=settings.main_rows_angle_ref,
 
@@ -145,13 +145,13 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                 y=-index_offset / 2,
 
                                 elements=(
-                                    Key(steno="&", label="&&", grid_location=(0, 2, 3, 1)),
+                                    Key(steno="*", label="🞱", grid_location=(0, 2, 3, 1)),
                                     Key(steno="H", label=_num_bar_affected_label("H", "4"), grid_location=(0, 0)),
                                     Key(steno="HR", grid_location=(1, 0)),
                                     Key(steno="R", label="R", grid_location=(2, 0)),
-                                    Key(steno="&H", grid_location=(0, 1)),
-                                    Key(steno="&HR", grid_location=(1, 1)),
-                                    Key(steno="&R", grid_location=(2, 1)),
+                                    Key(steno="H*", grid_location=(0, 1)),
+                                    Key(steno="HR*", grid_location=(1, 1)),
+                                    Key(steno="R*", grid_location=(2, 1)),
                                 ),
                             ),
                         ),
@@ -160,8 +160,10 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                         alignment=GroupAlignment.TOP_LEFT,
                         organization=GroupOrganization.horizontal(key_height),
 
-                        x=Ref(0),
-                        y=Ref(0.25),
+                        x=-(settings.vowel_set_offset_fac_ref * settings.key_width_ref),
+                        y=settings.row_spacing_ref,
+
+                        angle=settings.vowel_rows_angle_ref,
 
                         elements=(
                             Key(steno="A", label=_num_bar_affected_label("A", "5"), width=reduced_key_width + VOWEL_KEY_WIDTH_BOOST),
@@ -175,7 +177,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
             Group(
                 alignment=GroupAlignment.TOP_LEFT,
 
-                x=index_group_width + 2,
+                x=index_group_width + settings.bank_spacing_ref / 2,
                 y=Ref(0),
                 angle=-settings.main_rows_angle_ref,
 
@@ -184,8 +186,10 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                         alignment=GroupAlignment.TOP_RIGHT,
                         organization=GroupOrganization.horizontal(key_height),
 
-                        x=Ref(0),
-                        y=Ref(0.25),
+                        x=settings.vowel_set_offset_fac_ref * settings.key_width_ref,
+                        y=settings.row_spacing_ref,
+
+                        angle=-settings.vowel_rows_angle_ref,
 
                         elements=(
                             Key(steno="E", label="E", width=reduced_key_width + VOWEL_KEY_WIDTH_BOOST),

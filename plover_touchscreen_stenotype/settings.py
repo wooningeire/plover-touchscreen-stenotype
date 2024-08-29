@@ -76,6 +76,9 @@ class Settings(QObject):
     main_rows_angle = _PersistentSetting(float)
     vowel_rows_angle = _PersistentSetting(float)
 
+    row_spacing = _PersistentSetting(float)
+    bank_spacing = _PersistentSetting(float)
+
     window_opacity = _PersistentSetting(float)
     # Window size is not preserved through the Settings object; Setting object only allows window size to be edited
     # through the settings dialog.
@@ -106,6 +109,9 @@ class Settings(QObject):
     main_rows_angle_ref = main_rows_angle.ref_getter()
     vowel_rows_angle_ref = vowel_rows_angle.ref_getter()
 
+    row_spacing_ref = row_spacing.ref_getter()
+    bank_spacing_ref = bank_spacing.ref_getter()
+
     window_opacity_ref = window_opacity.ref_getter()
     window_width_ref = window_width.ref_getter()
     window_height_ref = window_height.ref_getter()
@@ -129,7 +135,7 @@ class Settings(QObject):
         self.index_stretch = -0.1
         self.pinky_stretch = 0.4
 
-        self.vowel_set_offset_fac = 0.6
+        self.vowel_set_offset_fac = 0
 
         self.index_stagger_fac = 0.5
         self.middle_stagger_fac = 0.85
@@ -137,7 +143,10 @@ class Settings(QObject):
         self.pinky_stagger_fac = 0
 
         self.main_rows_angle = 22.5
-        self.vowel_rows_angle = 20.5
+        self.vowel_rows_angle = 0
+
+        self.row_spacing = 0
+        self.bank_spacing = 4
 
         self.window_opacity = 0.675
         self.window_width_ref = Ref(30)

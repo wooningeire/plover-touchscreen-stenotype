@@ -33,7 +33,7 @@ from ...lib.reactivity import Ref, RefAttr, computed, on
 from ..composables.UseDpi import UseDpi
 from ...lib.constants import GRAPHICS_VIEW_STYLE, KEY_STYLESHEET
 from ...lib.util import empty_stroke, render, child
-from ...lib.keyboard_layout.descriptors.english_stenotype_extended_custom import build_layout_descriptor
+from ...lib.keyboard_layout.descriptors.english_stenotype import build_layout_descriptor
 
 
 POSITION_RESET_TIMEOUT = 1500
