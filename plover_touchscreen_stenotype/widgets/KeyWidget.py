@@ -7,6 +7,8 @@ from PyQt5.QtWidgets import (
     QWidget,
     QToolButton,
     QSizePolicy,
+    QVBoxLayout,
+    QLabel,
 )
 from PyQt5.QtGui import (
     QFont,
@@ -17,7 +19,7 @@ from plover.steno import Stroke
 from .composables.UseDpi import UseDpi
 from ..lib.reactivity import Ref, watch, watch_many
 from ..lib.constants import FONT_FAMILY
-from ..lib.util import empty_stroke, not_none
+from ..lib.util import child, empty_stroke, not_none, render
 
 
 class KeyWidget(QToolButton):
@@ -41,6 +43,7 @@ class KeyWidget(QToolButton):
         self.__touched = False
         self.__matched = False
         self.__matched_soft = False
+        self.__key_label: "KeyLabel | None" = None
 
         touched_key_widgets = touched_key_widgets or Ref(set())
         current_stroke = current_stroke or Ref(empty_stroke())
@@ -64,24 +67,37 @@ class KeyWidget(QToolButton):
                 self.matched = False
 
 
-            if (old_touched, old_matched) != (self.touched, self.matched):
-                # Reload stylesheet for dynamic properties: https://stackoverflow.com/questions/1595476/are-qts-stylesheets-really-handling-dynamic-properties
-                # self.style().unpolish(key_widget)
-                not_none(self.style()).polish(self)
+            if (old_touched, old_matched) == (self.touched, self.matched): return
+            # Reload stylesheet for dynamic properties: https://stackoverflow.com/questions/1595476/are-qts-stylesheets-really-handling-dynamic-properties
+            # self.style().unpolish(key_widget)
+            not_none(self.style()).polish(self)
 
 
-        @watch(dpi.change, parent=self)
-        def set_font():
-            self.setFont(QFont(FONT_FAMILY, dpi.dp(8)))
+        key_label: "KeyLabel | None" = None
 
-        if isinstance(label_maybe_ref, str):
-            label: str = label_maybe_ref
-            self.setText(label)
-        else:
-            label_ref: Ref[str] = label_maybe_ref
-            @watch(label_ref.change, parent=self)
-            def set_label():
-                self.setText(label_ref.value)
+        @render(self, QVBoxLayout(self))
+        def render_widget(widget: QWidget, _: QVBoxLayout):
+            @child(self, KeyLabel())
+            def render_label(label: KeyLabel, _: None):
+                nonlocal key_label
+                key_label = label
+
+                label.setAlignment(Qt.AlignCenter)
+
+                if isinstance(label_maybe_ref, str):
+                    label_text: str = label_maybe_ref
+                    label.setText(label_text)
+                else:
+                    label_ref: Ref[str] = label_maybe_ref
+                    @watch(label_ref.change, parent=label)
+                    def set_label():
+                        label.setText(label_ref.value)
+
+                return ()
+
+            return ()
+
+        self.__key_label = not_none(key_label)
 
 
         # self.setMinimumSize(0, 0)
@@ -117,6 +133,9 @@ class KeyWidget(QToolButton):
     def matched(self, matched: bool):
         self.__matched = matched
 
+        if self.__key_label is None: return
+        self.__key_label.highlighted = matched or self.matched_soft
+
     @pyqtProperty(bool)
     def matched_soft(self):
         return self.__matched_soft
@@ -124,3 +143,31 @@ class KeyWidget(QToolButton):
     @matched_soft.setter
     def matched_soft(self, matched_soft: bool):
         self.__matched_soft = matched_soft
+
+        if self.__key_label is None: return
+        self.__key_label.highlighted = matched_soft or self.matched
+
+
+class KeyLabel(QLabel):
+    def __init__(self, parent: "QWidget | None"=None):
+        super().__init__(parent)
+
+        dpi = UseDpi(self)
+
+        self.__highlighted = False
+
+        @watch(dpi.change, parent=self)
+        def set_font():
+            self.setFont(QFont(FONT_FAMILY, dpi.dp(8)))
+
+    @pyqtProperty(bool)
+    def highlighted(self):
+        return self.__highlighted
+
+    @highlighted.setter
+    def highlighted(self, highlighted: bool):
+        old_highlighted = self.__highlighted
+
+        self.__highlighted = highlighted
+        if old_highlighted != highlighted:
+            not_none(self.style()).polish(self)

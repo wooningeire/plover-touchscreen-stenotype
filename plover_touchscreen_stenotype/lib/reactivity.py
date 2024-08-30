@@ -176,8 +176,6 @@ def computed_on_signals(handler: Callable[[], T], *dependency_signals: pyqtBound
     return ref
 
 
-# TODO mix between synchrony and asynchrony below may lead to inconsistent/unexpected behavior
-
 def _connect(signal: pyqtBoundSignal, handler: Callable[..., None], parent: "QObject | None"=None):
     # Disconnecting using `connection` instead of `handler` allows errors to be caught properly when attempting to
     # disconnect after the signal parents have been destroyed (why?)

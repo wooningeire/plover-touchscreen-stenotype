@@ -27,8 +27,8 @@ from ..KeyWidget import KeyWidget
 from ...lib.keyboard_layout.LayoutDescriptor import Group, GroupOrganizationType, KeyGroup, Key, GroupOrganizationType, ADAPTATION_RATE, MEAN_DEVIATION_FACTOR
 from ...lib.reactivity import on, on_many, watch, watch_many, Ref, computed
 from ..composables.UseDpi import UseDpi
-from ...lib.constants import KEY_STYLESHEET
-from ...lib.util import not_none, render, child, Point
+from ...lib.constants import KEY_GROUP_STYLESHEET
+from ...lib.util import empty_stroke, not_none, render, child, Point
 
 
 def set_group_transforms(item: QGraphicsItem, group: "Group | KeyGroup", bounding_rect_change_signals: list[pyqtBoundSignal], *, displacement: Ref[Point], dpi: UseDpi):
@@ -50,7 +50,7 @@ def set_group_transforms(item: QGraphicsItem, group: "Group | KeyGroup", boundin
 
         @watch(group.angle.change, parent=item.parentWidget())
         def set_group_angle():
-            item.setRotation(group.angle.value)
+            item.setRotation(not_none(group.angle).value)
 
 class KeyGroupWidget(QWidget):
     displacement_this_stroke_change = pyqtSignal(object, object)  # KeyGroupWidget, Point | None, Point | None,
@@ -70,6 +70,7 @@ class KeyGroupWidget(QWidget):
         dpi: UseDpi,
     ):
         super().__init__(parent)
+
 
         items: list[QGraphicsItem] = []
         bounding_rect_change_signals: list[pyqtBoundSignal] = []
@@ -163,6 +164,13 @@ class KeyGroupWidget(QWidget):
         self.reset_position = reset_position
 
 
+        def get_key_stroke(key: Key) -> Stroke:
+            try:
+                return Stroke.from_steno(key.steno)
+            except ValueError:
+                return empty_stroke()
+
+
         if group.organization.type == GroupOrganizationType.VERTICAL:
             @render(self, QVBoxLayout())
             def render_widget(widget: QWidget, _: QVBoxLayout):
@@ -174,20 +182,20 @@ class KeyGroupWidget(QWidget):
                 def set_container_height():
                     widget.setFixedHeight(dpi.cm(sum(not_none(element.height).value for element in group.elements)))
 
-                bounding_rect_change_signals.append(group.organization.width.change)
+                bounding_rect_change_signals.append(not_none(group.organization.width).change)
 
                 for key in group.elements:
                     assert key.height is not None
 
-                    @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, touched_key_widgets=touched_key_widgets, current_stroke=current_stroke, dpi=dpi))
+                    @child(widget, KeyWidget(get_key_stroke(key), key.label, touched_key_widgets=touched_key_widgets, current_stroke=current_stroke, dpi=dpi))
                     def render_widget(key_widget: KeyWidget, _: None):
                         key_widgets_to_keys[key_widget] = key
                         current_key = key
 
-                        @watch_many(current_key.height.change, dpi.change, parent=key_widget)
+                        @watch_many(not_none(current_key.height).change, dpi.change, parent=key_widget)
                         def set_height():
-                            key_widget.setFixedHeight(dpi.cm(current_key.height.value))
-                        bounding_rect_change_signals.append(current_key.height.change)
+                            key_widget.setFixedHeight(dpi.cm(not_none(current_key.height).value))
+                        bounding_rect_change_signals.append(not_none(current_key.height).change)
 
                         return ()
                 return ()
@@ -195,28 +203,28 @@ class KeyGroupWidget(QWidget):
         elif group.organization.type == GroupOrganizationType.HORIZONTAL:
             @render(self, QHBoxLayout())
             def render_widget(widget: QWidget, _: QHBoxLayout):
-                @watch_many(group.organization.height.change, dpi.change, parent=widget)
+                @watch_many(not_none(group.organization.height).change, dpi.change, parent=widget)
                 def set_container_height():
-                    widget.setFixedHeight(dpi.cm(group.organization.height.value))
+                    widget.setFixedHeight(dpi.cm(not_none(group.organization.height).value))
 
                 @watch_many(*(not_none(element.width).change for element in group.elements), dpi.change, parent=widget)
                 def set_container_width():
                     widget.setFixedWidth(dpi.cm(sum(not_none(element.width).value for element in group.elements)))
 
-                bounding_rect_change_signals.append(group.organization.height.change)
+                bounding_rect_change_signals.append(not_none(group.organization.height).change)
 
                 for key in group.elements:
                     assert key.width is not None
 
-                    @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, touched_key_widgets=touched_key_widgets, current_stroke=current_stroke, dpi=dpi))
+                    @child(widget, KeyWidget(get_key_stroke(key), key.label, touched_key_widgets=touched_key_widgets, current_stroke=current_stroke, dpi=dpi))
                     def render_widget(key_widget: KeyWidget, _: None):
                         key_widgets_to_keys[key_widget] = key
                         current_key = key
 
-                        @watch_many(current_key.width.change, dpi.change, parent=key_widget)
+                        @watch_many(not_none(current_key.width).change, dpi.change, parent=key_widget)
                         def set_width():
-                            key_widget.setFixedWidth(dpi.cm(current_key.width.value))
-                        bounding_rect_change_signals.append(current_key.width.change)
+                            key_widget.setFixedWidth(dpi.cm(not_none(current_key.width).value))
+                        bounding_rect_change_signals.append(not_none(current_key.width).change)
 
                         return ()
                 return ()
@@ -239,7 +247,7 @@ class KeyGroupWidget(QWidget):
                 bounding_rect_change_signals.extend(width.change for width in widths)
 
                 for key in group.elements:
-                    @child(widget, KeyWidget(Stroke.from_steno(key.steno), key.label, touched_key_widgets=touched_key_widgets, current_stroke=current_stroke, dpi=dpi))
+                    @child(widget, KeyWidget(get_key_stroke(key), key.label, touched_key_widgets=touched_key_widgets, current_stroke=current_stroke, dpi=dpi))
                     def render_widget(key_widget: KeyWidget, _: None):
                         row_start = key.grid_location[0]
                         col_start = key.grid_location[1]
@@ -263,7 +271,7 @@ class KeyGroupWidget(QWidget):
 
         set_group_transforms(self.__proxy, group, bounding_rect_change_signals, displacement=displacement, dpi=dpi)
                     
-        self.setStyleSheet(KEY_STYLESHEET)
+        self.setStyleSheet(KEY_GROUP_STYLESHEET)
     
     @property
     def proxy(self):

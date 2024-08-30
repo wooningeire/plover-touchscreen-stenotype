@@ -102,7 +102,7 @@ def build_layout_descriptor(settings: Settings, keyboard_widget: KeyboardWidget)
                                 y=-pinky_offset / 2,
     
                                 elements=(
-                                    Key(steno="&", label="&&", grid_location=(0, 0), center_offset_x=end_column_compound_width / 2, center_offset_y=compound_key_height_small / 2),
+                                    Key(steno="&", label="&", grid_location=(0, 0), center_offset_x=end_column_compound_width / 2, center_offset_y=compound_key_height_small / 2),
                                     Key(steno="&@", grid_location=(1, 0), center_offset_x=end_column_compound_width / 2),
                                     Key(steno="@", label="@", grid_location=(2, 0), center_offset_x=end_column_compound_width / 2, center_offset_y=-compound_key_height_small / 2 - pinky_offset / 4),
                                     Key(steno="&S", grid_location=(0, 1), center_offset_y=compound_key_height_small / 2),

@@ -34,7 +34,7 @@ from ...lib.Joystick import Joystick, JoystickLayout, JoystickSemicircleSide, MA
 from ..composables.UseJoystickControl import UseJoystickControl
 from ...lib.reactivity import Ref, computed, on, on_many, watch, watch_many
 from ..composables.UseDpi import UseDpi
-from ...lib.constants import GRAPHICS_VIEW_STYLE, KEY_STYLESHEET, KEY_CONTAINER_STYLE
+from ...lib.constants import GRAPHICS_VIEW_STYLE, KEY_GROUP_STYLESHEET
 from ...lib.util import child, empty_stroke, render, not_none
 if TYPE_CHECKING:
     from ...Main import Main
@@ -278,7 +278,7 @@ class JoysticksWidget(QWidget):
         
 
 
-        self.setStyleSheet(KEY_STYLESHEET)
+        self.setStyleSheet(KEY_GROUP_STYLESHEET)
 
         self.setAttribute(Qt.WA_AcceptTouchEvents)
         self.setFocusPolicy(Qt.NoFocus)
@@ -456,7 +456,7 @@ class _VerticalJoystickWidget(QWidget):
 
         key_widgets: tuple[KeyWidget, ...] = ()
 
-        self.setStyleSheet(KEY_STYLESHEET)
+        self.setStyleSheet(KEY_GROUP_STYLESHEET)
 
 
         @render(self, QGridLayout())
@@ -512,7 +512,7 @@ class _GridJoystickWidget(QWidget):
         key_widgets: tuple[KeyWidget, ...] = ()
 
         
-        self.setStyleSheet(KEY_STYLESHEET)
+        self.setStyleSheet(KEY_GROUP_STYLESHEET)
 
 
         @render(self, QGridLayout())

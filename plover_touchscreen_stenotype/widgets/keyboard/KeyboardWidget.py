@@ -19,6 +19,7 @@ from PyQt5.QtWidgets import (
     QGraphicsScene,
     QGridLayout,
     QGraphicsItem,
+    QLabel,
 )
 from PyQt5.QtGui import (
     QTouchEvent,
@@ -34,7 +35,7 @@ from ..KeyWidget import KeyWidget
 from ..composables.UseDpi import UseDpi
 from ...settings import Settings
 from ...lib.reactivity import Ref, RefAttr, computed, on, watch
-from ...lib.constants import GRAPHICS_VIEW_STYLE, KEY_STYLESHEET
+from ...lib.constants import GRAPHICS_VIEW_STYLE, KEY_GROUP_STYLESHEET
 from ...lib.util import empty_stroke, not_none, render, child
 from ...lib.keyboard_layout.descriptors import KEYBOARD_LAYOUT_BUILDERS, DEFAULT_KEYBOARD_LAYOUT_NAME
 
@@ -157,8 +158,12 @@ class KeyboardWidget(QWidget):
                 widget_coords = proxy_transform.inverted()[0].map(point)
 
                 key_widget = key_group_widget.childAt(widget_coords)
-                if key_widget is not None:
-                    return key_widget, key_group_widget
+                if key_widget is None: continue
+
+                if not isinstance(key_widget, KeyWidget):
+                    return key_widget.parentWidget(), key_group_widget
+                
+                return key_widget, key_group_widget
 
             return None
         
@@ -237,7 +242,7 @@ class KeyboardWidget(QWidget):
         #     left_right_width_diff.value = left_right_width_diff_src.value
 
 
-        self.setStyleSheet(KEY_STYLESHEET)
+        self.setStyleSheet(KEY_GROUP_STYLESHEET)
 
         self.setAttribute(Qt.WA_AcceptTouchEvents)
         self.setFocusPolicy(Qt.NoFocus)
