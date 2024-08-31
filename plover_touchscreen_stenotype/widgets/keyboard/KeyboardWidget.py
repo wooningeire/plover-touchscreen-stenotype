@@ -193,6 +193,9 @@ class KeyboardWidget(QWidget):
                 nonlocal graphics_view
 
                 view.setStyleSheet(GRAPHICS_VIEW_STYLE)
+
+                view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+                view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
                 
                 @watch(settings.keyboard_layout_ref.change)
                 def set_keyboard_layout():
